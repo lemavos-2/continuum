@@ -635,3 +635,4 @@ export {
   SidebarTrigger,
   useSidebar,
 };
+export { SessionNavBar } from "./session-nav-bar";
