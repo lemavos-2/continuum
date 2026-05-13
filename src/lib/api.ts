@@ -100,12 +100,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor: refresh token on 401
+// Interceptor: refresh token on 401 only.
+// 403 is treated as authorization/business error (e.g., PlanLimitException) and MUST NOT log the user out.
+// On refresh failure we just clear tokens and emit an event — the AuthContext reacts without a hard reload.
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if ((error.response?.status === 401 || error.response?.status === 403) && !original._retry) {
+    const status = error.response?.status;
+    const url: string = original?.url ?? "";
+    const isAuthEndpoint =
+      url.startsWith("/api/auth/login") ||
+      url.startsWith("/api/auth/register") ||
+      url.startsWith("/api/auth/refresh") ||
+      url.startsWith("/api/auth/google");
+
+    if (status === 401 && !original?._retry && !isAuthEndpoint) {
       original._retry = true;
       const refreshToken = getRefreshToken();
       if (refreshToken) {
@@ -117,11 +127,13 @@ api.interceptors.response.use(
           original.headers.Authorization = `Bearer ${data.accessToken}`;
           return api(original);
         } catch {
-          // Refresh failed — clear and redirect
+          // fall-through to soft logout
         }
       }
       clearAuthTokens();
-      window.location.href = "/";
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("auth:logout"));
+      }
     }
     return Promise.reject(error);
   }
