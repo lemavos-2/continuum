@@ -32,9 +32,14 @@
 - updates: undefined
 
 
-### V7 (lemavos-7)
+### V7 (lemavos-1)
 - started: 07-05-2026
-- ended: 
-- updates:
+- ended: 12-05-2026
+- updates: 14
+
+### V8 (lemavos-2ue)
+- started: 13-05-2026
+- ended:
+- updates: 
 
 ---

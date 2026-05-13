@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MobileSidebar } from "@/components/sidebar/MobileSidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SessionNavBar } from "@/components/ui/session-nav-bar";
 
 interface SearchResult {
   id: string;
@@ -462,30 +463,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   };
 
-  const desktopSidebar = (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-30 hidden h-screen flex-col border-r border-white/5 bg-[#0a0a0d] lg:flex overflow-hidden transition-all duration-200 ease-out",
-        collapsed ? "w-20" : "w-64",
-      )}
-    >
-      {sidebarHeader(false)}
-      <div className="flex-1 overflow-y-auto">
-        <SidebarBody
-          collapsed={collapsed}
-          pathname={location.pathname}
-          searchQuery={searchQuery}
-          searching={searching}
-          searchResults={searchResults}
-          searchFocused={searchFocused}
-          setSearchFocused={setSearchFocused}
-          handleSearch={handleSearch}
-          handleResultClick={handleResultClick}
-        />
-      </div>
-      {profileFooter(false)}
-    </aside>
-  );
+  const desktopSidebar = <SessionNavBar />;
 
   return (
     <div className="flex min-h-screen bg-[#05060a] text-white">
@@ -530,7 +508,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {desktopSidebar}
 
-      <main className={cn("min-w-0 flex-1 overflow-auto bg-[#05060a]", collapsed ? "lg:ml-20" : "lg:ml-64")}>
+      <main className="min-w-0 flex-1 overflow-auto bg-[#05060a] lg:ml-[3.05rem]">
         <div className="h-16 lg:hidden" />
         {children}
       </main>
