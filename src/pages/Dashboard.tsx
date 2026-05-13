@@ -137,7 +137,10 @@ export default function Dashboard() {
     queryKey: ["entities", "activities"],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      return (response.data as Entity[]).filter((entity) => entity.type === "ACTIVITY");
+      // Include both ACTIVITY and PROJECT — both are tracked under /activities and /projects.
+      return (response.data as Entity[]).filter(
+        (entity) => entity.type === "ACTIVITY" || entity.type === "PROJECT",
+      );
     },
   });
 
