@@ -1,0 +1,116 @@
+/* Flip Clock Animations */
+.flip-digit {
+  perspective: 1000px;
+}
+
+.flip-digit .flip-top,
+.flip-digit .flip-bottom {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.flip-digit .flip-top {
+  transform-origin: bottom;
+}
+
+.flip-digit .flip-bottom {
+  transform-origin: top;
+}
+
+.flip-digit.flipping .flip-top {
+  animation: flip-top 0.6s ease-in-out forwards;
+}
+
+.flip-digit.flipping .flip-bottom {
+  animation: flip-bottom 0.6s ease-in-out 0.3s forwards;
+}
+
+@keyframes flip-top {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(-90deg);
+  }
+  100% {
+    transform: rotateX(-90deg);
+  }
+}
+
+@keyframes flip-bottom {
+  0% {
+    transform: rotateX(90deg);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* Fullscreen overlay styles */
+.flip-clock-fullscreen {
+  background: #000000;
+  backdrop-filter: blur(10px);
+}
+
+.flip-clock-fullscreen .flip-digit {
+  position: relative;
+  width: 4rem;
+  height: 5rem;
+}
+
+.flip-clock-fullscreen .flip-digit > div {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  background: rgb(39 39 42);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-weight: 900;
+  font-size: 3rem;
+  color: white;
+}
+
+.flip-clock-fullscreen .flip-digit .flip-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.flip-clock-fullscreen .flip-digit .flip-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.flip-clock-fullscreen .flip-digit.flipping .flip-top {
+  animation: flip-top 0.6s ease-in-out forwards;
+}
+
+.flip-clock-fullscreen .flip-digit.flipping .flip-bottom {
+  animation: flip-bottom 0.6s ease-in-out 0.3s forwards;
+}
+
+@media (min-width: 640px) {
+  .flip-clock-fullscreen .flip-digit {
+    width: 5rem;
+    height: 6rem;
+  }
+
+  .flip-clock-fullscreen .flip-digit > div {
+    font-size: 4rem;
+  }
+}

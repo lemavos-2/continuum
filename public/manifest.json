@@ -1,0 +1,36 @@
+{
+  "name": "Continuum - Time Tracking",
+  "short_name": "Continuum",
+  "description": "Knowledge graph with integrated time tracking",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Time Tracking",
+      "short_name": "Tracking",
+      "description": "Track time on your projects",
+      "url": "/time-tracking",
+      "icons": []
+    }
+  ]
+}
