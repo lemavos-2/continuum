@@ -476,7 +476,7 @@ export default function Dashboard() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/time-tracking")}
+                onClick={() => navigate("/activities")}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Open
@@ -517,7 +517,7 @@ export default function Dashboard() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/time-tracking")}
+                onClick={() => navigate("/activities")}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Open
