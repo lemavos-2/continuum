@@ -62,6 +62,7 @@ function NavItem({
   collapsed,
   end,
   onClick,
+  key,
 }: {
   to: string;
   icon: any;
@@ -69,6 +70,7 @@ function NavItem({
   collapsed: boolean;
   end?: boolean;
   onClick?: () => void;
+  key?: string;
 }) {
   const link = (
     <NavLink
