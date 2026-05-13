@@ -16,7 +16,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        display: ["Playfair Display", "Georgia", "Times New Roman", "serif"],
+        display: ["Instrument Serif", "Georgia", "Times New Roman", "serif"],
+        serif: ["Instrument Serif", "Georgia", "Times New Roman", "serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",

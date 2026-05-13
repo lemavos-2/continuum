@@ -4,194 +4,199 @@ import AppLayout from "@/components/AppLayout";
 import { entitiesApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import UpgradeModal from "@/components/UpgradeModal";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, Network, User, Briefcase, Hash, Building, Flame, Loader2, Trash2, Clock } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { CreateEntityDialog } from "@/components/CreateEntityDialog";
-import { useTimeTracking } from "@/hooks/useTimeTracking";
+import { SpotlightTable } from "@/components/ui/spotlight-table";
 import type { EntityType } from "@/types";
 
-interface Entity { id: string; title: string; type: EntityType; description?: string; createdAt: string; trackingDates?: string[]; }
-
-const typeIcons: Record<string, any> = { PERSON: User, PROJECT: Briefcase, TOPIC: Hash, ORGANIZATION: Building, ACTIVITY: Flame };
-const typeLabels: Record<string, string> = { PERSON: "Person", PROJECT: "Project", TOPIC: "Topic", ORGANIZATION: "Organization", ACTIVITY: "Activity" };
-
-// Dynamic badge colors based on type
-function getEntityBadgeColor(type: EntityType): string {
-  const colors: Record<EntityType, string> = {
-    PERSON: "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    PROJECT: "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    TOPIC: "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    ORGANIZATION: "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    ACTIVITY: "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    ACCURRENCY: "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-  };
-  return colors[type] || "";
+interface Entity {
+  id: string;
+  title: string;
+  type: EntityType;
+  description?: string;
+  createdAt: string;
+  trackingDates?: string[];
 }
+
+const typeLabels: Record<string, string> = {
+  PERSON: "Person",
+  PROJECT: "Project",
+  TOPIC: "Topic",
+  ORGANIZATION: "Organization",
+  ACTIVITY: "Activity",
+};
+
+const types = ["PERSON", "PROJECT", "TOPIC", "ORGANIZATION", "ACTIVITY"];
+
+const formatDate = (iso?: string) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
 
 export default function Entities() {
   const [entities, setEntities] = useState<Entity[]>([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const typeFilter = searchParams.get("type");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { refresh: refreshUsage, applyUsageDelta } = usePlanGate();
-
   const [createOpen, setCreateOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  const { data: timeSummaries } = useTimeTracking().getAllSummaries();
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await entitiesApi.list();
+        if (!cancelled) setEntities(Array.isArray(res.data) ? (res.data as Entity[]) : []);
+      } catch {
+        if (!cancelled) toast({ title: "Could not load entities", variant: "destructive" });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [toast]);
 
-  const getTimeSummaryForEntity = (entityId: string) => {
-    return timeSummaries?.find(s => s.entityId === entityId);
-  };
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      console.log('Fetching entities...');
-      const eRes = await entitiesApi.list();
-      console.log('Entities response:', eRes);
-      setEntities(Array.isArray(eRes.data) ? eRes.data : []);
-      console.log('Entities set:', Array.isArray(eRes.data) ? eRes.data : []);
-    } catch (error) {
-      console.error('Error loading entities:', error);
-      toast({ title: "Error loading entities", variant: "destructive" });
-    }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchData(); }, []);
-
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent, entity: Entity) => {
     e.stopPropagation();
     try {
-      const entity = entities.find((item) => item.id === id);
-      await entitiesApi.delete(id);
-      setEntities((prev) => prev.filter((en) => en.id !== id));
-      applyUsageDelta({ entitiesCount: -1, activitiesCount: entity?.type === "ACTIVITY" ? -1 : 0 });
+      await entitiesApi.delete(entity.id);
+      setEntities((prev) => prev.filter((x) => x.id !== entity.id));
+      applyUsageDelta({ entitiesCount: -1, activitiesCount: entity.type === "ACTIVITY" ? -1 : 0 });
       void refreshUsage();
+    } catch {
+      toast({ title: "Error deleting entity", variant: "destructive" });
     }
-    catch { toast({ title: "Error deleting", variant: "destructive" }); }
   };
 
-  const filtered = entities.filter((e) => {
-    const matchSearch = e.title.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter ? e.type === typeFilter : true;
-    return matchSearch && matchType;
-  });
-
-  const types = ["PERSON", "PROJECT", "TOPIC", "ORGANIZATION", "ACTIVITY"];
+  const filtered = typeFilter ? entities.filter((e) => e.type === typeFilter) : entities;
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-white">Entities</h1>
-          <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1">
-            <Plus className="w-4 h-4" /> New Entity
-          </Button>
-          <CreateEntityDialog
-            open={createOpen}
-            onOpenChange={setCreateOpen}
-            defaultType={(typeFilter as string) || "TOPIC"}
-            onCreated={(entity) => setEntities((prev) => [...prev, entity as Entity])}
-          />
-        </div>
+      <div className="px-6 lg:px-12 py-10 max-w-6xl mx-auto">
+        {/* Header */}
+        <header className="flex items-end justify-between border-b border-white/10 pb-6 mb-8">
+          <div>
+            <p className="label-caps mb-2">Index</p>
+            <h1 className="font-serif text-5xl tracking-tight">Entities</h1>
+            <p className="mt-2 text-sm text-white/50">
+              The atoms of your knowledge graph.
+            </p>
+          </div>
+          <button onClick={() => setCreateOpen(true)} className="btn-primary">
+            <Plus className="w-4 h-4" /> New entity
+          </button>
+        </header>
 
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setSearchParams({})} className={cn("bento-tag", !typeFilter && "bg-primary/10 text-primary font-medium")}>All</button>
-          {types.map((t) => {
-            const Icon = typeIcons[t];
-            return (
-              <button key={t} onClick={() => setSearchParams({ type: t })} className={cn("bento-tag flex items-center gap-1", typeFilter === t && "bg-primary/10 text-primary font-medium")}>
-                <Icon className="w-3 h-3" /> {typeLabels[t]}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search entities..." className="pl-9 bg-accent border-border/50" />
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => setSearchParams({})}
+            className={cn(
+              "text-xs px-3 py-1.5 rounded-md border transition-colors",
+              !typeFilter
+                ? "bg-white text-black border-white"
+                : "border-white/10 text-white/60 hover:border-white/30 hover:text-white",
+            )}
+          >
+            All
+          </button>
+          {types.map((t) => (
+            <button
+              key={t}
+              onClick={() => setSearchParams({ type: t })}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-md border transition-colors",
+                typeFilter === t
+                  ? "bg-white text-black border-white"
+                  : "border-white/10 text-white/60 hover:border-white/30 hover:text-white",
+              )}
+            >
+              {typeLabels[t]}
+            </button>
+          ))}
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 space-y-2">
-            <Network className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-muted-foreground text-sm">No entities found</p>
+          <div className="flex justify-center py-24">
+            <Loader2 className="w-5 h-5 animate-spin text-white/30" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((entity) => {
-              const Icon = typeIcons[entity.type] || Network;
-              const streak = entity.trackingDates?.length || 0;
-              
-              return (
-                <div
-                  key={entity.id}
-                  onClick={() => navigate(`/entities/${entity.id}`)}
-                  className="group relative p-4 rounded-xl cursor-pointer transition-all border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/15 hover:border-white/30 hover:shadow-lg min-h-40 flex flex-col"
-                >
-                  {/* Icon and Type Badge */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                      <Icon className="w-5 h-5 text-white/70" />
-                    </div>
-                    <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-lg", getEntityBadgeColor(entity.type))}>
-                      {typeLabels[entity.type]}
-                    </span>
+          <SpotlightTable
+            data={filtered}
+            searchKeys={["title", "description", "type"]}
+            placeholder="Search by name, type or description…"
+            emptyState="No entities yet. Create your first one."
+            onRowClick={(row) => navigate(`/entities/${row.id}`)}
+            columns={[
+              {
+                key: "title",
+                header: "Name",
+                render: (row) => (
+                  <div className="min-w-0">
+                    <p className="font-medium text-white truncate">{row.title || "Untitled"}</p>
+                    {row.description && (
+                      <p className="mt-0.5 text-xs text-white/40 truncate">{row.description}</p>
+                    )}
                   </div>
-
-                  {/* Title */}
-                  <h3 className="font-semibold text-white/90 text-sm line-clamp-2 flex-1">{entity.title}</h3>
-
-                  {/* Description */}
-                  {entity.description && (
-                    <p className="text-xs text-white/50 line-clamp-2 mt-2 mb-auto">{entity.description}</p>
-                  )}
-
-                  {/* Footer - Track/Streak and Delete */}
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5 gap-2">
-                          <div className="flex items-center gap-1">
-                      {entity.type === "ACTIVITY" && streak > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-500/20 border border-zinc-500/30">
-                          <Flame className="w-3.5 h-3.5 text-zinc-400" />
-                          <span className="text-xs font-semibold text-zinc-200">{streak}</span>
-                        </div>
-                      )}
-                      {entity.type === "PROJECT" && (() => {
-                        const summary = getTimeSummaryForEntity(entity.id);
-                        return summary ? (
-                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-500/20 border border-zinc-500/30">
-                            <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                            <span className="text-xs font-semibold text-zinc-200">{summary.formattedTotal}</span>
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                    
-                    <button
-                      onClick={(e) => handleDelete(entity.id, e)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-zinc-500/20"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-zinc-400/60 hover:text-zinc-400" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                ),
+              },
+              {
+                key: "type",
+                header: "Type",
+                width: "180px",
+                render: (row) => (
+                  <span className="text-xs uppercase tracking-wider text-white/60">
+                    {typeLabels[row.type] ?? row.type}
+                  </span>
+                ),
+              },
+              {
+                key: "createdAt",
+                header: "Created",
+                width: "160px",
+                render: (row) => (
+                  <span className="text-xs text-white/50 font-mono">{formatDate(row.createdAt)}</span>
+                ),
+              },
+              {
+                key: "actions",
+                header: "",
+                width: "60px",
+                render: (row) => (
+                  <button
+                    onClick={(e) => handleDelete(e, row)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-white/10"
+                    aria-label="Delete entity"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-white/50 hover:text-white" />
+                  </button>
+                ),
+              },
+            ]}
+          />
         )}
       </div>
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="You've reached the entities limit for your plan." />
+
+      <CreateEntityDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultType={(typeFilter as string) || "TOPIC"}
+        onCreated={(entity) => setEntities((prev) => [...prev, entity as Entity])}
+      />
+      <UpgradeModal
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        reason="You've reached the entities limit for your plan."
+      />
     </AppLayout>
   );
 }
-

@@ -137,7 +137,10 @@ export default function Dashboard() {
     queryKey: ["entities", "activities"],
     queryFn: async () => {
       const response = await entitiesApi.list();
-      return (response.data as Entity[]).filter((entity) => entity.type === "ACTIVITY");
+      // Include both ACTIVITY and PROJECT — both are tracked under /activities and /projects.
+      return (response.data as Entity[]).filter(
+        (entity) => entity.type === "ACTIVITY" || entity.type === "PROJECT",
+      );
     },
   });
 
@@ -473,7 +476,7 @@ export default function Dashboard() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/time-tracking")}
+                onClick={() => navigate("/activities")}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Open
@@ -514,7 +517,7 @@ export default function Dashboard() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate("/time-tracking")}
+                onClick={() => navigate("/activities")}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Open

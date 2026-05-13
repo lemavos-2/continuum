@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
+  const fetchUser = async (opts: { silent?: boolean } = {}) => {
     try {
       const { data } = await authApi.me();
       if (data) {
@@ -64,7 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try { localStorage.setItem("auth_user", JSON.stringify(next)); } catch {}
       }
     } catch (error: unknown) {
-      if ([401, 403].includes((error as any)?.response?.status)) {
+      const status = (error as any)?.response?.status;
+      // Only 401 means the session is truly invalid. 403 = business rule (plan limits etc).
+      // Network errors / 5xx / 403 must NOT clear the session — keep cached user.
+      if (status === 401) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("auth_user");
@@ -84,6 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setLoading(false);
     }
+
+    const onLogout = () => {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("auth_user");
+      setUser(null);
+    };
+    window.addEventListener("auth:logout", onLogout);
+    return () => window.removeEventListener("auth:logout", onLogout);
   }, []);
 
   const setTokens = (accessToken: string, refreshToken: string) => {
