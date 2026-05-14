@@ -25,7 +25,7 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-black/95 border-white/10 shadow-2xl shadow-black/20">
+      <DialogContent className="w-full max-w-md sm:max-w-lg rounded-3xl bg-black/90 border-white/10 shadow-2xl shadow-black/20 p-6 sm:p-8 max-h-[calc(100vh-3rem)] overflow-y-auto">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -42,7 +42,7 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
             </div>
 
             <div className="flex flex-wrap gap-2 rounded-full bg-white/5 p-1.5">
-              {(["login", "register", "forgot"] as AuthTab[]).map((tab) => (
+              {(["login", "register"] as AuthTab[]).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -53,13 +53,13 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
                       : "text-white/70 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  {tab === "login" ? "Login" : tab === "register" ? "Register" : "Forgot"}
+                  {tab === "login" ? "Login" : "Register"}
                 </button>
               ))}
             </div>
           </div>
 
-          {activeTab === "login" && <LoginForm onSuccess={() => onOpenChange(false)} />}
+          {activeTab === "login" && <LoginForm onSuccess={() => onOpenChange(false)} onForgot={() => setActiveTab("forgot")} />}
           {activeTab === "register" && <RegisterForm onSwitchToLogin={() => setActiveTab("login")} />}
           {activeTab === "forgot" && <ForgotForm onSwitchToLogin={() => setActiveTab("login")} />}
         </div>
@@ -68,7 +68,7 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
   );
 }
 
-function LoginForm({ onSuccess }: { onSuccess: () => void }) {
+function LoginForm({ onSuccess, onForgot }: { onSuccess: () => void; onForgot: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -124,7 +124,16 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
 
       <div className="space-y-4">
-        <label className="block text-sm font-medium text-white/70">Password</label>
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-sm font-medium text-white/70">Password</label>
+          <button
+            type="button"
+            onClick={onForgot}
+            className="text-sm font-semibold text-white/80 hover:text-white hover:underline"
+          >
+            Forgot?
+          </button>
+        </div>
         <input
           type="password"
           required
