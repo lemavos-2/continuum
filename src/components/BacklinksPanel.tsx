@@ -1,4 +1,4 @@
-git push -u origin main --forceimport { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StickyNote, Link2, Unlink } from "lucide-react";
