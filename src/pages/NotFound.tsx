@@ -9,11 +9,21 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
+    // Alterado para bg-black e texto branco
+    <div className="flex min-h-screen items-center justify-center bg-black text-white p-4">
       <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
+        {/* h1 com fonte serifada para combinar com o "Your second brain" */}
+        <h1 className="mb-4 text-7xl font-medium font-serif italic">404</h1>
+        
+        <p className="mb-8 text-xl text-zinc-400 max-w-md mx-auto">
+          The page you are looking for has drifted into the void.
+        </p>
+
+        {/* Botão estilizado como o "Start free" da imagem */}
+        <a 
+          href="/" 
+          className="inline-block bg-white text-black px-6 py-2 rounded-md font-medium transition-hover hover:bg-zinc-200"
+        >
           Return to Home
         </a>
       </div>
