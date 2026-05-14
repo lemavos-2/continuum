@@ -22,6 +22,8 @@ import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Vault from "./pages/Vault";
 import VaultDownload from "./pages/VaultDownload";
 import TimeTracking from "./pages/TimeTracking";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 // import Subscription from "./pages/Subscription";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -99,6 +101,8 @@ const AppRoutes = () => (
     <Route path="/google-callback" element={<GoogleCallback />} />
     <Route path="/login-successful" element={<LoginSuccess />} />
     <Route path="/login-token" element={<LoginSuccess />} />
+    <Route path="/terms" element={<Terms />} />
+    <Route path="/privacy" element={<Privacy />} />
     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
     <Route path="/notes/:id" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />
     <Route path="/entities" element={<ProtectedRoute><Entities /></ProtectedRoute>} />
