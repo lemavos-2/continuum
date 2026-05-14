@@ -278,7 +278,8 @@ export default function KnowledgeGraph() {
       n.y += n.vy * alpha;
     }
 
-    alphaRef.current *= 0.985;
+    // Slow cooling — keeps the graph "alive" longer with subtle motion
+    alphaRef.current = Math.max(0.05, alphaRef.current * 0.992);
   }, []);
 
   // ── Render ───────────────────────────────────────────────────────────
