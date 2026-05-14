@@ -39,14 +39,14 @@ interface GraphEdge {
   target: string;
 }
 
-// Resolved via CSS variables to follow design tokens
+// Color per node type — gives the graph life while keeping the monochrome shell.
 const TYPE_COLORS: Record<string, string> = {
-  NOTE: "hsl(0, 0%, 95%)",
-  ACTIVITY: "hsl(0, 0%, 78%)",
-  PERSON: "hsl(0, 0%, 65%)",
-  PROJECT: "hsl(0, 0%, 55%)",
-  TOPIC: "hsl(0, 0%, 45%)",
-  ORGANIZATION: "hsl(0, 0%, 38%)",
+  NOTE: "hsl(48, 95%, 65%)",         // amber
+  ACTIVITY: "hsl(160, 70%, 55%)",    // emerald
+  PERSON: "hsl(210, 90%, 65%)",      // blue
+  PROJECT: "hsl(280, 70%, 70%)",     // violet
+  TOPIC: "hsl(20, 85%, 62%)",        // orange
+  ORGANIZATION: "hsl(340, 75%, 65%)",// pink
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -59,7 +59,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const BASE_RADIUS: Record<string, number> = {
-  NOTE: 4, ACTIVITY: 5, PERSON: 5, PROJECT: 6, TOPIC: 5, ORGANIZATION: 6,
+  NOTE: 5, ACTIVITY: 6, PERSON: 6, PROJECT: 7, TOPIC: 6, ORGANIZATION: 7,
 };
 
 // ── Barnes-Hut quadtree (mutable for perf) ──────────────────────────────
