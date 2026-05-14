@@ -1,29 +1,71 @@
 /*
- * CONTINUUM — Home Page / Landing Page
- * Design: Void Cartography — Bauhaus Digital / Scientific Minimalism
- * Dark mode first. Playfair Display headlines. DM Sans body.
- * Asymmetric layouts. Cyan accent. Framer Motion animations.
+ * CONTINUUM — Landing Page
+ * Now powered by the ScrollGlobe scroll-driven story.
  */
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/landing/Navbar";
-import HeroSection from "@/components/landing/sections/HeroSection";
-import ProblemSection from "@/components/landing/sections/ProblemSection";
-import SolutionSection from "@/components/landing/sections/SolutionSection";
-import FeaturesSection from "@/components/landing/sections/FeaturesSection";
-import HowItWorksSection from "@/components/landing/sections/HowItWorksSection";
-import CTASection from "@/components/landing/sections/CTASection";
 import Footer from "@/components/landing/Footer";
+import { ScrollGlobe } from "@/components/ui/landing-page";
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+
+  const sections = [
+    {
+      id: "hero",
+      badge: "Continuum",
+      title: "Your second",
+      subtitle: "brain, mapped.",
+      description:
+        "Capture every thought, person, and project — and watch them connect into a living graph of knowledge that grows with you.",
+      align: "left" as const,
+      actions: [
+        { label: "Start free", variant: "primary" as const, onClick: () => navigate("/register") },
+        { label: "Sign in", variant: "secondary" as const, onClick: () => navigate("/login") },
+      ],
+    },
+    {
+      id: "connect",
+      badge: "Connections",
+      title: "Notes that link themselves.",
+      description:
+        "Mention people, projects, or topics with @ and # — Continuum stitches everything into your personal knowledge graph automatically.",
+      align: "center" as const,
+    },
+    {
+      id: "discover",
+      badge: "Discovery",
+      title: "See the patterns",
+      subtitle: "you couldn't before.",
+      description:
+        "Explore your ideas spatially. Find unexpected connections, surface forgotten notes, and let your network think with you.",
+      align: "left" as const,
+      features: [
+        { title: "Knowledge Graph", description: "An interactive map of every entity, note, and link in your workspace." },
+        { title: "Mentions & Backlinks", description: "Bidirectional relationships keep context one click away." },
+        { title: "Time Tracking", description: "Track effort against the projects and activities that matter." },
+      ],
+    },
+    {
+      id: "future",
+      badge: "Get started",
+      title: "Build your",
+      subtitle: "continuum.",
+      description:
+        "Free to start, private by design. Bring your notes, your people, and your work into one connected space.",
+      align: "center" as const,
+      actions: [
+        { label: "Create account", variant: "primary" as const, onClick: () => navigate("/register") },
+        { label: "Sign in", variant: "secondary" as const, onClick: () => navigate("/login") },
+      ],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       <Navbar />
       <main>
-        <HeroSection />
-        <ProblemSection />
-        <SolutionSection />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <CTASection />
+        <ScrollGlobe sections={sections} className="bg-black" />
       </main>
       <Footer />
     </div>
