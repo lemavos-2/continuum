@@ -68,7 +68,7 @@ function project(x: number, y: number, z: number, cx: number, cy: number, fov: n
 
 export function Component({
   className,
-  size = 600,
+  size = 280,
   dotColor = "rgba(255, 255, 255, ALPHA)",
   arcColor = "rgba(255, 255, 255, 0.25)",
   markerColor = "rgba(255, 255, 255, 0.95)",

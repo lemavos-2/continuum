@@ -41,16 +41,16 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
               </DialogHeader>
             </div>
 
-            <div className="flex flex-wrap gap-2 rounded-full bg-white/5 p-1.5">
+            <div className="flex flex-wrap items-center gap-2 rounded-full bg-white/5 p-1.5">
               {(["login", "register"] as AuthTab[]).map((tab) => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`min-w-[96px] rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
                     activeTab === tab
-                      ? "bg-white text-black"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
+                      ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.18)]"
+                      : "text-white/75 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   {tab === "login" ? "Login" : "Register"}
@@ -147,7 +147,7 @@ function LoginForm({ onSuccess, onForgot }: { onSuccess: () => void; onForgot: (
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-white/90 disabled:opacity-60"
+        className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition shadow-[0_14px_34px_rgba(255,255,255,0.16)] hover:bg-white/95 disabled:opacity-60"
       >
         {loading ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Signing in…</span> : "Sign in"}
       </button>
