@@ -38,6 +38,7 @@ export default function Footer() {
               <a href="#/terms" className="hover:text-white transition-colors">Terms and Conditions</a>
               <a href="#/privacy" className="hover:text-white transition-colors">Privacy</a>
               <a href="mailto:lemavos.noreply@gmail.com" className="hover:text-white transition-colors">Contact</a>
+              <a href="https://www.instagram.com/continuumnodes" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
             </div>
             <p className="font-body text-xs text-[#888888]">
               © {new Date().getFullYear()} Continuum. All rights reserved.
