@@ -272,26 +272,17 @@ export default function Vault() {
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="px-6 lg:px-12 py-10 max-w-6xl mx-auto space-y-6">
+        {/* Header — same pattern as /entities */}
+        <header className="flex items-end justify-between border-b border-white/10 pb-6 mb-2">
           <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight">Vault</h1>
-            <p className="text-sm text-muted-foreground mt-1">Secure storage for images, PDFs, and audio.</p>
+            <p className="label-caps mb-2">Storage</p>
+            <h1 className="font-serif text-5xl tracking-tight">Vault</h1>
+            <p className="mt-2 text-sm text-white/50">
+              Browse files you have stored. Upload by dragging files into the Notes page.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept="image/jpeg,image/png,image/webp,application/pdf,audio/mpeg,audio/mp4,audio/x-m4a,audio/m4a"
-              onChange={handleFileSelected}
-            />
-            <Button type="button" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading || !canUploadVault(0)} className="inline-flex items-center gap-2">
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {canUploadVault(0) ? "Upload file" : "Storage full"}
-            </Button>
-          </div>
-        </div>
+        </header>
 
         <div className="bento-card p-4 space-y-2">
           <div className="flex items-center justify-between">
@@ -304,16 +295,6 @@ export default function Vault() {
             </span>
           </div>
           <Progress value={vaultMaxMB === -1 ? 0 : vaultPct} className="h-1" />
-        </div>
-
-        <div
-          onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-          className={`rounded-xl border-2 border-dashed transition-all ${
-            dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-primary/50"
-          } p-6 text-center`}
-        >
-          <Upload className={`w-6 h-6 mx-auto ${dragActive ? "text-primary" : "text-muted-foreground/50"}`} />
-          <p className="text-sm mt-2">{dragActive ? "Drop your file here" : "Drag a file here or use the upload button"}</p>
         </div>
 
         {loading ? (
