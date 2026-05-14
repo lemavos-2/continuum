@@ -318,15 +318,15 @@ export default function KnowledgeGraph() {
         if (!isNodeVisible(a) || !isNodeVisible(b)) continue;
         const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
         if (hasSelection && !isHighlighted) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.025)";
-          ctx.lineWidth = 0.6 / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.04)";
+          ctx.lineWidth = 1.0 / z;
         } else if (isHighlighted) {
-          ctx.strokeStyle = "hsla(180,80%,55%,0.55)";
-          ctx.lineWidth = 1.8 / z;
+          ctx.strokeStyle = "hsla(48,95%,65%,0.75)";
+          ctx.lineWidth = 2.6 / z;
         } else {
           // edge thickness by combined degree
-          const w = Math.min(2.2, 0.5 + (a.degree + b.degree) * 0.04) / z;
-          ctx.strokeStyle = "hsla(180,60%,50%,0.18)";
+          const w = Math.min(3.4, 1.4 + (a.degree + b.degree) * 0.08) / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.28)";
           ctx.lineWidth = w;
         }
         ctx.beginPath();
