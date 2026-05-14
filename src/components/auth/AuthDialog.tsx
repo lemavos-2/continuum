@@ -47,11 +47,12 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`min-w-[96px] rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
-                    activeTab === tab
-                      ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.18)]"
-                      : "text-white/75 hover:text-white hover:bg-white/10"
-                  }`}
+                  className={
+                    "flex-1 min-w-[110px] whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 " +
+                    (activeTab === tab
+                      ? "bg-white text-black shadow-[0_14px_32px_rgba(255,255,255,0.18)]"
+                      : "text-white/70 hover:text-white hover:bg-white/10")
+                  }
                 >
                   {tab === "login" ? "Login" : "Register"}
                 </button>
