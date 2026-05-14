@@ -137,18 +137,71 @@ export default function Notes() {
 
   const limitMsg = getLimitMessage("notes");
 
+  // Drag & drop upload to Vault directly from Notes
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      await vaultApi.upload(form);
+      toast({ title: "File uploaded", description: `${file.name} added to your Vault.` });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally { setUploading(false); }
+  };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+  };
+
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">Notes</h1>
-            {limitMsg && <p className="text-xs text-slate-400 mt-1">{limitMsg}</p>}
+      <div
+        className="px-6 lg:px-12 py-10 max-w-6xl mx-auto relative"
+        onDragEnter={handleDragOver}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleFileDrop}
+      >
+        {dragActive && (
+          <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+            <div className="border-2 border-dashed border-white/40 rounded-xl p-12 text-center">
+              <Upload className="w-8 h-8 mx-auto mb-3 text-white/80" />
+              <p className="text-white text-sm">Drop file to upload to Vault</p>
+            </div>
           </div>
-          <Button onClick={handleCreateNote} size="sm" className="bg-white text-black hover:bg-gray-100 shadow-lg" disabled={!canCreateNote && canCreateNote !== undefined}>
-            <Plus className="w-4 h-4 mr-1" /> New Note
-          </Button>
-        </div>
+        )}
+        {uploading && (
+          <div className="fixed top-4 right-4 z-50 bg-card border border-border rounded-md px-3 py-2 flex items-center gap-2 text-xs">
+            <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+          </div>
+        )}
+
+        {/* Header — same pattern as /entities */}
+        <header className="flex items-end justify-between border-b border-white/10 pb-6 mb-8">
+          <div>
+            <p className="label-caps mb-2">Index</p>
+            <h1 className="font-serif text-5xl tracking-tight">Notes</h1>
+            <p className="mt-2 text-sm text-white/50">
+              {limitMsg || "Your thoughts, written down. Drag any file here to send it to Vault."}
+            </p>
+          </div>
+          <button
+            onClick={handleCreateNote}
+            className="btn-primary"
+            disabled={!canCreateNote && canCreateNote !== undefined}
+          >
+            <Plus className="w-4 h-4" /> New note
+          </button>
+        </header>
 
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="lg:w-44 lg:shrink-0 space-y-4">
