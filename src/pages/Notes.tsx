@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { notesApi, foldersApi } from "@/lib/api";
+import { notesApi, foldersApi, vaultApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, StickyNote, Folder, Trash2, Loader2, Heart, MessageSquare } from "lucide-react";
+import { Plus, Search, StickyNote, Trash2, Loader2, Heart, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
