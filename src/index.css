@@ -241,7 +241,7 @@
     background: hsl(0 0% 100% / 0.06); color: #fff; border: 1px solid transparent;
   }
   .continuum-note-mention:hover { background: hsl(0 0% 100% / 0.12); }
-  .continuum-note-mention::before { content: "#"; @apply opacity-50 mr-0.5; }
+  /* prefix already in mention label text — no ::before */
 
   .hljs-comment, .hljs-quote { @apply text-muted-foreground italic; }
   .hljs-keyword, .hljs-selector-tag { color: hsl(0 0% 90%); font-weight: 600; }
