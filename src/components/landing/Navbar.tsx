@@ -10,8 +10,8 @@ import { useNavigate } from "react-router-dom";
 import AppLogo from "./AppLogo";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "How it works", href: "#how-it-works" },
+  { label: "", href: "" },
+  { label: "", href: "" },
 ];
 
 export default function Navbar() {
