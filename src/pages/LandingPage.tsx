@@ -2,13 +2,22 @@
  * CONTINUUM — Landing Page
  * Now powered by the ScrollGlobe scroll-driven story.
  */
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
+import AuthDialog from "@/components/auth/AuthDialog";
 import { ScrollGlobe } from "@/components/ui/landing-page";
 
 export default function LandingPage() {
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const navigate = useNavigate();
+
+  const openAuth = (tab: "login" | "register") => {
+    setAuthTab(tab);
+    setAuthOpen(true);
+  };
 
   const sections = [
     {
@@ -20,8 +29,8 @@ export default function LandingPage() {
         "Capture every thought, person, and project — and watch them connect into a living graph of knowledge that grows with you.",
       align: "left" as const,
       actions: [
-        { label: "Start free", variant: "primary" as const, onClick: () => navigate("/register") },
-        { label: "Sign in", variant: "secondary" as const, onClick: () => navigate("/login") },
+        { label: "Start free", variant: "primary" as const, onClick: () => openAuth("register") },
+        { label: "Sign in", variant: "secondary" as const, onClick: () => openAuth("login") },
       ],
     },
     {
@@ -55,19 +64,20 @@ export default function LandingPage() {
         "Free to start, private by design. Bring your notes, your people, and your work into one connected space.",
       align: "center" as const,
       actions: [
-        { label: "Create account", variant: "primary" as const, onClick: () => navigate("/register") },
-        { label: "Sign in", variant: "secondary" as const, onClick: () => navigate("/login") },
+        { label: "Create account", variant: "primary" as const, onClick: () => openAuth("register") },
+        { label: "Sign in", variant: "secondary" as const, onClick: () => openAuth("login") },
       ],
     },
   ];
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      <Navbar />
+      <Navbar onAuthOpen={() => openAuth("login")} />
       <main>
         <ScrollGlobe sections={sections} className="bg-black" />
       </main>
       <Footer />
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} initialTab={authTab} />
     </div>
   );
 }

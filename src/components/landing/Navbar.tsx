@@ -8,7 +8,11 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import AppLogo from "./AppLogo";
 
-export default function Navbar() {
+interface NavbarProps {
+  onAuthOpen?: () => void;
+}
+
+export default function Navbar({ onAuthOpen }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
@@ -46,7 +50,10 @@ export default function Navbar() {
         {/* Botão de Login ultra-discreto (estilo ghost) */}
         <div className="flex items-center">
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              if (onAuthOpen) onAuthOpen();
+              else navigate("/login");
+            }}
             className="text-white/60 hover:text-white/100 text-xs font-medium tracking-wide transition-colors duration-300 py-2 px-3"
           >
             Sign in
