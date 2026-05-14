@@ -744,15 +744,14 @@ export default function KnowledgeGraph() {
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
-        {/* Toolbar */}
-        <div className="px-3 lg:px-4 py-2.5 flex items-center justify-between border-b border-border/50 shrink-0 gap-2">
-          <div className="min-w-0">
-            <h1 className="font-display text-base lg:text-lg font-semibold tracking-tight text-foreground leading-none">
-              Knowledge Graph
-            </h1>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+        {/* Standard page header — same pattern as /entities and /notes */}
+        <header className="px-6 lg:px-12 pt-10 pb-6 max-w-6xl w-full mx-auto flex items-end justify-between border-b border-white/10 shrink-0">
+          <div>
+            <p className="label-caps mb-2">Network</p>
+            <h1 className="font-serif text-5xl tracking-tight">Knowledge Graph</h1>
+            <p className="mt-2 text-sm text-white/50">
               {graphStats.nodes} nodes · {graphStats.edges} connections
-              {selectedNode && <> · <span className="text-primary">{selectedNode.label}</span></>}
+              {selectedNode && <> · <span className="text-foreground">{selectedNode.label}</span></>}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -788,7 +787,7 @@ export default function KnowledgeGraph() {
               <Maximize2 className="w-4 h-4" />
             </Button>
           </div>
-        </div>
+        </header>
 
         {/* Search bar (inline) */}
         {searchOpen && (
