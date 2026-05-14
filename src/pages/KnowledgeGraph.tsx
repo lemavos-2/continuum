@@ -39,14 +39,14 @@ interface GraphEdge {
   target: string;
 }
 
-// Resolved via CSS variables to follow design tokens
+// Color per node type — gives the graph life while keeping the monochrome shell.
 const TYPE_COLORS: Record<string, string> = {
-  NOTE: "hsl(0, 0%, 95%)",
-  ACTIVITY: "hsl(0, 0%, 78%)",
-  PERSON: "hsl(0, 0%, 65%)",
-  PROJECT: "hsl(0, 0%, 55%)",
-  TOPIC: "hsl(0, 0%, 45%)",
-  ORGANIZATION: "hsl(0, 0%, 38%)",
+  NOTE: "hsl(48, 95%, 65%)",         // amber
+  ACTIVITY: "hsl(160, 70%, 55%)",    // emerald
+  PERSON: "hsl(210, 90%, 65%)",      // blue
+  PROJECT: "hsl(280, 70%, 70%)",     // violet
+  TOPIC: "hsl(20, 85%, 62%)",        // orange
+  ORGANIZATION: "hsl(340, 75%, 65%)",// pink
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -59,7 +59,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const BASE_RADIUS: Record<string, number> = {
-  NOTE: 4, ACTIVITY: 5, PERSON: 5, PROJECT: 6, TOPIC: 5, ORGANIZATION: 6,
+  NOTE: 5, ACTIVITY: 6, PERSON: 6, PROJECT: 7, TOPIC: 6, ORGANIZATION: 7,
 };
 
 // ── Barnes-Hut quadtree (mutable for perf) ──────────────────────────────
@@ -228,11 +228,11 @@ export default function KnowledgeGraph() {
     if (nodes.length === 0) return;
     if (alphaRef.current < 0.01) return;
 
-    const repulsion = 220;
-    const attraction = 0.025;
-    const idealLen = 90;
-    const damping = 0.82;
-    const centerForce = 0.012;
+    const repulsion = 320;
+    const attraction = 0.035;
+    const idealLen = 110;
+    const damping = 0.86;
+    const centerForce = 0.010;
     const alpha = alphaRef.current;
 
     // Bounding box
@@ -278,7 +278,8 @@ export default function KnowledgeGraph() {
       n.y += n.vy * alpha;
     }
 
-    alphaRef.current *= 0.985;
+    // Slow cooling — keeps the graph "alive" longer with subtle motion
+    alphaRef.current = Math.max(0.05, alphaRef.current * 0.992);
   }, []);
 
   // ── Render ───────────────────────────────────────────────────────────
@@ -317,15 +318,15 @@ export default function KnowledgeGraph() {
         if (!isNodeVisible(a) || !isNodeVisible(b)) continue;
         const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
         if (hasSelection && !isHighlighted) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.025)";
-          ctx.lineWidth = 0.6 / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.04)";
+          ctx.lineWidth = 1.0 / z;
         } else if (isHighlighted) {
-          ctx.strokeStyle = "hsla(180,80%,55%,0.55)";
-          ctx.lineWidth = 1.8 / z;
+          ctx.strokeStyle = "hsla(48,95%,65%,0.75)";
+          ctx.lineWidth = 2.6 / z;
         } else {
           // edge thickness by combined degree
-          const w = Math.min(2.2, 0.5 + (a.degree + b.degree) * 0.04) / z;
-          ctx.strokeStyle = "hsla(180,60%,50%,0.18)";
+          const w = Math.min(3.4, 1.4 + (a.degree + b.degree) * 0.08) / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.28)";
           ctx.lineWidth = w;
         }
         ctx.beginPath();
@@ -743,15 +744,14 @@ export default function KnowledgeGraph() {
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
-        {/* Toolbar */}
-        <div className="px-3 lg:px-4 py-2.5 flex items-center justify-between border-b border-border/50 shrink-0 gap-2">
-          <div className="min-w-0">
-            <h1 className="font-display text-base lg:text-lg font-semibold tracking-tight text-foreground leading-none">
-              Knowledge Graph
-            </h1>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+        {/* Standard page header — same pattern as /entities and /notes */}
+        <header className="px-6 lg:px-12 pt-10 pb-6 max-w-6xl w-full mx-auto flex items-end justify-between border-b border-white/10 shrink-0">
+          <div>
+            <p className="label-caps mb-2">Network</p>
+            <h1 className="font-serif text-5xl tracking-tight">Knowledge Graph</h1>
+            <p className="mt-2 text-sm text-white/50">
               {graphStats.nodes} nodes · {graphStats.edges} connections
-              {selectedNode && <> · <span className="text-primary">{selectedNode.label}</span></>}
+              {selectedNode && <> · <span className="text-foreground">{selectedNode.label}</span></>}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -787,7 +787,7 @@ export default function KnowledgeGraph() {
               <Maximize2 className="w-4 h-4" />
             </Button>
           </div>
-        </div>
+        </header>
 
         {/* Search bar (inline) */}
         {searchOpen && (

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -82,8 +82,8 @@
 @layer components {
   .font-display,
   .font-serif {
-    font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-    font-weight: 400;
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-weight: 600;
     letter-spacing: -0.01em;
   }
   .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
@@ -234,14 +234,14 @@
     background: hsl(0 0% 100% / 0.06); color: #fff; border: 1px solid transparent;
   }
   .continuum-entity-mention:hover { background: hsl(0 0% 100% / 0.12); }
-  .continuum-entity-mention::before { content: "@"; @apply opacity-50 mr-0.5; }
+  /* prefix already in mention label text — no ::before */
 
   .continuum-note-mention {
     @apply inline-flex items-center px-1.5 py-0.5 rounded-md text-[0.9em] font-medium cursor-pointer transition-colors;
     background: hsl(0 0% 100% / 0.06); color: #fff; border: 1px solid transparent;
   }
   .continuum-note-mention:hover { background: hsl(0 0% 100% / 0.12); }
-  .continuum-note-mention::before { content: "#"; @apply opacity-50 mr-0.5; }
+  /* prefix already in mention label text — no ::before */
 
   .hljs-comment, .hljs-quote { @apply text-muted-foreground italic; }
   .hljs-keyword, .hljs-selector-tag { color: hsl(0 0% 90%); font-weight: 600; }
