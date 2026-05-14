@@ -35,8 +35,9 @@ export default function Footer() {
 
           <div className="pt-8 mt-8 border-t border-white/[0.05] space-y-4">
             <div className="flex gap-6 text-xs text-[#888888]">
-              <a href="#features" className="hover:text-white transition-colors">Features</a>
-              <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
+              <a href="#terms" className="hover:text-white transition-colors">Terms and Conditions</a>
+              <a href="#privacy" className="hover:text-white transition-colors">Privacy</a>
+              <a href="mailto:lemavos.noreply@gmail.com" className="hover:text-white transition-colors">Contact</a>
             </div>
             <p className="font-body text-xs text-[#888888]">
               © {new Date().getFullYear()} Continuum. All rights reserved.
