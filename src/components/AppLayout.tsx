@@ -465,7 +465,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   };
 
-  const desktopSidebar = <SessionNavBar />;
+  const desktopSidebarWidth = collapsed ? "lg:ml-[4rem]" : "lg:ml-[16rem]";
 
   return (
     <div className="flex min-h-screen bg-[#05060a] text-white">
@@ -508,9 +508,31 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </MobileSidebar>
 
-      {desktopSidebar}
+      {/* Desktop sidebar — uses the project's own nav, not the demo SessionNavBar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden lg:flex flex-col border-r border-white/5 bg-[#0a0a0d] transition-[width] duration-200",
+          collapsed ? "w-16" : "w-64",
+        )}
+      >
+        {sidebarHeader(false)}
+        <div className="flex-1 overflow-y-auto">
+          <SidebarBody
+            collapsed={collapsed}
+            pathname={location.pathname}
+            searchQuery={searchQuery}
+            searching={searching}
+            searchResults={searchResults}
+            searchFocused={searchFocused}
+            setSearchFocused={setSearchFocused}
+            handleSearch={handleSearch}
+            handleResultClick={handleResultClick}
+          />
+        </div>
+        {profileFooter(false)}
+      </aside>
 
-      <main className="min-w-0 flex-1 overflow-auto bg-[#05060a] lg:ml-[3.05rem]">
+      <main className={cn("min-w-0 flex-1 overflow-auto bg-[#05060a] transition-[margin] duration-200", desktopSidebarWidth)}>
         <div className="h-16 lg:hidden" />
         {children}
       </main>
