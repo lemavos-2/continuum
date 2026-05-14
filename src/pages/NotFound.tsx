@@ -19,7 +19,6 @@ const NotFound = () => {
           The page you are looking for has drifted into the void.
         </p>
 
-        {/* Botão estilizado como o "Start free" da imagem */}
         <a 
           href="/" 
           className="inline-block bg-white text-black px-6 py-2 rounded-md font-medium transition-hover hover:bg-zinc-200"
