@@ -228,11 +228,11 @@ export default function KnowledgeGraph() {
     if (nodes.length === 0) return;
     if (alphaRef.current < 0.01) return;
 
-    const repulsion = 220;
-    const attraction = 0.025;
-    const idealLen = 90;
-    const damping = 0.82;
-    const centerForce = 0.012;
+    const repulsion = 320;
+    const attraction = 0.035;
+    const idealLen = 110;
+    const damping = 0.86;
+    const centerForce = 0.010;
     const alpha = alphaRef.current;
 
     // Bounding box
