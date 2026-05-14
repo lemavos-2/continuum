@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import Globe from "@/components/ui/globe";
+import { Component as Globe } from "@/components/ui/interactive-globe";
 import { cn } from "@/lib/utils";
 
 interface ScrollGlobeProps {
