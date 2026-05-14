@@ -234,7 +234,7 @@
     background: hsl(0 0% 100% / 0.06); color: #fff; border: 1px solid transparent;
   }
   .continuum-entity-mention:hover { background: hsl(0 0% 100% / 0.12); }
-  .continuum-entity-mention::before { content: "@"; @apply opacity-50 mr-0.5; }
+  /* prefix already in mention label text — no ::before */
 
   .continuum-note-mention {
     @apply inline-flex items-center px-1.5 py-0.5 rounded-md text-[0.9em] font-medium cursor-pointer transition-colors;
