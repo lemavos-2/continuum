@@ -98,11 +98,10 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
         </Card>
       ) : (
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-          <div className="grid grid-cols-[1.6fr_0.9fr_0.9fr_120px] gap-4 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.24em] text-white/50">
+          <div className="grid grid-cols-[1.8fr_0.9fr_0.9fr] gap-4 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.24em] text-white/50">
             <span>Name</span>
             <span>Type</span>
             <span>Tracked</span>
-            <span />
           </div>
           <Accordion type="single" collapsible className="divide-y divide-white/10">
             {filteredEntities.map((entity, index) => {
@@ -119,7 +118,7 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                     'hover:bg-white/10',
                   )}
                 >
-                  <AccordionTrigger className="grid grid-cols-[1.6fr_0.9fr_0.9fr_120px] items-center gap-4 px-4 py-4 text-left">
+                  <AccordionTrigger className="grid grid-cols-[1.8fr_0.9fr_0.9fr] items-center gap-4 px-4 py-4 text-left">
                     <div className="min-w-0">
                       <p className="font-medium text-white truncate">{entity.title || 'Untitled'}</p>
                       {entity.description && (
@@ -133,16 +132,6 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                       <p className="text-sm font-mono text-white/80">{summary?.formattedTotal || '00:00:00'}</p>
                       <p className="text-xs text-white/50">{summary?.entriesCount ?? 0} entries</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/entities/${entity.id}`);
-                      }}
-                      className="justify-self-end text-xs text-white/70 hover:text-white"
-                    >
-                      View details
-                    </button>
                   </AccordionTrigger>
 
                   <AccordionContent className="px-4 pb-4 pt-0">
