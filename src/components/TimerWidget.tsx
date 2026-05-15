@@ -34,7 +34,7 @@ function FlipDigit({ value, isColon = false }: FlipDigitProps) {
 
   if (isColon) {
     return (
-      <div className="flex items-center justify-center w-8 h-16 text-4xl sm:text-5xl font-mono font-black text-white">
+      <div className="flex items-center justify-center w-6 sm:w-10 h-[7rem] sm:h-[10rem] lg:h-[12rem] text-5xl sm:text-7xl lg:text-8xl font-mono font-bold text-white/60">
         :
       </div>
     );
@@ -57,34 +57,29 @@ function FlipClockOverlay({ timeString, onClose }: { timeString: string; onClose
 
   return (
     <div className="flip-clock-fullscreen fixed inset-0 z-50 flex items-center justify-center bg-black text-white">
-      <div className="relative w-full max-w-6xl px-4">
+      <div className="relative w-full max-w-7xl px-4">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-50 rounded-full border border-white/20 bg-black/80 p-3 text-white transition-all hover:bg-white/10 hover:scale-105"
+          className="absolute right-6 top-6 z-50 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition-colors hover:bg-white/10"
           aria-label="Close flip clock"
         >
-          <X className="h-6 w-6" />
+          <X className="h-5 w-5" />
         </button>
 
-        <div className="flex flex-col items-center gap-12">
-          <div className="flex items-center justify-center gap-2 sm:gap-4 p-8 rounded-3xl border border-white/10 bg-black/90 shadow-2xl">
-            {/* Hours */}
+        <div className="flex flex-col items-center gap-10">
+          <div className="flex items-center justify-center gap-1 sm:gap-2">
             <FlipDigit value={hours[0]} />
             <FlipDigit value={hours[1]} />
             <FlipDigit value=":" isColon />
-
-            {/* Minutes */}
             <FlipDigit value={minutes[0]} />
             <FlipDigit value={minutes[1]} />
             <FlipDigit value=":" isColon />
-
-            {/* Seconds */}
             <FlipDigit value={seconds[0]} />
             <FlipDigit value={seconds[1]} />
           </div>
 
-          <div className="text-center text-sm text-zinc-400 max-w-md">
-            Press <span className="font-semibold text-white">Esc</span> or click the close button to exit Flip Clock mode
+          <div className="text-center text-xs uppercase tracking-[0.3em] text-zinc-500">
+            Press <span className="text-white">Esc</span> to exit
           </div>
         </div>
       </div>
