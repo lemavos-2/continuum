@@ -3,10 +3,18 @@ import { parseTiptapContent } from "@/lib/tiptap-content";
 
 // Lê em tempo de execução, não de build
 const getAPIBaseURL = () => {
-  return (
-    import.meta.env.VITE_API_BASE_URL ||
-    (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}` : "http://localhost:8080")
-  );
+  // Prefer explicit env var
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
+
+  // In development assume backend runs on localhost:8080
+  // This avoids requests being sent to the vite dev server origin
+  if (import.meta.env.DEV) return "http://localhost:8080";
+
+  // In production use the same origin
+  if (typeof window !== "undefined") return `${window.location.protocol}//${window.location.host}`;
+
+  // Fallback
+  return "http://localhost:8080";
 };
 
 const API_BASE_URL = getAPIBaseURL();

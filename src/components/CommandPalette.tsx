@@ -50,7 +50,9 @@ export function CommandPalette() {
       try {
         const { data } = await searchApi.search(query);
         setResults(Array.isArray(data) ? data.slice(0, 10) : []);
-      } catch {
+      } catch (err) {
+        console.error("Search error:", err);
+        toast({ title: "Search failed", description: "Unable to perform search. Check your connection or API.", variant: "destructive" });
         setResults([]);
       } finally {
         setLoading(false);
