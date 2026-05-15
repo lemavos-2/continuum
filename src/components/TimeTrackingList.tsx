@@ -1,12 +1,10 @@
-import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, MoreVertical, FolderOpen, Briefcase, Activity, Plus, ChevronDown } from 'lucide-react';
-import { Flame } from 'lucide-react';
+import { FolderOpen, Briefcase, Flame, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
 import { CreateEntityDialog } from '@/components/CreateEntityDialog';
@@ -19,9 +17,8 @@ import type { Entity } from '@/types';
 export function TimeTrackingList({ filterType }: { filterType?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const { getAllSummaries, startTimer, stopTimer, formatSeconds, activeTimers, isTimerActive, getElapsedSeconds, isStarting, isStopping } = useTimeTracking();
+  const { getAllSummaries } = useTimeTracking();
 
   const { data: trackableEntities, isLoading: entitiesLoading } = useQuery({
     queryKey: ['entities', 'trackable', filterType],
@@ -42,19 +39,6 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
     return summaries.find((s: TimeEntitySummary) => s.entityId === entityId);
   };
 
-  const handleStartTimer = (entityId: string) => {
-    startTimer(entityId);
-    setSelectedEntity(entityId);
-  };
-
-  const handleStopTimer = (entityId: string) => {
-    const activeTimerData = activeTimers.get(entityId);
-    if (activeTimerData) {
-      // Pass the sessionId (timerId) correctly with empty note as default
-      stopTimer({ sessionId: activeTimerData.timerId, note: '' });
-      setSelectedEntity(null);
-    }
-  };
 
   const isLoading = entitiesLoading || summariesLoading;
 
@@ -155,41 +139,7 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                       )}
 
                       {/* Actions */}
-                      <div className="flex gap-2 pt-2">
-                        {showTimer && (
-                          <>
-                            {isEntityTimerActive ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                className="gap-2 flex-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStopTimer(entity.id);
-                                }}
-                                disabled={isStopping}
-                              >
-                                <Pause className="w-4 h-4" />
-                                Stop
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 flex-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStartTimer(entity.id);
-                                }}
-                                disabled={isStarting}
-                              >
-                                <Play className="w-4 h-4" />
-                                Start
-                              </Button>
-                            )}
-                          </>
-                        )}
-
+                      <div className="flex justify-center pt-2">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -197,7 +147,7 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                             e.stopPropagation();
                             navigate(`/entities/${entity.id}`);
                           }}
-                          className="text-xs flex-1"
+                          className="text-xs"
                         >
                           View Details
                         </Button>

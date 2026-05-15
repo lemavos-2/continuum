@@ -64,17 +64,14 @@ export function ActivityCompletionCalendar({
   };
 
   return (
-    <div className="space-y-3 max-w-[220px]">
-      {/* Mini Calendar Grid - 4 weeks */}
+    <div className="w-full max-w-[240px] mx-auto rounded-2xl border border-white/10 bg-zinc-950/50 p-3">
       <div className="grid grid-cols-7 gap-0.5 text-[10px]">
-        {/* Day headers */}
         {['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'].map(day => (
           <div key={day} className="text-center font-medium text-zinc-500">
             {day}
           </div>
         ))}
 
-        {/* Days */}
         {lastFourWeeks.map((date, index) => {
           const dateStr = format(date, 'yyyy-MM-dd');
           const isCompleted = completionDates.has(dateStr);
@@ -106,7 +103,6 @@ export function ActivityCompletionCalendar({
         })}
       </div>
 
-      {/* Sequence & Action */}
       <div className="flex items-center justify-between pt-2">
         <div className="text-[11px] text-zinc-400">
           <span className="font-semibold text-zinc-400">{trackingDates.length}</span> sequence
