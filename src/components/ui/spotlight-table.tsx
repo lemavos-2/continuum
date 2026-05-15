@@ -80,7 +80,7 @@ export function SpotlightTable<T extends Record<string, any>>({
         <div className="overflow-x-auto">
           <table className="min-w-full border-collapse">
             <thead>
-              <tr className="border-b border-white/10">
+              <tr className="border-b border-white/10 bg-white/5">
                 {columns.map((c) => (
                   <th
                     key={String(c.key)}
@@ -103,8 +103,8 @@ export function SpotlightTable<T extends Record<string, any>>({
                     key={rowKey ? rowKey(row, i) : (row.id ?? i)}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
                     className={cn(
-                      "group border-b border-white/[0.06] transition-opacity duration-200",
-                      dim ? "opacity-20" : "opacity-100 hover:bg-white/[0.03]",
+                      "group border-b border-white/[0.06] transition-opacity duration-200 odd:bg-white/5 even:bg-white/0",
+                      dim ? "opacity-20" : "opacity-100 hover:bg-white/[0.08]",
                       onRowClick && "cursor-pointer",
                     )}
                   >
