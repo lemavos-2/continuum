@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FolderOpen, Briefcase, Flame, Plus } from 'lucide-react';
@@ -19,6 +20,7 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const { getAllSummaries } = useTimeTracking();
 
   const { data: trackableEntities, isLoading: entitiesLoading } = useQuery({
@@ -40,22 +42,43 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
     return summaries.find((s: TimeEntitySummary) => s.entityId === entityId);
   };
 
-
   const isLoading = entitiesLoading || summariesLoading;
 
-  const filteredEntities = trackableEntities || [];
+  const lowerQuery = query.trim().toLowerCase();
+  const filteredEntities = useMemo(() => {
+    const source = trackableEntities || [];
+    const typed = source.filter((e) =>
+      filterType ? e.type === filterType : e.type === 'PROJECT' || e.type === 'ACTIVITY'
+    );
+    if (!lowerQuery) return typed;
+    return typed.filter((e) =>
+      [e.title, e.description, e.type]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(lowerQuery))
+    );
+  }, [trackableEntities, filterType, lowerQuery]);
 
   const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity', ACCURRENCY: 'Accurrency' };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          New {filterType ? typeLabels[filterType] : 'Entity'}
-        </Button>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="w-full max-w-sm">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${filterType === 'PROJECT' ? 'projects' : 'activities'}...`}
+            className="w-full bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-sm outline-none transition-colors placeholder:text-white/30"
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New {filterType ? typeLabels[filterType] : 'Entity'}
+          </Button>
+        </div>
       </div>
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col gap-4">
         <div className="flex-1 space-y-3">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -76,12 +99,20 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
             </Card>
           ) : (
             <Accordion type="single" collapsible className="space-y-2 w-full">
-              {filteredEntities.map(entity => {
+              {filteredEntities.map((entity, index) => {
                 const summary = getSummaryForEntity(entity.id);
                 const showTimer = entity.type === 'PROJECT';
 
                 return (
-                  <AccordionItem key={entity.id} value={entity.id} className="border border-white/10 rounded-lg">
+                  <AccordionItem
+                    key={entity.id}
+                    value={entity.id}
+                    className={cn(
+                      "border border-white/10 rounded-lg transition-all",
+                      index % 2 === 0 ? "bg-white/5" : "bg-white/0",
+                      "hover:bg-white/[0.08]"
+                    )}
+                  >
                     <AccordionTrigger className="px-4 py-3 hover:bg-white/[0.02] hover:no-underline">
                       <div className="flex items-start gap-3 text-left flex-1">
                         <div className="flex-1 min-w-0">
