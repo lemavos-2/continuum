@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { type Plan, type PlanLimits } from "@/types";
 import { Loader2, Crown, Zap, Rocket, Gem, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { loadStripe } from "@stripe/stripe-js";
 import PricingSection6 from "@/components/ui/pricing-section-4";
 
 const planMeta: Record<Plan, { icon: any; color: string }> = {
@@ -16,8 +15,6 @@ const planMeta: Record<Plan, { icon: any; color: string }> = {
   PRO: { icon: Rocket, color: "text-warning" },
   VISION: { icon: Gem, color: "text-warning" },
 };
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface SubInfo { plan?: string; effectivePlan?: string; status: string; currentPeriodEnd?: string; }
 

@@ -45,8 +45,6 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
 
   const filteredEntities = trackableEntities || [];
 
-  const types = filterType ? [filterType] : ['PROJECT', 'ACTIVITY', 'ACCURRENCY'];
-  const typeIcons: Record<string, any> = { PROJECT: Briefcase, ACTIVITY: Flame, ACCURRENCY: Activity };
   const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity', ACCURRENCY: 'Accurrency' };
 
   return (
@@ -80,7 +78,6 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
             <Accordion type="single" collapsible className="space-y-2 w-full">
               {filteredEntities.map(entity => {
                 const summary = getSummaryForEntity(entity.id);
-                const isEntityTimerActive = isTimerActive(entity.id);
                 const showTimer = entity.type === 'PROJECT';
 
                 return (
