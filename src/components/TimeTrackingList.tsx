@@ -5,11 +5,12 @@ import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, MoreVertical, FolderOpen, Briefcase, Activity, Plus } from 'lucide-react';
+import { Play, Pause, MoreVertical, FolderOpen, Briefcase, Activity, Plus, ChevronDown } from 'lucide-react';
 import { Flame } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
 import { CreateEntityDialog } from '@/components/CreateEntityDialog';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import type { Entity } from '@/types';
 
 /**
@@ -91,31 +92,21 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
               </Button>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Accordion type="single" collapsible className="space-y-2 w-full">
               {filteredEntities.map(entity => {
                 const summary = getSummaryForEntity(entity.id);
                 const isEntityTimerActive = isTimerActive(entity.id);
-                // Only show timer for Projects
                 const showTimer = entity.type === 'PROJECT';
 
                 return (
-                  <Card
-                    key={entity.id}
-                    className={`p-4 cursor-pointer transition-all ${
-                      isEntityTimerActive && showTimer
-                        ? 'ring-2 ring-zinc-500 bg-zinc-950/20'
-                        : 'hover:border-white/20'
-                    }`}
-                    onClick={() => navigate(`/entities/${entity.id}`)}
-                  >
-                    <div className="space-y-3">
-                      {/* Header */}
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
+                  <AccordionItem key={entity.id} value={entity.id} className="border border-white/10 rounded-lg">
+                    <AccordionTrigger className="px-4 py-3 hover:bg-white/[0.02] hover:no-underline">
+                      <div className="flex items-start gap-3 text-left flex-1">
+                        <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-white truncate">
                             {entity.title}
                           </h3>
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-zinc-500 mt-1">
                             {entity.type === 'PROJECT'
                               ? '📁 Project'
                               : entity.type === 'ACCURRENCY'
@@ -124,26 +115,32 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                             }
                           </p>
                         </div>
-                        <button className="text-zinc-400 hover:text-white p-1" onClick={(e) => e.stopPropagation()}>
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        {summary && (
+                          <div className="text-right">
+                            <p className="text-sm font-mono text-zinc-400">
+                              {summary?.formattedTotal || '00:00:00'}
+                            </p>
+                          </div>
+                        )}
                       </div>
+                    </AccordionTrigger>
 
-                      {/* Stats - Only for Projects */}
-                      {showTimer && (
+                    <AccordionContent className="px-4 py-4 border-t border-white/10 space-y-4">
+                      {/* Stats */}
+                      {showTimer && summary && (
                         <div className="bg-zinc-950/50 rounded-lg p-3 space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-zinc-400">Total Time</span>
-                            <span className="font-mono font-bold text-zinc-400">
-                              {summary?.formattedTotal || '00:00:00'}
+                            <span className="font-mono font-bold text-zinc-300">
+                              {summary.formattedTotal || '00:00:00'}
                             </span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-zinc-400">
-                              {summary?.entriesCount || 0} entries
+                              {summary.entriesCount || 0} entries
                             </span>
                             <span className="text-zinc-400">
-                              {summary?.totalHours?.toFixed(1) || '0.0'}h
+                              {summary.totalHours?.toFixed(1) || '0.0'}h
                             </span>
                           </div>
                         </div>
@@ -157,57 +154,59 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                         />
                       )}
 
-                      {/* Timer Controls - Only for Projects */}
-                      {showTimer && (
-                        <div className="flex gap-2">
-                          {isEntityTimerActive ? (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStopTimer(entity.id);
-                              }}
-                              disabled={isStopping}
-                            >
-                              <Pause className="w-4 h-4" />
-                              Stop
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 gap-2"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartTimer(entity.id);
-                              }}
-                              disabled={isStarting}
-                            >
-                              <Play className="w-4 h-4" />
-                              Start
-                            </Button>
-                          )}
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-2">
+                        {showTimer && (
+                          <>
+                            {isEntityTimerActive ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="gap-2 flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStopTimer(entity.id);
+                                }}
+                                disabled={isStopping}
+                              >
+                                <Pause className="w-4 h-4" />
+                                Stop
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartTimer(entity.id);
+                                }}
+                                disabled={isStarting}
+                              >
+                                <Play className="w-4 h-4" />
+                                Start
+                              </Button>
+                            )}
+                          </>
+                        )}
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/entities/${entity.id}`);
-                            }}
-                            className="text-xs"
-                          >
-                            Details
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/entities/${entity.id}`);
+                          }}
+                          className="text-xs flex-1"
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 );
               })}
-            </div>
+            </Accordion>
           )}
         </div>
       </div>
