@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BadgeCheck, Loader2, Moon, Sun, Mail, User, Calendar, Lock } from "lucide-react";
 
 const formatLimitValue = (value: number, suffix = "") => (value === -1 ? "Unlimited" : `${value}${suffix}`);
@@ -27,6 +28,7 @@ export default function Profile() {
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const handleExportData = async () => {
@@ -167,13 +169,24 @@ export default function Profile() {
               </div>
 
               <Button
-                onClick={handleSave}
+                onClick={() => setSaveConfirmOpen(true)}
                 disabled={saving || !username.trim()}
                 className="w-full bg-white text-black hover:bg-gray-100 font-semibold shadow-lg transition-all"
               >
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
+              <ConfirmDialog
+                open={saveConfirmOpen}
+                onOpenChange={setSaveConfirmOpen}
+                title="Save profile changes?"
+                description="Your username change will be saved to your account."
+                confirmText="Save"
+                onConfirm={async () => {
+                  setSaveConfirmOpen(false);
+                  await handleSave();
+                }}
+              />
             </div>
 
             <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">

@@ -8,7 +8,7 @@ VERMELHO='\033[0;31m'
 NC='\033[0m'
 
 # --- VERSÃO ATUAL ---
-# VERSION: 8.28
+# VERSION: 8.29
 
 # Pega a versão atual do próprio arquivo
 ULTIMA_V=$(grep "^# VERSION:" "$0" | cut -d ' ' -f 3)

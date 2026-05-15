@@ -5,6 +5,7 @@ import { notesApi, foldersApi, vaultApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, StickyNote, Trash2, Loader2, Heart, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default function Notes() {
   const [search, setSearch] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [pendingDeleteNote, setPendingDeleteNote] = useState<NoteSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const navigate = useNavigate();
@@ -99,18 +101,25 @@ export default function Notes() {
     }
   };
 
-  const handleDeleteNote = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteNote = (note: NoteSummary, e: React.MouseEvent) => {
     e.stopPropagation();
-    try { 
-      await notesApi.delete(id); 
-      setNotes((prev) => prev.filter((n) => n.id !== id)); 
-      applyUsageDelta({ notesCount: -1 }); 
+    setPendingDeleteNote(note);
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!pendingDeleteNote) return;
+    try {
+      await notesApi.delete(pendingDeleteNote.id);
+      setNotes((prev) => prev.filter((n) => n.id !== pendingDeleteNote.id));
+      applyUsageDelta({ notesCount: -1 });
       void refresh();
-      // Recarregar tipos (nota deletada pode ter deixado seu tipo orfão)
       const typesRes = await notesApi.getTypes();
       setTypes(Array.isArray(typesRes.data) ? typesRes.data : []);
+    } catch {
+      toast({ title: "Error deleting", variant: "destructive" });
+    } finally {
+      setPendingDeleteNote(null);
     }
-    catch { toast({ title: "Error deleting", variant: "destructive" }); }
   };
 
   const filtered = notes
@@ -291,7 +300,7 @@ export default function Notes() {
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
                       <span className="text-xs text-white/40">{new Date(note.updatedAt).toLocaleDateString("en-US")}</span>
                       <button
-                        onClick={(e) => handleDeleteNote(note.id, e)}
+                        onClick={(e) => handleDeleteNote(note, e)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-zinc-500/20"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-zinc-400/60 hover:text-zinc-400" />
@@ -305,6 +314,19 @@ export default function Notes() {
         </div>
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="You've reached the notes limit for your plan." />
+      <ConfirmDialog
+        open={!!pendingDeleteNote}
+        onOpenChange={(open) => !open && setPendingDeleteNote(null)}
+        title="Delete note?"
+        description={
+          pendingDeleteNote
+            ? `${pendingDeleteNote.title || "Untitled"} will be permanently removed.`
+            : "This action cannot be undone."
+        }
+        confirmText="Delete"
+        destructive
+        onConfirm={confirmDeleteNote}
+      />
     </AppLayout>
   );
 }

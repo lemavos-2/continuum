@@ -3,6 +3,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   LayoutDashboard,
   StickyNote,
@@ -43,10 +44,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const handleLogoutRequest = () => {
+    setConfirmLogoutOpen(true);
   };
 
   const initial = (user?.username || user?.email || "U").trim().charAt(0).toUpperCase();
@@ -130,7 +136,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <Settings className="mr-2 h-4 w-4" /> Subscription
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogoutRequest}>
                   <LogOut className="mr-2 h-4 w-4" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -138,6 +144,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </MobileSidebar>
+      <ConfirmDialog
+        open={confirmLogoutOpen}
+        onOpenChange={setConfirmLogoutOpen}
+        title="Sign out?"
+        description="You will be signed out of your account and returned to the landing page."
+        confirmText="Logout"
+        destructive
+        onConfirm={async () => {
+          setConfirmLogoutOpen(false);
+          await handleLogout();
+        }}
+      />
 
       {/* Desktop hover-expand sidebar */}
       <SessionNavBar />

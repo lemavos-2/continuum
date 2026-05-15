@@ -20,6 +20,7 @@ import {
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,6 +107,7 @@ function SidebarLink({
 
 export function SessionNavBar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -117,6 +119,8 @@ export function SessionNavBar() {
     await logout();
     navigate("/");
   };
+
+  const handleLogoutRequest = () => setConfirmLogoutOpen(true);
 
   return (
     <motion.aside
@@ -244,7 +248,7 @@ export function SessionNavBar() {
                   <Settings className="mr-2 h-4 w-4" /> Subscription
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogoutRequest}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -252,6 +256,18 @@ export function SessionNavBar() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmLogoutOpen}
+        onOpenChange={setConfirmLogoutOpen}
+        title="Sign out?"
+        description="You will be signed out of your account and returned to the landing page."
+        confirmText="Logout"
+        destructive
+        onConfirm={async () => {
+          setConfirmLogoutOpen(false);
+          await handleLogout();
+        }}
+      />
     </motion.aside>
   );
 }

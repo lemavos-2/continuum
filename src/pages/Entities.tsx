@@ -4,6 +4,7 @@ import AppLayout from "@/components/AppLayout";
 import { entitiesApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import UpgradeModal from "@/components/UpgradeModal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +47,7 @@ export default function Entities() {
   const { refresh: refreshUsage, applyUsageDelta } = usePlanGate();
   const [createOpen, setCreateOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [pendingDeleteEntity, setPendingDeleteEntity] = useState<Entity | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,15 +67,22 @@ export default function Entities() {
     };
   }, [toast]);
 
-  const handleDelete = async (e: React.MouseEvent, entity: Entity) => {
+  const handleDelete = (e: React.MouseEvent, entity: Entity) => {
     e.stopPropagation();
+    setPendingDeleteEntity(entity);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteEntity) return;
     try {
-      await entitiesApi.delete(entity.id);
-      setEntities((prev) => prev.filter((x) => x.id !== entity.id));
-      applyUsageDelta({ entitiesCount: -1, activitiesCount: entity.type === "ACTIVITY" ? -1 : 0 });
+      await entitiesApi.delete(pendingDeleteEntity.id);
+      setEntities((prev) => prev.filter((x) => x.id !== pendingDeleteEntity.id));
+      applyUsageDelta({ entitiesCount: -1, activitiesCount: pendingDeleteEntity.type === "ACTIVITY" ? -1 : 0 });
       void refreshUsage();
     } catch {
       toast({ title: "Error deleting entity", variant: "destructive" });
+    } finally {
+      setPendingDeleteEntity(null);
     }
   };
 
@@ -196,6 +205,19 @@ export default function Entities() {
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
         reason="You've reached the entities limit for your plan."
+      />
+      <ConfirmDialog
+        open={!!pendingDeleteEntity}
+        onOpenChange={(open) => !open && setPendingDeleteEntity(null)}
+        title="Delete entity?"
+        description={
+          pendingDeleteEntity
+            ? `${pendingDeleteEntity.title || "Untitled"} will be permanently removed.`
+            : "This action cannot be undone."
+        }
+        confirmText="Delete"
+        destructive
+        onConfirm={confirmDelete}
       />
     </AppLayout>
   );
