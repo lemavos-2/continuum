@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { FolderOpen, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
 import { CreateEntityDialog } from '@/components/CreateEntityDialog';
-import { SpotlightTable } from '@/components/ui/spotlight-table';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { Entity } from '@/types';
 
 /**
@@ -43,7 +46,18 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
 
   const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity', ACCURRENCY: 'Accurrency' };
 
-  const filteredEntities = trackableEntities || [];
+  const lowerQuery = query.trim().toLowerCase();
+  const filteredEntities = useMemo(() => {
+    const source = trackableEntities || [];
+    return source.filter((e) => {
+      const matchesType = filterType ? e.type === filterType : e.type === 'PROJECT' || e.type === 'ACTIVITY';
+      if (!matchesType) return false;
+      if (!lowerQuery) return true;
+      return [e.title, e.description, e.type]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(lowerQuery));
+    });
+  }, [trackableEntities, filterType, lowerQuery]);
 
   return (
     <div className="space-y-6">
@@ -69,76 +83,96 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
             <Skeleton key={i} className="h-48" />
           ))}
         </div>
+      ) : filteredEntities.length === 0 ? (
+        <Card className="p-12 text-center bg-white/5 border border-white/10">
+          <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4 opacity-50" />
+          <h3 className="text-lg font-medium text-white mb-2">
+            No {filterType ? typeLabels[filterType]?.toLowerCase() + 's' : 'entities'} yet
+          </h3>
+          <p className="text-sm text-zinc-500 mb-4">
+            Create a {filterType ? typeLabels[filterType]?.toLowerCase() : 'project or activity'} to start tracking.
+          </p>
+          <Button onClick={() => setCreateOpen(true)}>
+            Create {filterType ? typeLabels[filterType] : 'Entity'}
+          </Button>
+        </Card>
       ) : (
-        <SpotlightTable<Entity>
-          data={filteredEntities}
-          searchKeys={["title", "description", "type"]}
-          placeholder={`Search ${filterType === 'PROJECT' ? 'projects' : 'activities'}...`}
-          emptyState={
-            <div className="text-sm text-white/40">
-              No {filterType ? typeLabels[filterType]?.toLowerCase() + 's' : 'entities'} yet.
-            </div>
-          }
-          query={query}
-          onQueryChange={setQuery}
-          onRowClick={(row) => navigate(`/entities/${row.id}`)}
-          rowKey={(row) => row.id}
-          columns={[
-            {
-              key: 'title',
-              header: 'Name',
-              render: (row) => (
-                <div className="min-w-0">
-                  <p className="font-medium text-white truncate">{row.title || 'Untitled'}</p>
-                  {row.description && (
-                    <p className="mt-0.5 text-xs text-white/40 truncate">{row.description}</p>
+        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+          <div className="grid grid-cols-[1.6fr_0.9fr_0.9fr_120px] gap-4 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.24em] text-white/50">
+            <span>Name</span>
+            <span>Type</span>
+            <span>Tracked</span>
+            <span />
+          </div>
+          <Accordion type="single" collapsible className="divide-y divide-white/10">
+            {filteredEntities.map((entity, index) => {
+              const summary = getSummaryForEntity(entity.id);
+              const showTimer = entity.type === 'PROJECT';
+
+              return (
+                <AccordionItem
+                  key={entity.id}
+                  value={entity.id}
+                  className={cn(
+                    'transition-colors',
+                    index % 2 === 0 ? 'bg-white/5' : 'bg-white/0',
+                    'hover:bg-white/10',
                   )}
-                </div>
-              ),
-            },
-            {
-              key: 'type',
-              header: 'Type',
-              width: '140px',
-              render: (row) => (
-                <span className="text-xs uppercase tracking-wider text-white/60">
-                  {typeLabels[row.type] ?? row.type}
-                </span>
-              ),
-            },
-            {
-              key: 'total',
-              header: 'Tracked',
-              width: '180px',
-              render: (row) => {
-                const summary = getSummaryForEntity(row.id);
-                return (
-                  <div className="text-right">
-                    <p className="text-sm font-mono text-white/80">{summary?.formattedTotal || '00:00:00'}</p>
-                    <p className="text-xs text-white/50">{summary?.entriesCount ?? 0} entries</p>
-                  </div>
-                );
-              },
-            },
-            {
-              key: 'actions',
-              header: '',
-              width: '120px',
-              render: (row) => (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/entities/${row.id}`);
-                  }}
-                  className="text-xs text-white/70 hover:text-white"
                 >
-                  View details
-                </button>
-              ),
-            },
-          ]}
-        />
+                  <AccordionTrigger className="grid grid-cols-[1.6fr_0.9fr_0.9fr_120px] items-center gap-4 px-4 py-4 text-left">
+                    <div className="min-w-0">
+                      <p className="font-medium text-white truncate">{entity.title || 'Untitled'}</p>
+                      {entity.description && (
+                        <p className="mt-1 text-xs text-white/40 truncate">{entity.description}</p>
+                      )}
+                    </div>
+                    <span className="text-xs uppercase tracking-wider text-white/60">
+                      {typeLabels[entity.type] ?? entity.type}
+                    </span>
+                    <div className="text-right">
+                      <p className="text-sm font-mono text-white/80">{summary?.formattedTotal || '00:00:00'}</p>
+                      <p className="text-xs text-white/50">{summary?.entriesCount ?? 0} entries</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/entities/${entity.id}`);
+                      }}
+                      className="justify-self-end text-xs text-white/70 hover:text-white"
+                    >
+                      View details
+                    </button>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="px-4 pb-4 pt-0">
+                    <div className="grid gap-4">
+                      {showTimer && summary ? (
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Total time</p>
+                              <p className="mt-2 font-mono text-white/90">{summary.formattedTotal}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Entries</p>
+                              <p className="mt-2 text-white/90">{summary.entriesCount}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <ActivityCompletionCalendar
+                          entityId={entity.id}
+                          trackingDates={entity.trackingDates}
+                        />
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </div>
       )}
 
       <CreateEntityDialog
