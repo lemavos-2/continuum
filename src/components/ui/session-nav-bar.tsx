@@ -139,9 +139,11 @@ export function SessionNavBar() {
             onClick={() => navigate("/")}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-white/5"
           >
-            <div className="grid h-6 w-6 shrink-0 place-items-center rounded bg-white text-[11px] font-bold text-black">
-              C
-            </div>
+            <img
+              src="/favicon.ico"
+              alt="Continuum"
+              className="h-6 w-6 shrink-0 rounded object-contain"
+            />
             <motion.span
               variants={labelVariants}
               className="truncate text-sm font-semibold tracking-tight text-white"

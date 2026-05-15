@@ -67,7 +67,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="grid h-6 w-6 place-items-center rounded bg-white text-[11px] font-bold text-black">C</div>
+          <img src="/favicon.ico" alt="Continuum" className="h-6 w-6 rounded object-contain" />
           <span className="text-sm font-semibold">Continuum</span>
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex h-full flex-col bg-black/95 backdrop-blur-xl">
           <div className="flex h-[54px] items-center justify-between border-b border-white/8 px-4">
             <div className="flex items-center gap-2">
-              <div className="grid h-6 w-6 place-items-center rounded bg-white text-[11px] font-bold text-black">C</div>
+              <img src="/favicon.ico" alt="Continuum" className="h-6 w-6 rounded object-contain" />
               <span className="text-sm font-semibold">Continuum</span>
             </div>
             <button
