@@ -201,22 +201,6 @@ export function SessionNavBar() {
 
           {/* Footer */}
           <div className="flex flex-col gap-1 border-t border-white/8 p-2">
-            <NavLink
-              to="/subscription"
-              title={isCollapsed ? "Subscription" : undefined}
-              className={({ isActive }) =>
-                cn(
-                  "flex h-9 w-full items-center rounded-md px-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white",
-                  isActive && "bg-white/10 text-white",
-                )
-              }
-            >
-              <Settings className="h-4 w-4 shrink-0" />
-              <motion.span variants={labelVariants} className="ml-2 truncate text-sm font-medium">
-                {!isCollapsed && "Subscription"}
-              </motion.span>
-            </NavLink>
-
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
