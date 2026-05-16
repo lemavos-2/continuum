@@ -771,7 +771,8 @@ export default function KnowledgeGraph() {
           </button>
 
           <div className="absolute right-4 top-5 z-30 flex flex-col items-end gap-2">
-            <div className="flex items-center gap-0.5">
+            {/* Alterado de 'flex items-center' para 'flex flex-col items-center' */}
+            <div className="flex flex-col items-center gap-0.5">
               <button
                 type="button"
                 onClick={() => handleZoom(1)}
