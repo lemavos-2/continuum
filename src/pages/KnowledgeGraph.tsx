@@ -136,6 +136,7 @@ export default function KnowledgeGraph() {
   const [showEdges, setShowEdges] = useState(true);
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "30d">("all");
   const [legendOpen, setLegendOpen] = useState(false);
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
 
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
@@ -734,6 +735,13 @@ export default function KnowledgeGraph() {
     }));
   }, [graphStats]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const listener = () => setMobileOptionsOpen(open => !open);
+    window.addEventListener("graph-options-toggle", listener);
+    return () => window.removeEventListener("graph-options-toggle", listener);
+  }, []);
+
   const toggleTypeFilter = (type: string) => {
     setTypeFilters(prev => {
       const next = new Set(prev);
@@ -795,10 +803,10 @@ export default function KnowledgeGraph() {
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-1 w-full justify-start lg:w-auto lg:justify-end">
-              <Button variant="outline" size="sm" className="h-8 px-3" onClick={handleShowAll}>
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 px-3" onClick={handleShowAll}>
                 Show all
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-3" onClick={() => setLegendOpen(v => !v)}>
+              <Button variant="ghost" size="sm" className="hidden sm:inline-flex h-8 px-3" onClick={() => setLegendOpen(v => !v)}>
                 Legend
               </Button>
             </div>
@@ -814,6 +822,32 @@ export default function KnowledgeGraph() {
             </Button>
           </div>
         </div>
+
+        {mobileOptionsOpen && (
+          <div className="fixed inset-x-4 top-[3.5rem] z-50 sm:hidden">
+            <div className="bento-card p-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold">Graph options</p>
+                <button
+                  type="button"
+                  onClick={() => setMobileOptionsOpen(false)}
+                  className="grid h-8 w-8 place-items-center rounded-md bg-white/5 text-white transition-colors hover:bg-white/10"
+                  aria-label="Close options"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid gap-2">
+                <Button variant="outline" size="sm" className="w-full" onClick={() => { handleShowAll(); setMobileOptionsOpen(false); }}>
+                  Show all
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => { setLegendOpen(v => !v); setMobileOptionsOpen(false); }}>
+                  {legendOpen ? "Hide legend" : "Show legend"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search bar (inline) */}
         {searchOpen && (

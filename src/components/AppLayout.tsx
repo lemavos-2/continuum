@@ -55,6 +55,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     setConfirmLogoutOpen(true);
   };
 
+  const handleGraphOptionsToggle = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("graph-options-toggle"));
+    }
+  };
+
   const initial = (user?.username || user?.email || "U").trim().charAt(0).toUpperCase();
   const display = user?.username || user?.email?.split("@")[0] || "Guest";
 
@@ -72,7 +78,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 justify-center">
           {location.pathname === "/graph" ? (
             <GitGraph className="h-6 w-6 text-white" />
           ) : (
@@ -82,6 +88,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </>
           )}
         </div>
+        {location.pathname === "/graph" && (
+          <button
+            type="button"
+            onClick={handleGraphOptionsToggle}
+            className="grid h-10 w-10 place-items-center rounded-md bg-white/5 text-white transition-colors hover:bg-white/10"
+            aria-label="Graph options"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Mobile drawer */}
