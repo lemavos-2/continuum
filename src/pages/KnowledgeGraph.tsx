@@ -744,17 +744,22 @@ export default function KnowledgeGraph() {
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
-        {/* Standard page header — same pattern as /entities and /notes */}
-        <header className="px-6 lg:px-12 pt-10 pb-6 max-w-6xl w-full mx-auto flex items-end justify-between border-b border-white/10 shrink-0">
-          <div>
-            <p className="label-caps mb-2">Network</p>
-            <h1 className="font-serif text-5xl tracking-tight">Knowledge Graph</h1>
-            <p className="mt-2 text-sm text-white/50">
-              {graphStats.nodes} nodes · {graphStats.edges} connections
-              {selectedNode && <> · <span className="text-foreground">{selectedNode.label}</span></>}
-            </p>
+        <div className="px-6 lg:px-12 py-4 max-w-6xl w-full mx-auto flex flex-col gap-3 border-b border-white/10 shrink-0 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Network</p>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-white/70">
+              <span>{graphStats.nodes} nodes</span>
+              <span className="text-white/20">·</span>
+              <span>{graphStats.edges} connections</span>
+              {selectedNode && (
+                <>
+                  <span className="text-white/20">·</span>
+                  <span className="text-foreground">{selectedNode.label}</span>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" title="Search" onClick={() => setSearchOpen(v => !v)}>
               <Search className="w-4 h-4" />
             </Button>
@@ -787,7 +792,7 @@ export default function KnowledgeGraph() {
               <Maximize2 className="w-4 h-4" />
             </Button>
           </div>
-        </header>
+        </div>
 
         {/* Search bar (inline) */}
         {searchOpen && (
