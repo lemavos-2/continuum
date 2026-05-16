@@ -5,15 +5,18 @@ import { entitiesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Flame, CheckCircle, Edit, StickyNote, Network, Calendar, Tag, Clock, Play, Pause } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, Loader2, Flame, Edit, StickyNote, Network, Calendar, Tag, Clock } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
 import { TimerWidget } from "@/components/TimerWidget";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
-import { getPlanLimits } from "@/lib/plan";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
 
@@ -35,9 +38,8 @@ export default function EntityDetail() {
   const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
 
   // Time tracking
-  const { getTotalTime, getActiveTimer, formatSeconds } = useTimeTracking();
+  const { getTotalTime, formatSeconds } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
-  const { data: activeTimer } = getActiveTimer(id!);
 
   useEffect(() => {
     if (!id) return;
@@ -217,38 +219,42 @@ export default function EntityDetail() {
   const longestStreak = stats?.longestStreak ?? 0;
   const totalCompletions = entity.trackingDates?.length ?? stats?.totalCompletions ?? 0;
 
+  const typeLabel = entity.type.charAt(0) + entity.type.slice(1).toLowerCase();
+
   return (
     <AppLayout>
-      <div className="relative">
-        <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-gray-900/10 via-transparent to-transparent pointer-events-none"></div>
-        <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6 relative z-10">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/entities")} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-4 h-4 mr-1" /> Back
-        </Button>
+      <div className="px-6 lg:px-12 py-10 max-w-4xl mx-auto">
+        <button
+          onClick={() => navigate("/entities")}
+          className="mb-6 inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to entities
+        </button>
 
-        <div className="space-y-3">
+        {/* Premium serif header — matches /entities */}
+        <header className="border-b border-white/10 pb-8 mb-8">
+          <p className="label-caps mb-2">{typeLabel}</p>
           {editingTitle ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 max-w-xl">
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="New name..." className="flex-1" />
               <Button size="sm" onClick={handleSaveTitle}>Save</Button>
               <Button size="sm" variant="outline" onClick={() => { setEditingTitle(false); setNewTitle(entity?.title || ""); }}>Cancel</Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">{entity.title}</h1>
-              <Button variant="ghost" size="sm" onClick={() => { setEditingTitle(true); setNewTitle(entity?.title || ""); }}>
-                <Edit className="w-4 h-4" />
-              </Button>
+            <div className="flex items-center gap-3 group">
+              <h1 className="font-serif text-5xl tracking-tight">{entity.title}</h1>
+              <button
+                onClick={() => { setEditingTitle(true); setNewTitle(entity?.title || ""); }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-white/10"
+                aria-label="Edit name"
+              >
+                <Edit className="w-4 h-4 text-white/50" />
+              </button>
             </div>
           )}
-          <div className="flex gap-2">
-            <span className="bento-tag">{entity.type}</span>
-            {isHabit && <span className="bento-tag flex items-center gap-1 text-gray-400"><Flame className="w-3 h-3" /> Streak: {streak} days</span>}
-            {isHabit && <span className="bento-tag">Max: {longestStreak}</span>}
-            {isHabit && <span className="bento-tag">Total: {totalCompletions}</span>}
-          </div>
+
           {editingDescription ? (
-            <div className="flex flex-col gap-2">
+            <div className="mt-4 flex flex-col gap-2 max-w-xl">
               <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Add description..." className="text-sm" rows={3} />
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSaveDescription}>Save</Button>
@@ -256,138 +262,160 @@ export default function EntityDetail() {
               </div>
             </div>
           ) : (
-            <div className="flex items-start gap-2 group">
-              {entity.description ? (
-                <p className="text-sm text-slate-400 flex-1">{entity.description}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">No description</p>
-              )}
-              <Button variant="ghost" size="sm" onClick={() => { setEditingDescription(true); setNewDescription(entity?.description || ""); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <Edit className="w-4 h-4" />
-              </Button>
+            <div className="mt-3 flex items-start gap-2 group">
+              <p className="text-sm text-white/50 flex-1">
+                {entity.description || <span className="italic text-white/30">No description</span>}
+              </p>
+              <button
+                onClick={() => { setEditingDescription(true); setNewDescription(entity?.description || ""); }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-white/10"
+                aria-label="Edit description"
+              >
+                <Edit className="w-3.5 h-3.5 text-white/50" />
+              </button>
             </div>
           )}
-        </div>
 
+          {isHabit && (
+            <div className="mt-5 flex flex-wrap gap-2 text-xs uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-md border border-white/10 text-white/60 inline-flex items-center gap-1.5">
+                <Flame className="w-3 h-3" /> Streak {streak}d
+              </span>
+              <span className="px-3 py-1 rounded-md border border-white/10 text-white/60">Max {longestStreak}</span>
+              <span className="px-3 py-1 rounded-md border border-white/10 text-white/60">Total {totalCompletions}</span>
+            </div>
+          )}
+        </header>
+
+        {/* Type-specific primary block */}
         {entity?.type === "PROJECT" && (
-          <>
+          <div className="mb-8 space-y-4">
             <TimerWidget
               entityId={id!}
               entityName={entity.title}
-              onTimerStart={(sessionId) => {
-                toast({ title: "Timer started! ⏱️" });
-              }}
-              onTimerStop={(duration) => {
-                toast({ title: `Timer stopped! ${formatSeconds(duration)} recorded` });
-              }}
+              onTimerStart={() => toast({ title: "Timer started" })}
+              onTimerStop={(duration) => toast({ title: `Stopped — ${formatSeconds(duration)} recorded` })}
             />
-
-            {/* Time Summary */}
-            {timeSummary && (
-              <div className="bento-card p-4">
-                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Time Tracking Summary
-                </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Total Time:</span>
-                    <span className="ml-2 font-semibold text-foreground">{timeSummary.formattedTotal}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Sessions:</span>
-                    <span className="ml-2 font-semibold text-foreground">{timeSummary.entriesCount}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
+          </div>
         )}
 
         {entity?.type === "ACTIVITY" && (
-          <>
-            <ActivityAnalyticsCalendar 
-              trackingDates={entity.trackingDates}
-            />
-          </>
+          <div className="mb-8">
+            <ActivityAnalyticsCalendar trackingDates={entity.trackingDates} />
+          </div>
         )}
 
-        <div className="bento-card p-4">
-              <h3 className="text-sm font-medium text-foreground mb-3">Entity Metadata</h3>
-          <div className="grid grid-cols-1 gap-3 text-xs text-muted-foreground">
-            <div className="rounded-md border border-border/50 bg-card/60 p-3">
-              <div className="mb-1 inline-flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                Created At
-              </div>
-              <div className="text-sm font-semibold text-foreground">{new Date(entity.createdAt).toLocaleDateString("en-US")}</div>
-            </div>
-            <div className="rounded-md border border-border/50 bg-card/60 p-3">
-              <div className="mb-1 inline-flex items-center gap-1.5">
-                <Network className="h-3.5 w-3.5" />
-                Number of Connections
-              </div>
-              <div className="text-sm font-semibold text-foreground">{relatedEntities.length}</div>
-            </div>
-            <div className="rounded-md border border-border/50 bg-card/60 p-3">
-              <div className="mb-1 inline-flex items-center gap-1.5">
-                <Tag className="h-3.5 w-3.5" />
-                Entity Type
-              </div>
-              <div className="text-sm font-semibold text-foreground">{entity.type}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bento-card p-4">
-              <h3 className="text-sm font-medium text-foreground mb-3">Connected Notes</h3>
-          <div className="space-y-2">
-            {relatedNotes.length > 0 ? (
-              relatedNotes.slice(0, 5).map((note) => (
-                <button
-                  key={note.id}
-                  onClick={() => navigate(`/notes/${note.id}`)}
-                  className="flex w-full items-start gap-2 rounded-md border border-border/40 px-3 py-2 text-left transition-colors hover:bg-accent hover:border-white/20"
-                >
-                  <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-foreground">{note.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Updated {new Date(note.updatedAt).toLocaleDateString("en-US")}
-                    </p>
+        {/* Accordion sections */}
+        <Accordion
+          type="multiple"
+          defaultValue={["metadata", "notes", "entities"]}
+          className="border-t border-white/10"
+        >
+          <AccordionItem value="metadata" className="border-b border-white/10">
+            <AccordionTrigger className="label-caps text-white/60 hover:text-white hover:no-underline py-4">
+              Metadata
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-4">
+                <div className="rounded-md border border-white/10 bg-white/[0.02] p-3">
+                  <div className="label-caps text-white/40 mb-1.5 inline-flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3" /> Created
                   </div>
-                </button>
-              ))
-            ) : (
-                  <p className="text-sm text-muted-foreground">No connected notes yet.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="bento-card p-4">
-              <h3 className="text-sm font-medium text-foreground mb-3">Connected Entities</h3>
-          <div className="space-y-2">
-            {relatedEntities.length > 0 ? (
-              relatedEntities.slice(0, 5).map((ent) => (
-                <button
-                  key={ent.id}
-                  onClick={() => navigate(`/entities/${ent.id}`)}
-                  className="flex w-full items-start gap-2 rounded-md border border-border/40 px-3 py-2 text-left transition-colors hover:bg-accent"
-                >
-                  <Network className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-foreground">{ent.title}</p>
-                    <p className="text-xs text-muted-foreground">{ent.type}</p>
+                  <div className="text-sm text-white">{new Date(entity.createdAt).toLocaleDateString("en-US")}</div>
+                </div>
+                <div className="rounded-md border border-white/10 bg-white/[0.02] p-3">
+                  <div className="label-caps text-white/40 mb-1.5 inline-flex items-center gap-1.5">
+                    <Network className="h-3 w-3" /> Connections
                   </div>
-                </button>
-              ))
-            ) : (
-                  <p className="text-sm text-muted-foreground">No connected entities yet.</p>
-            )}
-          </div>
-        </div>
+                  <div className="text-sm text-white">{relatedEntities.length}</div>
+                </div>
+                <div className="rounded-md border border-white/10 bg-white/[0.02] p-3">
+                  <div className="label-caps text-white/40 mb-1.5 inline-flex items-center gap-1.5">
+                    <Tag className="h-3 w-3" /> Type
+                  </div>
+                  <div className="text-sm text-white">{typeLabel}</div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {entity?.type === "PROJECT" && timeSummary && (
+            <AccordionItem value="time" className="border-b border-white/10">
+              <AccordionTrigger className="label-caps text-white/60 hover:text-white hover:no-underline py-4">
+                <span className="inline-flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> Time tracking summary</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-2 gap-3 pb-4 max-w-md">
+                  <div className="rounded-md border border-white/10 bg-white/[0.02] p-3">
+                    <p className="label-caps text-white/40">Total time</p>
+                    <p className="mt-1.5 font-mono text-white">{timeSummary.formattedTotal}</p>
+                  </div>
+                  <div className="rounded-md border border-white/10 bg-white/[0.02] p-3">
+                    <p className="label-caps text-white/40">Sessions</p>
+                    <p className="mt-1.5 text-white">{timeSummary.entriesCount}</p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          <AccordionItem value="notes" className="border-b border-white/10">
+            <AccordionTrigger className="label-caps text-white/60 hover:text-white hover:no-underline py-4">
+              Connected notes <span className="ml-2 text-white/30 normal-case tracking-normal">({relatedNotes.length})</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-1 pb-4">
+                {relatedNotes.length > 0 ? (
+                  relatedNotes.map((note) => (
+                    <button
+                      key={note.id}
+                      onClick={() => navigate(`/notes/${note.id}`)}
+                      className="flex w-full items-start gap-2 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                    >
+                      <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-white">{note.title}</p>
+                        <p className="text-xs text-white/40">
+                          Updated {new Date(note.updatedAt).toLocaleDateString("en-US")}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-white/40 px-3 py-2">No connected notes yet.</p>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="entities" className="border-b border-white/10">
+            <AccordionTrigger className="label-caps text-white/60 hover:text-white hover:no-underline py-4">
+              Connected entities <span className="ml-2 text-white/30 normal-case tracking-normal">({relatedEntities.length})</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-1 pb-4">
+                {relatedEntities.length > 0 ? (
+                  relatedEntities.map((ent) => (
+                    <button
+                      key={ent.id}
+                      onClick={() => navigate(`/entities/${ent.id}`)}
+                      className="flex w-full items-start gap-2 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                    >
+                      <Network className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-white">{ent.title}</p>
+                        <p className="text-xs text-white/40 uppercase tracking-wider">{ent.type}</p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-white/40 px-3 py-2">No connected entities yet.</p>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
-    </div>
     </AppLayout>
   );
 }

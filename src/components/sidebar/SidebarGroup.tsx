@@ -95,7 +95,7 @@ export function SidebarGroup({ title, icon: Icon, items, collapsed = false, acti
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 28 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="absolute left-full top-0 z-20 min-w-[16rem] rounded-3xl border border-white/5 bg-[#0f1117]/95 p-3 shadow-[0_30px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl"
+            className="absolute left-full top-0 z-20 min-w-[16rem] rounded-xl border border-white/8 bg-black/90 p-3 shadow-[0_30px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl"
           >
             <div className="space-y-2">
               {items.map((item) => (
