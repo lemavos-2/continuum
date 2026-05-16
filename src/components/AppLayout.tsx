@@ -43,6 +43,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isGraphPage = location.pathname.startsWith("/graph");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
@@ -63,7 +64,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <CommandPalette />
 
       {/* Mobile top bar */}
-      <div className="fixed left-0 right-0 top-0 z-40 flex items-center gap-3 border-b border-white/8 bg-black/70 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="fixed left-0 right-0 top-0 z-40 flex items-center justify-between gap-3 border-b border-white/8 bg-black/70 px-4 py-3 backdrop-blur-xl lg:hidden">
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
@@ -72,10 +73,30 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-2">
-          <img src="/favicon.ico" alt="Continuum" className="h-6 w-6 rounded object-contain" />
-          <span className="text-sm font-semibold">Continuum</span>
+
+        <div className="flex-1 flex items-center justify-center">
+          {isGraphPage ? (
+            <GitGraph className="h-5 w-5 text-white" />
+          ) : (
+            <div className="flex items-center gap-2">
+              <img src="/favicon.ico" alt="Continuum" className="h-6 w-6 rounded object-contain" />
+              <span className="text-sm font-semibold">Continuum</span>
+            </div>
+          )}
         </div>
+
+        {isGraphPage ? (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("graph-options-toggle"))}
+            className="grid h-10 w-10 place-items-center rounded-md bg-white/5 text-white transition-colors hover:bg-white/10"
+            aria-label="Open graph options"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+        ) : (
+          <div className="h-10 w-10" />
+        )}
       </div>
 
       {/* Mobile drawer */}
@@ -148,7 +169,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         open={confirmLogoutOpen}
         onOpenChange={setConfirmLogoutOpen}
         title="Sign out?"
-        description="You will be signed out of your account and returned to the landing page."
+        description="You will be signed out of your account continue?"
         confirmText="Logout"
         destructive
         onConfirm={async () => {
@@ -161,7 +182,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <SessionNavBar />
 
       <main className="min-w-0 flex-1 overflow-auto bg-black lg:ml-[3.25rem]">
-        <div className="h-16 lg:hidden" />
+        <div className="h-14 lg:hidden" />
         {children}
       </main>
     </div>
