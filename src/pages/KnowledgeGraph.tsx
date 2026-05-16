@@ -770,7 +770,7 @@ export default function KnowledgeGraph() {
             <Settings className="h-5 w-5" />
           </button>
 
-          <div className="absolute right-4 top-10 z-30 flex flex-col items-end gap-2">
+          <div className="absolute right-4 top-5 z-30 flex flex-col items-end gap-2">
             <div className="flex items-center gap-0.5">
               <button
                 type="button"
