@@ -770,6 +770,34 @@ export default function KnowledgeGraph() {
             <Settings className="h-5 w-5" />
           </button>
 
+          <div className="absolute right-4 top-20 z-30 flex flex-col items-end gap-2">
+            <button
+              type="button"
+              onClick={() => setLegendOpen(open => !open)}
+              className={`rounded-full border border-white/10 bg-black/80 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/10 ${legendOpen ? "ring-1 ring-primary" : ""}`}
+            >
+              {legendOpen ? "Legend on" : "Legend off"}
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleZoom(1)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10"
+                aria-label="Zoom in"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleZoom(-1)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10"
+                aria-label="Zoom out"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
           {optionsOpen && (
             <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 px-4 py-6 sm:p-6">
               <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
@@ -806,23 +834,10 @@ export default function KnowledgeGraph() {
                     <Button variant="outline" size="sm" className="w-full" onClick={() => { handleShowAll(); setOptionsOpen(false); }}>
                       Show all
                     </Button>
-                    <Button variant="ghost" size="sm" className="w-full" onClick={() => setLegendOpen(v => !v)}>
-                      {legendOpen ? "Hide legend" : "Show legend"}
+                    <Button variant="ghost" size="sm" className="w-full" onClick={handleReset}>
+                      Reset view
                     </Button>
                   </div>
-
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button variant="ghost" size="sm" className="w-full" onClick={() => handleZoom(1)}>
-                      Zoom in
-                    </Button>
-                    <Button variant="ghost" size="sm" className="w-full" onClick={() => handleZoom(-1)}>
-                      Zoom out
-                    </Button>
-                  </div>
-
-                  <Button variant="ghost" size="sm" className="w-full" onClick={handleReset}>
-                    Reset view
-                  </Button>
 
                   <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Type filters</p>
@@ -863,20 +878,6 @@ export default function KnowledgeGraph() {
                       ))}
                     </div>
                   </div>
-
-                  {legendOpen && (
-                    <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Legend</p>
-                      <div className="mt-2 grid gap-2 text-sm">
-                        {availableTypes.map(({ label, color, type }) => (
-                          <div key={type} className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                            <span className="text-sm text-foreground">{label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -927,6 +928,20 @@ export default function KnowledgeGraph() {
                 onTouchEnd={handleTouchEnd}
                 onTouchCancel={handleTouchEnd}
               />
+            )}
+
+            {legendOpen && (
+              <div className="absolute left-4 top-4 z-20 rounded-3xl border border-white/10 bg-black/80 p-4 text-sm text-white shadow-lg shadow-black/30 backdrop-blur-xl">
+                <p className="mb-3 text-xs uppercase tracking-[0.24em] text-muted-foreground">Legend</p>
+                <div className="grid gap-2">
+                  {availableTypes.map(({ label, color, type }) => (
+                    <div key={type} className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                      <span className="text-sm text-white">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {hoveredNode && tooltipPos && !selectedNode && (

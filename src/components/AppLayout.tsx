@@ -74,16 +74,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="flex-1 flex items-center justify-center">
-          {isGraphPage ? (
-            <GitGraph className="h-5 w-5 text-white" />
-          ) : (
-            <div className="flex items-center gap-2">
-              <img src="/favicon.ico" alt="Continuum" className="h-6 w-6 rounded object-contain" />
-              <span className="text-sm font-semibold">Continuum</span>
-            </div>
-          )}
-        </div>
+        <div className="flex-1" />
 
         {isGraphPage ? (
           <button
