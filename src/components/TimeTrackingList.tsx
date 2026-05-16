@@ -166,7 +166,7 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
