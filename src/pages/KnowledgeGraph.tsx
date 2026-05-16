@@ -617,10 +617,21 @@ export default function KnowledgeGraph() {
     zoomRef.current = 1;
     setTypeFilters(new Set());
     setSearch("");
+    setSearchOpen(false);
     setTimeFilter("all");
     setSelectedNode(null);
     closeInspector();
     alphaRef.current = 0.5;
+  };
+
+  const handleShowAll = () => {
+    setTypeFilters(new Set());
+    setSearch("");
+    setSearchOpen(false);
+    setTimeFilter("all");
+    setSelectedNode(null);
+    closeInspector();
+    alphaRef.current = 0.3;
   };
 
   // ── Touch handlers (pinch + drag + tap) ─────────────────────────────
@@ -780,6 +791,12 @@ export default function KnowledgeGraph() {
               onClick={() => setShowEdges(v => !v)}
             >
               <Spline className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 px-3" onClick={handleShowAll}>
+              Show all
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 px-3" onClick={() => setLegendOpen(v => !v)}>
+              Legend
             </Button>
             <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleZoom(1)}>
@@ -942,28 +959,19 @@ export default function KnowledgeGraph() {
             </div>
           )}
 
-          {/* Legend */}
-          {!empty && availableTypes.length > 0 && (
-            <div className="absolute bottom-3 left-3">
-              <button
-                onClick={() => setLegendOpen(v => !v)}
-                className="bento-card px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-              >
-                Legend
-              </button>
-              {legendOpen && (
-                <div className="bento-card p-2.5 space-y-1 max-w-[160px] mt-1.5">
-                  {availableTypes.map(({ type, label, color }) => (
-                    <div key={type} className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <span className="text-[10px] text-muted-foreground">{label}</span>
-                    </div>
-                  ))}
-                  <p className="text-[9px] text-muted-foreground pt-1 border-t border-border/50">
-                    {isMobile ? "Tap to inspect · Double-tap to open · Pinch to zoom" : "Click to inspect · Double-click to open · Scroll to zoom"}
-                  </p>
-                </div>
-              )}
+          {legendOpen && !empty && availableTypes.length > 0 && (
+            <div className="absolute top-3 right-3 z-20">
+              <div className="bento-card p-2.5 space-y-1 max-w-[180px]">
+                {availableTypes.map(({ type, label, color }) => (
+                  <div key={type} className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-[10px] text-muted-foreground">{label}</span>
+                  </div>
+                ))}
+                <p className="text-[9px] text-muted-foreground pt-1 border-t border-border/50">
+                  {isMobile ? "Tap to inspect · Double-tap to open · Pinch to zoom" : "Click to inspect · Double-click to open · Scroll to zoom"}
+                </p>
+              </div>
             </div>
           )}
         </div>
