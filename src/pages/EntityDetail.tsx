@@ -12,14 +12,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
 import { TimerWidget } from "@/components/TimerWidget";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
-import { getPlanLimits } from "@/lib/plan";
 
 interface EntityData { id: string; title: string; type: string; description?: string; trackingDates?: string[]; createdAt: string; }
 
@@ -41,9 +38,8 @@ export default function EntityDetail() {
   const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
 
   // Time tracking
-  const { getTotalTime, getActiveTimer, formatSeconds } = useTimeTracking();
+  const { getTotalTime, formatSeconds } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
-  const { data: activeTimer } = getActiveTimer(id!);
 
   useEffect(() => {
     if (!id) return;
