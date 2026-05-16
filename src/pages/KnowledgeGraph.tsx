@@ -771,13 +771,6 @@ export default function KnowledgeGraph() {
           </button>
 
           <div className="absolute right-4 top-20 z-30 flex flex-col items-end gap-2">
-            <button
-              type="button"
-              onClick={() => setLegendOpen(open => !open)}
-              className={`rounded-full border border-white/10 bg-black/80 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/10 ${legendOpen ? "ring-1 ring-primary" : ""}`}
-            >
-              {legendOpen ? "Legend on" : "Legend off"}
-            </button>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -876,6 +869,33 @@ export default function KnowledgeGraph() {
                           {t === "all" ? "Anytime" : t === "7d" ? "Last 7d" : "Last 30d"}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Display options</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setShowEdges(prev => !prev)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${showEdges ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {showEdges ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
+                        {showEdges ? "Edges on" : "Edges off"}
+                      </button>
+                      <button
+                        onClick={() => setShowLabels(prev => !prev)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${showLabels ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {showLabels ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
+                        {showLabels ? "Labels on" : "Labels off"}
+                      </button>
+                      <button
+                        onClick={() => setLegendOpen(open => !open)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${legendOpen ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {legendOpen ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
+                        {legendOpen ? "Legend on" : "Legend off"}
+                      </button>
                     </div>
                   </div>
                 </div>
