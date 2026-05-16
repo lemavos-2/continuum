@@ -4,23 +4,26 @@ import { useNavigate } from 'react-router-dom';
 import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { FolderOpen, Plus } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
+import { Plus, ChevronDown, FolderOpen, Loader2 } from 'lucide-react';
 import { CreateEntityDialog } from '@/components/CreateEntityDialog';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
 import type { Entity } from '@/types';
 
+const formatDate = (iso?: string) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 /**
- * List of all trackable entities with time summaries
+ * Premium striped table with inline accordion rows. Mirrors the
+ * `/entities` aesthetic: serif header, hairline borders, monochrome.
  */
 export function TimeTrackingList({ filterType }: { filterType?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
   const { getAllSummaries } = useTimeTracking();
 
   const { data: trackableEntities, isLoading: entitiesLoading } = useQuery({
@@ -28,139 +31,147 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
     queryFn: async () => {
       const response = await entitiesApi.list();
       const entities = response.data as Entity[];
-      if (filterType) {
-        return entities.filter(e => e.type === filterType);
-      }
-      return entities.filter(e => e.type === 'PROJECT' || e.type === 'ACTIVITY');
+      if (filterType) return entities.filter((e) => e.type === filterType);
+      return entities.filter((e) => e.type === 'PROJECT' || e.type === 'ACTIVITY');
     },
   });
 
   const { data: summaries, isLoading: summariesLoading } = getAllSummaries();
-
-  const getSummaryForEntity = (entityId: string): TimeEntitySummary | undefined => {
-    if (!summaries) return undefined;
-    return summaries.find((s: TimeEntitySummary) => s.entityId === entityId);
-  };
+  const getSummaryForEntity = (entityId: string): TimeEntitySummary | undefined =>
+    summaries?.find((s: TimeEntitySummary) => s.entityId === entityId);
 
   const isLoading = entitiesLoading || summariesLoading;
+  const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity' };
 
-  const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity', ACCURRENCY: 'Accurrency' };
-
-  const lowerQuery = query.trim().toLowerCase();
-  const filteredEntities = useMemo(() => {
-    const source = trackableEntities || [];
-    return source.filter((e) => {
-      const matchesType = filterType ? e.type === filterType : e.type === 'PROJECT' || e.type === 'ACTIVITY';
-      if (!matchesType) return false;
-      if (!lowerQuery) return true;
-      return [e.title, e.description, e.type]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(lowerQuery));
+  const lower = query.trim().toLowerCase();
+  const filtered = useMemo(() => trackableEntities ?? [], [trackableEntities]);
+  const matches = useMemo(() => {
+    if (!lower) return new Set<number>();
+    const s = new Set<number>();
+    filtered.forEach((e, i) => {
+      if ([e.title, e.description, e.type].filter(Boolean).some((v) => String(v).toLowerCase().includes(lower))) {
+        s.add(i);
+      }
     });
-  }, [trackableEntities, filterType, lowerQuery]);
+    return s;
+  }, [lower, filtered]);
+
+  const placeholder = `Search ${filterType === 'PROJECT' ? 'projects' : filterType === 'ACTIVITY' ? 'activities' : 'entities'}…`;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="w-full max-w-sm">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${filterType === 'PROJECT' ? 'projects' : 'activities'}...`}
-            className="w-full bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-sm outline-none transition-colors placeholder:text-white/30"
-          />
-        </div>
-        <div className="flex justify-end">
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New {filterType ? typeLabels[filterType] : 'Entity'}
-          </Button>
-        </div>
+    <>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={placeholder}
+          className="w-full max-w-sm bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-sm outline-none transition-colors placeholder:text-white/30"
+        />
+        <button onClick={() => setCreateOpen(true)} className="btn-primary shrink-0">
+          <Plus className="w-4 h-4" /> New {filterType ? typeLabels[filterType] : 'Entity'}
+        </button>
       </div>
+
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48" />
-          ))}
+        <div className="flex justify-center py-24">
+          <Loader2 className="w-5 h-5 animate-spin text-white/30" />
         </div>
-      ) : filteredEntities.length === 0 ? (
-        <Card className="p-12 text-center bg-white/5 border border-white/10">
-          <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-medium text-white mb-2">
-            No {filterType ? typeLabels[filterType]?.toLowerCase() + 's' : 'entities'} yet
-          </h3>
-          <p className="text-sm text-zinc-500 mb-4">
-            Create a {filterType ? typeLabels[filterType]?.toLowerCase() : 'project or activity'} to start tracking.
+      ) : filtered.length === 0 ? (
+        <div className="border border-dashed border-white/10 rounded-md py-16 text-center">
+          <FolderOpen className="w-10 h-10 text-white/20 mx-auto mb-3" />
+          <p className="text-sm text-white/40">
+            No {filterType ? typeLabels[filterType].toLowerCase() + 's' : 'entities'} yet.
           </p>
-          <Button onClick={() => setCreateOpen(true)}>
-            Create {filterType ? typeLabels[filterType] : 'Entity'}
-          </Button>
-        </Card>
+        </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-          <div className="grid grid-cols-[1.8fr_0.9fr_0.9fr] gap-4 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.24em] text-white/50">
-            <span>Name</span>
-            <span>Type</span>
-            <span>Tracked</span>
-          </div>
-          <Accordion type="single" collapsible className="divide-y divide-white/10">
-            {filteredEntities.map((entity, index) => {
-              const summary = getSummaryForEntity(entity.id);
-              const showTimer = entity.type === 'PROJECT';
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="border-b border-white/10 bg-white/5">
+                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-10"></th>
+                <th className="label-caps text-left px-3 py-3 font-medium text-white/50">Name</th>
+                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-[140px]">Type</th>
+                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-[160px]">Tracked</th>
+                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-[120px]">Entries</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((entity, i) => {
+                const dim = lower && !matches.has(i);
+                const summary = getSummaryForEntity(entity.id);
+                const isOpen = openId === entity.id;
+                const showTimer = entity.type === 'PROJECT';
 
-              return (
-                <AccordionItem
-                  key={entity.id}
-                  value={entity.id}
-                  className={cn(
-                    'transition-colors',
-                    index % 2 === 0 ? 'bg-white/5' : 'bg-white/0',
-                    'hover:bg-white/10',
-                  )}
-                >
-                  <AccordionTrigger className="grid grid-cols-[1.8fr_0.9fr_0.9fr] items-center gap-4 px-4 py-4 text-left">
-                    <div className="min-w-0">
-                      <p className="font-medium text-white truncate">{entity.title || 'Untitled'}</p>
-                      {entity.description && (
-                        <p className="mt-1 text-xs text-white/40 truncate">{entity.description}</p>
+                return (
+                  <>
+                    <tr
+                      key={entity.id}
+                      onClick={() => setOpenId(isOpen ? null : entity.id)}
+                      className={cn(
+                        'group border-b border-white/[0.06] cursor-pointer transition-opacity duration-200 odd:bg-white/5 even:bg-white/0',
+                        dim ? 'opacity-20' : 'opacity-100 hover:bg-white/[0.08]',
                       )}
-                    </div>
-                    <span className="text-xs uppercase tracking-wider text-white/60">
-                      {typeLabels[entity.type] ?? entity.type}
-                    </span>
-                    <div className="text-right">
-                      <p className="text-sm font-mono text-white/80">{summary?.formattedTotal || '00:00:00'}</p>
-                      <p className="text-xs text-white/50">{summary?.entriesCount ?? 0} entries</p>
-                    </div>
-                  </AccordionTrigger>
-
-                  <AccordionContent className="px-4 pb-4 pt-0">
-                    <div className="grid gap-4">
-                      {showTimer && summary ? (
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Total time</p>
-                              <p className="mt-2 font-mono text-white/90">{summary.formattedTotal}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Entries</p>
-                              <p className="mt-2 text-white/90">{summary.entriesCount}</p>
+                    >
+                      <td className="px-3 py-4 text-white/40">
+                        <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} />
+                      </td>
+                      <td className="px-3 py-4">
+                        <p className="font-medium text-white truncate">{entity.title || 'Untitled'}</p>
+                        {entity.description && (
+                          <p className="mt-0.5 text-xs text-white/40 truncate">{entity.description}</p>
+                        )}
+                      </td>
+                      <td className="px-3 py-4 text-xs uppercase tracking-wider text-white/60">
+                        {typeLabels[entity.type] ?? entity.type}
+                      </td>
+                      <td className="px-3 py-4 text-sm font-mono text-white/80">
+                        {summary?.formattedTotal || '00:00:00'}
+                      </td>
+                      <td className="px-3 py-4 text-sm text-white/60">{summary?.entriesCount ?? 0}</td>
+                    </tr>
+                    {isOpen && (
+                      <tr key={entity.id + '-detail'} className="border-b border-white/[0.06] bg-black/40">
+                        <td colSpan={5} className="px-6 py-6">
+                          <div className="grid gap-4">
+                            {showTimer ? (
+                              <div className="grid grid-cols-2 gap-4 max-w-md">
+                                <div className="rounded-md border border-white/10 bg-white/5 p-4">
+                                  <p className="label-caps text-white/50">Total time</p>
+                                  <p className="mt-2 font-mono text-white/90">
+                                    {summary?.formattedTotal || '00:00:00'}
+                                  </p>
+                                </div>
+                                <div className="rounded-md border border-white/10 bg-white/5 p-4">
+                                  <p className="label-caps text-white/50">Sessions</p>
+                                  <p className="mt-2 text-white/90">{summary?.entriesCount ?? 0}</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <ActivityCompletionCalendar
+                                entityId={entity.id}
+                                trackingDates={entity.trackingDates}
+                              />
+                            )}
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/entities/${entity.id}`);
+                                }}
+                                className="text-xs px-3 py-1.5 rounded-md border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
+                              >
+                                Open detail →
+                              </button>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <ActivityCompletionCalendar
-                          entityId={entity.id}
-                          trackingDates={entity.trackingDates}
-                        />
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              );
-            })}
-          </Accordion>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -174,6 +185,6 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
           navigate(`/entities/${entity.id}`);
         }}
       />
-    </div>
+    </>
   );
 }
