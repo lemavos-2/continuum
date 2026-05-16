@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { entitiesApi } from '@/lib/api';
@@ -103,9 +103,8 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
                 const showTimer = entity.type === 'PROJECT';
 
                 return (
-                  <>
+                  <Fragment key={entity.id}>
                     <tr
-                      key={entity.id}
                       onClick={() => setOpenId(isOpen ? null : entity.id)}
                       className={cn(
                         'group border-b border-white/[0.06] cursor-pointer transition-opacity duration-200 odd:bg-white/5 even:bg-white/0',
