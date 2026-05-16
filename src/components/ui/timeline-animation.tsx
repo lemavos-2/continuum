@@ -22,7 +22,7 @@ export function TimelineContent({
   className = '',
   ...props
 }: TimelineContentProps) {
-  const ref = useRef<HTMLElement | null>(null)
+  const ref = useRef<HTMLDivElement | null>(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   const defaultVariants = {

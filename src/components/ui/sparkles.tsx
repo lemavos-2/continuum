@@ -45,7 +45,7 @@ export function Sparkles({
 
   const id = useId()
 
-  const defaultOptions = {
+  const defaultOptions: any = {
     background: {
       color: {
         value: background,
