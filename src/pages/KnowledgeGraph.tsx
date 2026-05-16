@@ -793,8 +793,8 @@ export default function KnowledgeGraph() {
 
           {optionsOpen && (
             <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 px-4 py-6 sm:p-6">
-              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-background/95 p-6 shadow-2xl shadow-black/40">
-                <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
+                <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Graph options</p>
                     <p className="text-xs text-muted-foreground">Customize your visualization</p>
@@ -802,42 +802,42 @@ export default function KnowledgeGraph() {
                   <button
                     type="button"
                     onClick={() => setOptionsOpen(false)}
-                    className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-white transition hover:bg-white/10"
+                    className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
                     aria-label="Close graph options"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Search nodes</label>
-                    <div className="relative">
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">Search nodes</label>
+                    <div className="mt-2 relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search nodes…"
-                        className="pl-10 h-11 bg-white/[0.03] border-white/[0.06] focus-visible:ring-white/20"
+                        className="pl-10"
                       />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <Button variant="ghost" size="sm" className="h-10" onClick={() => { handleShowAll(); setOptionsOpen(false); }}>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => { handleShowAll(); setOptionsOpen(false); }}>
                       Show all
                     </Button>
-                    <Button variant="outline" size="sm" className="h-10" onClick={handleReset}>
+                    <Button variant="ghost" size="sm" className="w-full" onClick={handleReset}>
                       Reset view
                     </Button>
                   </div>
 
-                  <div className="border-t border-white/5 pt-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2.5">Type filters</p>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Type filters</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         onClick={() => setTypeFilters(new Set())}
-                        className={`rounded-md px-3 py-1.5 text-[11px] font-medium transition ${typeFilters.size === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${typeFilters.size === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
                       >
                         All
                       </button>
@@ -847,9 +847,9 @@ export default function KnowledgeGraph() {
                           <button
                             key={type}
                             onClick={() => toggleTypeFilter(type)}
-                            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition ${active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-[11px] font-medium transition ${active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
                           >
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
                             {label}
                           </button>
                         );
@@ -857,14 +857,14 @@ export default function KnowledgeGraph() {
                     </div>
                   </div>
 
-                  <div className="border-t border-white/5 pt-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2.5">Time range</p>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Time range</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {(["all", "7d", "30d"] as const).map(t => (
                         <button
                           key={t}
                           onClick={() => setTimeFilter(t)}
-                          className={`rounded-md px-3 py-1.5 text-[11px] font-medium transition ${timeFilter === t ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                          className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${timeFilter === t ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
                         >
                           {t === "all" ? "Anytime" : t === "7d" ? "Last 7d" : "Last 30d"}
                         </button>
@@ -872,29 +872,29 @@ export default function KnowledgeGraph() {
                     </div>
                   </div>
 
-                  <div className="border-t border-white/5 pt-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2.5">Display options</p>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Display options</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       <button
                         onClick={() => setShowEdges(prev => !prev)}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition ${showEdges ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${showEdges ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
                       >
-                        {showEdges ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                        {showEdges ? "Edges" : "Edges hidden"}
+                        {showEdges ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
+                        {showEdges ? "Edges on" : "Edges off"}
                       </button>
                       <button
                         onClick={() => setShowLabels(prev => !prev)}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition ${showLabels ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${showLabels ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
                       >
-                        {showLabels ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                        {showLabels ? "Labels" : "Labels hidden"}
+                        {showLabels ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
+                        {showLabels ? "Labels on" : "Labels off"}
                       </button>
                       <button
                         onClick={() => setLegendOpen(open => !open)}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition ${legendOpen ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${legendOpen ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
                       >
-                        {legendOpen ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                        {legendOpen ? "Legend" : "Legend hidden"}
+                        {legendOpen ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
+                        {legendOpen ? "Legend on" : "Legend off"}
                       </button>
                     </div>
                   </div>
