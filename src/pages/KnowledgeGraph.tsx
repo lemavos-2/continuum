@@ -771,33 +771,37 @@ export default function KnowledgeGraph() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="Search" onClick={() => setSearchOpen(v => !v)}>
-              <Search className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 ${showLabels ? "text-foreground" : "text-muted-foreground"}`}
-              title={showLabels ? "Hide labels" : "Show labels"}
-              onClick={() => setShowLabels(v => !v)}
-            >
-              {showLabels ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-8 w-8 ${showEdges ? "text-foreground" : "text-muted-foreground"}`}
-              title={showEdges ? "Hide edges" : "Show edges"}
-              onClick={() => setShowEdges(v => !v)}
-            >
-              <Spline className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 px-3" onClick={handleShowAll}>
-              Show all
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 px-3" onClick={() => setLegendOpen(v => !v)}>
-              Legend
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="Search" onClick={() => setSearchOpen(v => !v)}>
+                <Search className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${showLabels ? "text-foreground" : "text-muted-foreground"}`}
+                title={showLabels ? "Hide labels" : "Show labels"}
+                onClick={() => setShowLabels(v => !v)}
+              >
+                {showLabels ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${showEdges ? "text-foreground" : "text-muted-foreground"}`}
+                title={showEdges ? "Hide edges" : "Show edges"}
+                onClick={() => setShowEdges(v => !v)}
+              >
+                <Spline className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1 w-full justify-start lg:w-auto lg:justify-end">
+              <Button variant="outline" size="sm" className="h-8 px-3" onClick={handleShowAll}>
+                Show all
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-3" onClick={() => setLegendOpen(v => !v)}>
+                Legend
+              </Button>
+            </div>
             <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleZoom(1)}>
               <ZoomIn className="w-4 h-4" />
