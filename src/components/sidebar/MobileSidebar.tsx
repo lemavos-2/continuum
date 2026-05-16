@@ -22,7 +22,7 @@ export function MobileSidebar({ open, onClose, children }: MobileSidebarProps) {
             aria-label="Close mobile sidebar overlay"
           />
           <motion.aside
-            className="fixed inset-y-0 left-0 z-50 w-[min(88vw,18rem)] bg-[#0f1117]/95 shadow-[0_30px_70px_rgba(0,0,0,0.32)] backdrop-blur-3xl"
+            className="fixed inset-y-0 left-0 z-50 w-[min(88vw,18rem)] bg-black/90 border-r border-white/8 shadow-[0_30px_70px_rgba(0,0,0,0.6)] backdrop-blur-xl"
             initial={{ x: -320 }}
             animate={{ x: 0 }}
             exit={{ x: -320 }}

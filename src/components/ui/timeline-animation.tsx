@@ -42,7 +42,7 @@ export function TimelineContent({
   return (
     <motion.div
       ref={ref}
-      as={Component}
+      
       custom={animationNum}
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
