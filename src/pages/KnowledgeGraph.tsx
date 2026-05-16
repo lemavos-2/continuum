@@ -9,7 +9,7 @@ import {
   Maximize2,
   Brain,
   Search,
-  Tag,
+  Settings,
   Eye,
   EyeOff,
   Spline,
@@ -131,12 +131,11 @@ export default function KnowledgeGraph() {
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showEdges, setShowEdges] = useState(true);
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "30d">("all");
   const [legendOpen, setLegendOpen] = useState(false);
-  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
@@ -618,7 +617,6 @@ export default function KnowledgeGraph() {
     zoomRef.current = 1;
     setTypeFilters(new Set());
     setSearch("");
-    setSearchOpen(false);
     setTimeFilter("all");
     setSelectedNode(null);
     closeInspector();
@@ -628,7 +626,6 @@ export default function KnowledgeGraph() {
   const handleShowAll = () => {
     setTypeFilters(new Set());
     setSearch("");
-    setSearchOpen(false);
     setTimeFilter("all");
     setSelectedNode(null);
     closeInspector();
@@ -737,7 +734,7 @@ export default function KnowledgeGraph() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const listener = () => setMobileOptionsOpen(open => !open);
+    const listener = () => setOptionsOpen(open => !open);
     window.addEventListener("graph-options-toggle", listener);
     return () => window.removeEventListener("graph-options-toggle", listener);
   }, []);
@@ -763,263 +760,187 @@ export default function KnowledgeGraph() {
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
-        <div className="px-6 lg:px-12 py-4 max-w-6xl w-full mx-auto flex flex-col gap-3 border-b border-white/10 shrink-0 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Network</p>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-white/70">
-              <span>{graphStats.nodes} nodes</span>
-              <span className="text-white/20">·</span>
-              <span>{graphStats.edges} connections</span>
-              {selectedNode && (
-                <>
-                  <span className="text-white/20">·</span>
-                  <span className="text-foreground">{selectedNode.label}</span>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-1">
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Search" onClick={() => setSearchOpen(v => !v)}>
-                <Search className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 ${showLabels ? "text-foreground" : "text-muted-foreground"}`}
-                title={showLabels ? "Hide labels" : "Show labels"}
-                onClick={() => setShowLabels(v => !v)}
-              >
-                {showLabels ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 ${showEdges ? "text-foreground" : "text-muted-foreground"}`}
-                title={showEdges ? "Hide edges" : "Show edges"}
-                onClick={() => setShowEdges(v => !v)}
-              >
-                <Spline className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-1 w-full justify-start lg:w-auto lg:justify-end">
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex h-8 px-3" onClick={handleShowAll}>
-                Show all
-              </Button>
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex h-8 px-3" onClick={() => setLegendOpen(v => !v)}>
-                Legend
-              </Button>
-            </div>
-            <div className="w-px h-5 bg-border/60 mx-1 hidden sm:block" />
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleZoom(1)}>
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleZoom(-1)}>
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReset} title="Reset view">
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <div className="relative flex-1">
+          <button
+            type="button"
+            onClick={() => setOptionsOpen(true)}
+            className="absolute right-4 top-4 z-30 hidden h-10 w-10 items-center justify-center rounded-md bg-white/5 text-white shadow-lg shadow-black/20 transition hover:bg-white/10 sm:grid"
+            aria-label="Open graph options"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
 
-        {mobileOptionsOpen && (
-          <div className="fixed inset-x-4 top-[3.5rem] z-50 sm:hidden">
-            <div className="bento-card p-3 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">Graph options</p>
-                <button
-                  type="button"
-                  onClick={() => setMobileOptionsOpen(false)}
-                  className="grid h-8 w-8 place-items-center rounded-md bg-white/5 text-white transition-colors hover:bg-white/10"
-                  aria-label="Close options"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="grid gap-2">
-                <Button variant="outline" size="sm" className="w-full" onClick={() => { handleShowAll(); setMobileOptionsOpen(false); }}>
-                  Show all
-                </Button>
-                <Button variant="ghost" size="sm" className="w-full" onClick={() => { setLegendOpen(v => !v); setMobileOptionsOpen(false); }}>
-                  {legendOpen ? "Hide legend" : "Show legend"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Search bar (inline) */}
-        {searchOpen && (
-          <div className="px-3 lg:px-4 py-2 border-b border-border/30 shrink-0 relative">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                autoFocus
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search nodes…"
-                className="pl-8 h-8 text-xs"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-            {searchResults.length > 0 && (
-              <div className="absolute left-3 right-3 lg:left-4 lg:right-4 top-full mt-1 bg-popover border border-border/60 rounded-md shadow-lg z-30 overflow-hidden">
-                {searchResults.map(n => (
+          {optionsOpen && (
+            <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 px-4 py-6 sm:p-6">
+              <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Graph options</p>
+                    <p className="text-xs text-muted-foreground">All graph controls live inside this popup.</p>
+                  </div>
                   <button
-                    key={n.id}
-                    onClick={() => { focusNode(n); setSearchOpen(false); setSearch(""); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-accent transition-colors"
+                    type="button"
+                    onClick={() => setOptionsOpen(false)}
+                    className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-white transition hover:bg-white/10"
+                    aria-label="Close graph options"
                   >
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: TYPE_COLORS[n.type] }} />
-                    <span className="truncate text-foreground">{n.label}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground">{TYPE_LABELS[n.type] || n.type}</span>
+                    <X className="h-4 w-4" />
                   </button>
-                ))}
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">Search nodes</label>
+                    <div className="mt-2 relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search nodes…"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => { handleShowAll(); setOptionsOpen(false); }}>
+                      Show all
+                    </Button>
+                    <Button variant="ghost" size="sm" className="w-full" onClick={() => setLegendOpen(v => !v)}>
+                      {legendOpen ? "Hide legend" : "Show legend"}
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button variant="ghost" size="sm" className="w-full" onClick={() => handleZoom(1)}>
+                      Zoom in
+                    </Button>
+                    <Button variant="ghost" size="sm" className="w-full" onClick={() => handleZoom(-1)}>
+                      Zoom out
+                    </Button>
+                  </div>
+
+                  <Button variant="ghost" size="sm" className="w-full" onClick={handleReset}>
+                    Reset view
+                  </Button>
+
+                  <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Type filters</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setTypeFilters(new Set())}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${typeFilters.size === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        All
+                      </button>
+                      {availableTypes.map(({ type, label, color }) => {
+                        const active = typeFilters.has(type);
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => toggleTypeFilter(type)}
+                            className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-[11px] font-medium transition ${active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                          >
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Time range</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(["all", "7d", "30d"] as const).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setTimeFilter(t)}
+                          className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${timeFilter === t ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                        >
+                          {t === "all" ? "Anytime" : t === "7d" ? "Last 7d" : "Last 30d"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {legendOpen && (
+                    <div className="rounded-3xl border border-white/10 bg-background/90 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Legend</p>
+                      <div className="mt-2 grid gap-2 text-sm">
+                        {availableTypes.map(({ label, color, type }) => (
+                          <div key={type} className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                            <span className="text-sm text-foreground">{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0 touch-none">
+            {loading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <p className="text-xs text-muted-foreground">Loading graph…</p>
+                </div>
+              </div>
+            )}
+
+            {empty && !loading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className="text-center space-y-4 max-w-xs px-6">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Brain className="w-8 h-8 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="font-display text-lg font-semibold text-foreground">
+                      No connections detected yet
+                    </h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Start creating notes and mention entities with <span className="text-primary font-medium">@</span> to grow your graph.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/notes")}>Create first note →</Button>
+                </div>
+              </div>
+            )}
+
+            {!empty && (
+              <canvas
+                ref={canvasRef}
+                className="bg-background select-none"
+                style={{ display: "block", touchAction: "none" }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onWheel={handleWheel}
+                onDoubleClick={handleDoubleClick}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+              />
+            )}
+
+            {hoveredNode && tooltipPos && !selectedNode && (
+              <div
+                className="absolute z-20 pointer-events-none px-2.5 py-1.5 rounded-md bg-popover/95 backdrop-blur-sm border border-border/50 shadow-lg"
+                style={{
+                  left: Math.min(tooltipPos.x + 12, (containerRef.current?.clientWidth || 300) - 180),
+                  top: Math.max(8, tooltipPos.y - 40),
+                }}
+              >
+                <p className="text-xs font-medium text-foreground truncate max-w-[160px]">{hoveredNode.label}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {TYPE_LABELS[hoveredNode.type] || hoveredNode.type} · {hoveredNode.degree} link{hoveredNode.degree === 1 ? "" : "s"}
+                </p>
               </div>
             )}
           </div>
-        )}
-
-        {/* Filter chips */}
-        {!empty && availableTypes.length > 0 && (
-          <div className="px-3 lg:px-4 py-2 flex gap-1.5 flex-wrap items-center border-b border-border/30 shrink-0 overflow-x-auto">
-            <Tag className="w-3 h-3 text-muted-foreground shrink-0" />
-            <button
-              onClick={() => setTypeFilters(new Set())}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors shrink-0 ${
-                typeFilters.size === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-              }`}
-            >
-              All
-            </button>
-            {availableTypes.map(({ type, label, color }) => {
-              const active = typeFilters.has(type);
-              return (
-                <button
-                  key={type}
-                  onClick={() => toggleTypeFilter(type)}
-                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
-                    active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                  {label}
-                </button>
-              );
-            })}
-            <div className="w-px h-3 bg-border/60 mx-1 shrink-0" />
-            {(["all", "7d", "30d"] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTimeFilter(t)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors shrink-0 ${
-                  timeFilter === t ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                }`}
-              >
-                {t === "all" ? "Anytime" : t === "7d" ? "Last 7d" : "Last 30d"}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Canvas area */}
-        <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0 touch-none">
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">Loading graph…</p>
-              </div>
-            </div>
-          )}
-
-          {empty && !loading && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="text-center space-y-4 max-w-xs px-6">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                  <Brain className="w-8 h-8 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h2 className="font-display text-lg font-semibold text-foreground">
-                    No connections detected yet
-                  </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Start creating notes and mention entities with <span className="text-primary font-medium">@</span> to grow your graph.
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate("/notes")}>
-                  Create first note →
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {!empty && (
-            <canvas
-              ref={canvasRef}
-              className="bg-background select-none"
-              style={{ display: "block", touchAction: "none" }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onWheel={handleWheel}
-              onDoubleClick={handleDoubleClick}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onTouchCancel={handleTouchEnd}
-            />
-          )}
-
-          {/* Hover tooltip */}
-          {hoveredNode && tooltipPos && !selectedNode && (
-            <div
-              className="absolute z-20 pointer-events-none px-2.5 py-1.5 rounded-md bg-popover/95 backdrop-blur-sm border border-border/50 shadow-lg"
-              style={{
-                left: Math.min(tooltipPos.x + 12, (containerRef.current?.clientWidth || 300) - 180),
-                top: Math.max(8, tooltipPos.y - 40),
-              }}
-            >
-              <p className="text-xs font-medium text-foreground truncate max-w-[160px]">{hoveredNode.label}</p>
-              <p className="text-[10px] text-muted-foreground">
-                {TYPE_LABELS[hoveredNode.type] || hoveredNode.type} · {hoveredNode.degree} link{hoveredNode.degree === 1 ? "" : "s"}
-              </p>
-            </div>
-          )}
-
-          {legendOpen && !empty && availableTypes.length > 0 && (
-            <div className="absolute top-3 right-3 z-20">
-              <div className="bento-card p-2.5 space-y-1 max-w-[180px]">
-                {availableTypes.map(({ type, label, color }) => (
-                  <div key={type} className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                    <span className="text-[10px] text-muted-foreground">{label}</span>
-                  </div>
-                ))}
-                <p className="text-[9px] text-muted-foreground pt-1 border-t border-border/50">
-                  {isMobile ? "Tap to inspect · Double-tap to open · Pinch to zoom" : "Click to inspect · Double-click to open · Scroll to zoom"}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <SideInspector
-        isOpen={inspectorOpen}
-        entity={inspectorEntity}
-        onClose={() => { closeInspector(); setSelectedNode(null); }}
-      />
-    </AppLayout>
-  );
-}
