@@ -760,7 +760,7 @@ export default function KnowledgeGraph() {
   return (
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
-        <div className="relative flex-1">
+        <div className="relative flex flex-col flex-1">
           <button
             type="button"
             onClick={() => setOptionsOpen(true)}
