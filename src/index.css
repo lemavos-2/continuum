@@ -92,11 +92,17 @@
   .hairline { border-color: hsl(var(--border)); }
 
   .bento-card {
-    @apply relative p-5 rounded-lg overflow-hidden transition-colors duration-200;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    @apply relative p-5 rounded-lg overflow-hidden transition-all duration-200 backdrop-blur-xl;
+    background: hsl(0 0% 100% / 0.025);
+    border: 1px solid hsl(0 0% 100% / 0.08);
   }
-  .bento-card:hover { border-color: hsl(0 0% 100% / 0.16); }
+  .bento-card:hover { border-color: hsl(0 0% 100% / 0.18); background: hsl(0 0% 100% / 0.04); }
+
+  .glass-panel {
+    @apply backdrop-blur-xl rounded-lg;
+    background: hsl(0 0% 100% / 0.025);
+    border: 1px solid hsl(0 0% 100% / 0.08);
+  }
 
   .bento-tag {
     @apply px-2.5 py-1 rounded-md text-xs transition-colors duration-150;
