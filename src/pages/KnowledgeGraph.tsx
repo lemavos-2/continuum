@@ -944,3 +944,14 @@ export default function KnowledgeGraph() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <SideInspector
+        isOpen={inspectorOpen}
+        entity={inspectorEntity}
+        onClose={() => { closeInspector(); setSelectedNode(null); }}
+      />
+    </AppLayout>
+  );
+}
