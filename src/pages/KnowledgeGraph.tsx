@@ -39,15 +39,17 @@ interface GraphEdge {
   target: string;
 }
 
-// Color per node type — gives the graph life while keeping the monochrome shell.
+// Monochrome palette — different greys per type, no rainbow.
+// Notes pop slightly brighter; people/topics sit calmer.
 const TYPE_COLORS: Record<string, string> = {
-  NOTE: "hsl(48, 95%, 65%)",         // amber
-  ACTIVITY: "hsl(160, 70%, 55%)",    // emerald
-  PERSON: "hsl(210, 90%, 65%)",      // blue
-  PROJECT: "hsl(280, 70%, 70%)",     // violet
-  TOPIC: "hsl(20, 85%, 62%)",        // orange
-  ORGANIZATION: "hsl(340, 75%, 65%)",// pink
+  NOTE: "hsl(0, 0%, 96%)",
+  ACTIVITY: "hsl(0, 0%, 78%)",
+  PERSON: "hsl(0, 0%, 70%)",
+  PROJECT: "hsl(0, 0%, 88%)",
+  TOPIC: "hsl(0, 0%, 60%)",
+  ORGANIZATION: "hsl(0, 0%, 50%)",
 };
+const HIGHLIGHT_COLOR = "hsl(0, 0%, 100%)";
 
 const TYPE_LABELS: Record<string, string> = {
   NOTE: "Note",
@@ -318,15 +320,15 @@ export default function KnowledgeGraph() {
         if (!isNodeVisible(a) || !isNodeVisible(b)) continue;
         const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
         if (hasSelection && !isHighlighted) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.04)";
-          ctx.lineWidth = 1.0 / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.025)";
+          ctx.lineWidth = 0.8 / z;
         } else if (isHighlighted) {
-          ctx.strokeStyle = "hsla(48,95%,65%,0.75)";
-          ctx.lineWidth = 2.6 / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.9)";
+          ctx.lineWidth = 2.2 / z;
         } else {
-          // edge thickness by combined degree
-          const w = Math.min(3.4, 1.4 + (a.degree + b.degree) * 0.08) / z;
-          ctx.strokeStyle = "hsla(0,0%,100%,0.28)";
+          // Subtle edges; thickness still informs the eye
+          const w = Math.min(2.2, 0.8 + (a.degree + b.degree) * 0.04) / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.12)";
           ctx.lineWidth = w;
         }
         ctx.beginPath();
@@ -369,12 +371,12 @@ export default function KnowledgeGraph() {
       ctx.fill();
 
       if (isSelected) {
-        ctx.strokeStyle = "hsl(0,0%,100%)";
-        ctx.lineWidth = 2 / z;
+        ctx.strokeStyle = HIGHLIGHT_COLOR;
+        ctx.lineWidth = 1.8 / z;
         ctx.stroke();
       } else if (matchesSearch) {
-        ctx.strokeStyle = "hsla(180,90%,60%,0.9)";
-        ctx.lineWidth = 1.6 / z;
+        ctx.strokeStyle = "hsla(0,0%,100%,0.95)";
+        ctx.lineWidth = 1.4 / z;
         ctx.stroke();
       }
 
