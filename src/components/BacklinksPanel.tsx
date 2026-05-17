@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StickyNote, Link2, Unlink } from "lucide-react";
 import { notesApi } from "@/lib/api";
 
 interface BacklinkItem {
@@ -9,14 +8,53 @@ interface BacklinkItem {
   title: string;
   snippet?: string;
 }
-
 interface BacklinksData {
   linkedMentions: BacklinkItem[];
   unlinkedMentions: BacklinkItem[];
 }
-
 interface BacklinksPanelProps {
   noteId: string;
+}
+
+function Section({ label, items, kind }: { label: string; items: BacklinkItem[]; kind: "linked" | "unlinked" }) {
+  if (items.length === 0) return null;
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-white/40">{label}</p>
+        <p className="font-mono text-[10px] text-white/30 tabular-nums">{items.length}</p>
+      </div>
+      <ul className="divide-y divide-white/[0.05]">
+        {items.map((item) => (
+          <li key={item.id}>
+            <Link
+              to={`/notes/${item.id}`}
+              className="group block py-3 transition-colors hover:bg-white/[0.02]"
+            >
+              <div className="flex items-start gap-2">
+                <span
+                  aria-hidden
+                  className={`mt-2 h-px w-3 shrink-0 transition-all ${
+                    kind === "linked" ? "bg-white/60 group-hover:w-5" : "bg-white/20 group-hover:w-5"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-serif text-sm text-white/90 group-hover:text-white">
+                    {item.title || "Untitled"}
+                  </p>
+                  {item.snippet && (
+                    <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/40">
+                      {item.snippet}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 export function BacklinksPanel({ noteId }: BacklinksPanelProps) {
@@ -34,20 +72,16 @@ export function BacklinksPanel({ noteId }: BacklinksPanelProps) {
           unlinkedMentions: Array.isArray(res.data?.unlinkedMentions) ? res.data.unlinkedMentions : [],
         });
       })
-      .catch(() => {
-        setData({ linkedMentions: [], unlinkedMentions: [] });
-      })
+      .catch(() => setData({ linkedMentions: [], unlinkedMentions: [] }))
       .finally(() => setLoading(false));
   }, [noteId]);
 
   if (loading) {
     return (
-      <div className="space-y-3 p-4">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-4 w-28 mt-4" />
-        <Skeleton className="h-12 w-full" />
+      <div className="space-y-4 p-5">
+        <Skeleton className="h-3 w-20 bg-white/5" />
+        <Skeleton className="h-10 w-full bg-white/5" />
+        <Skeleton className="h-10 w-full bg-white/5" />
       </div>
     );
   }
@@ -57,74 +91,18 @@ export function BacklinksPanel({ noteId }: BacklinksPanelProps) {
   const isEmpty = linked.length === 0 && unlinked.length === 0;
 
   return (
-    <div className="space-y-5 p-4">
-      {isEmpty && (
-        <div className="text-center py-8 space-y-2">
-          <Unlink className="w-5 h-5 text-muted-foreground/30 mx-auto" />
-          <p className="text-xs text-muted-foreground">
-            No connections found
+    <div className="space-y-8 p-5">
+      {isEmpty ? (
+        <div className="py-12 text-center">
+          <p className="font-serif text-base italic text-white/40">
+            Nothing references this note yet.
           </p>
         </div>
-      )}
-
-      {linked.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            <Link2 className="w-3 h-3" />
-            Linked Mentions
-          </div>
-          <div className="space-y-1">
-            {linked.map((item) => (
-              <Link
-                key={item.id}
-                to={`/notes/${item.id}`}
-                className="flex items-start gap-2 px-2 py-2 rounded-md hover:bg-accent transition-colors group"
-              >
-                <StickyNote className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                    {item.title}
-                  </p>
-                  {item.snippet && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {item.snippet}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {unlinked.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            <Unlink className="w-3 h-3" />
-            Unlinked Mentions
-          </div>
-          <div className="space-y-1">
-            {unlinked.map((item) => (
-              <Link
-                key={item.id}
-                to={`/notes/${item.id}`}
-                className="flex items-start gap-2 px-2 py-2 rounded-md hover:bg-accent transition-colors group"
-              >
-                <StickyNote className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                    {item.title}
-                  </p>
-                  {item.snippet && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {item.snippet}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+      ) : (
+        <>
+          <Section label="Linked" items={linked} kind="linked" />
+          <Section label="Unlinked" items={unlinked} kind="unlinked" />
+        </>
       )}
     </div>
   );

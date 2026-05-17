@@ -381,14 +381,13 @@ export default function NoteEditor() {
 
         {/* Backlinks panel (right column) */}
         {showBacklinks && id && (
-          <div className="w-72 border-l border-border/50 bg-card/50 overflow-auto hidden lg:block shrink-0">
-            <div className="px-4 py-3 border-b border-border/50">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Backlinks
-              </h3>
+          <aside className="hidden w-80 shrink-0 overflow-auto border-l border-white/10 bg-black/40 backdrop-blur-xl lg:block">
+            <div className="border-b border-white/10 px-5 py-4">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-white/40">References</p>
+              <h3 className="mt-1 font-serif text-lg text-white">Backlinks</h3>
             </div>
             <BacklinksPanel noteId={id} />
-          </div>
+          </aside>
         )}
       </div>
     </AppLayout>
