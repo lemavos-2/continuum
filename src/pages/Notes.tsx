@@ -1,156 +1,258 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { notesApi, foldersApi, vaultApi } from "@/lib/api";
+import { notesApi, vaultApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, StickyNote, Trash2, Loader2, Heart, Upload } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Loader2,
+  Bookmark,
+  BookmarkCheck,
+  Trash2,
+  Upload,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-interface NoteSummary { id: string; title: string; type?: string; folderId?: string; createdAt: string; updatedAt: string; content?: string; favorite?: boolean; }
-interface FolderItem { id: string; name: string; parentId?: string; }
-
-// Helper to get type badge colors
-function getTypeBadgeColor(type?: string): string {
-  if (!type) return "bg-white/5 text-white/70";
-  const hash = type.charCodeAt(0);
-  const colors = [
-    "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-    "bg-zinc-500/20 text-zinc-200 border border-zinc-500/30",
-  ];
-  return colors[hash % colors.length];
+interface NoteSummary {
+  id: string;
+  title: string;
+  type?: string;
+  folderId?: string;
+  createdAt: string;
+  updatedAt: string;
+  content?: unknown;
+  favorite?: boolean;
 }
 
-// Get preview of note content
-function getPreview(content?: string): string {
-  if (!content) return "No content";
-  const plain = content.replace(/<[^>]*>/g, "").trim();
-  return plain.slice(0, 80) + (plain.length > 80 ? "..." : "");
+type View = "all" | "favorites" | "recent" | "archived";
+
+const RECENT_WINDOW = 1000 * 60 * 60 * 24 * 7; // 7d
+const ARCHIVE_WINDOW = 1000 * 60 * 60 * 24 * 90; // 90d
+
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+
+function extractPreview(content: unknown): string {
+  if (!content) return "";
+  if (typeof content === "string") {
+    return content.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  }
+  const out: string[] = [];
+  const walk = (n: any) => {
+    if (!n || typeof n !== "object") return;
+    if (typeof n.text === "string") out.push(n.text);
+    if (Array.isArray(n.content)) n.content.forEach(walk);
+  };
+  walk(content);
+  return out.join(" ").replace(/\s+/g, " ").trim();
 }
+
+function monthKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonth(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(y, m - 1, 1);
+  return d.toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase();
+}
+
+function relativeDate(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const day = 86400000;
+  if (diff < day) return "today";
+  if (diff < day * 2) return "yesterday";
+  if (diff < day * 7) return `${Math.floor(diff / day)}d ago`;
+  if (diff < day * 30) return `${Math.floor(diff / (day * 7))}w ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/* ── Sidebar nav item ─────────────────────────────────────────────────── */
+
+interface NavItemProps {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}
+function NavItem({ label, count, active, onClick }: NavItemProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "group flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors",
+        active
+          ? "text-white"
+          : "text-white/45 hover:text-white/80"
+      )}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className={cn(
+            "h-px w-3 transition-all",
+            active ? "bg-white w-5" : "bg-white/20 group-hover:bg-white/40"
+          )}
+        />
+        {label}
+      </span>
+      <span className={cn("font-mono text-[10px] tabular-nums", active ? "text-white/60" : "text-white/30")}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
+/* ── Page ─────────────────────────────────────────────────────────────── */
 
 export default function Notes() {
-  const [notes, setNotes] = useState<NoteSummary[]>([]);
-  const [folders, setFolders] = useState<FolderItem[]>([]);
-  const [types, setTypes] = useState<string[]>([]);
-  const [search, setSearch] = useState("");
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [pendingDeleteNote, setPendingDeleteNote] = useState<NoteSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loading: authLoading } = useRequireAuth();
   const { canCreateNote, getLimitMessage, refresh, applyUsageDelta } = usePlanGate();
 
-  // Toggle favorite — persisted on backend
+  const [notes, setNotes] = useState<NoteSummary[]>([]);
+  const [types, setTypes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<View>("all");
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<NoteSummary | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Drag-drop upload to vault
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  /* Load */
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [notesRes, typesRes] = await Promise.all([notesApi.list(), notesApi.getTypes()]);
+      setNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
+      setTypes(Array.isArray(typesRes.data) ? typesRes.data : []);
+    } catch {
+      toast({ title: "Error loading archive", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  /* Mutations */
   const toggleFavorite = async (noteId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Optimistic update
-    setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !n.favorite } : n));
+    e.preventDefault();
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, favorite: !n.favorite } : n)));
     try {
       const { data } = await notesApi.toggleFavorite(noteId);
-      setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !!data.favorite } : n));
+      setNotes((prev) =>
+        prev.map((n) => (n.id === noteId ? { ...n, favorite: !!data.favorite } : n))
+      );
     } catch {
-      // Rollback
-      setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, favorite: !n.favorite } : n));
+      setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, favorite: !n.favorite } : n)));
       toast({ title: "Could not update favorite", variant: "destructive" });
     }
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const handleCreate = async () => {
+    if (!canCreateNote) {
+      setUpgradeOpen(true);
+      return;
+    }
     try {
-      const [notesRes, foldersRes, typesRes] = await Promise.all([notesApi.list(), foldersApi.list(), notesApi.getTypes()]);
-      setNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
-      setFolders(Array.isArray(foldersRes.data) ? foldersRes.data : []);
-      setTypes(Array.isArray(typesRes.data) ? typesRes.data : []);
-    } catch { toast({ title: "Error loading notes", variant: "destructive" }); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchData(); }, []);
-
-  if (authLoading) {
-    return (
-      <AppLayout>
-        <div className="flex justify-center items-center h-full">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  const handleCreateNote = async () => {
-    if (!canCreateNote) { setUpgradeOpen(true); return; }
-    try {
-      const { data } = await notesApi.create("New Note", "", selectedFolder || undefined);
+      const { data } = await notesApi.create("Untitled", "");
       applyUsageDelta({ notesCount: 1 });
       void refresh();
       navigate(`/notes/${data.id}`);
     } catch (err: any) {
       if (err.response?.status === 403) setUpgradeOpen(true);
-      else toast({ title: "Error", description: err.response?.data?.message || "Limit reached?", variant: "destructive" });
+      else toast({ title: "Error", description: err.response?.data?.message, variant: "destructive" });
     }
   };
 
-  const handleDeleteNote = (note: NoteSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPendingDeleteNote(note);
-  };
-
-  const confirmDeleteNote = async () => {
-    if (!pendingDeleteNote) return;
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
     try {
-      await notesApi.delete(pendingDeleteNote.id);
-      setNotes((prev) => prev.filter((n) => n.id !== pendingDeleteNote.id));
+      await notesApi.delete(pendingDelete.id);
+      setNotes((prev) => prev.filter((n) => n.id !== pendingDelete.id));
       applyUsageDelta({ notesCount: -1 });
       void refresh();
-      const typesRes = await notesApi.getTypes();
-      setTypes(Array.isArray(typesRes.data) ? typesRes.data : []);
     } catch {
       toast({ title: "Error deleting", variant: "destructive" });
     } finally {
-      setPendingDeleteNote(null);
+      setPendingDelete(null);
     }
   };
 
-  const filtered = notes
-    .sort((a, b) => {
-      // Favorites first
-      const aFav = !!a.favorite;
-      const bFav = !!b.favorite;
-      if (aFav !== bFav) return bFav ? 1 : -1;
-      // Then by date
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    })
-    .filter((n) => {
-      const matchSearch = n.title.toLowerCase().includes(search.toLowerCase());
-      const matchFolder = selectedFolder ? n.folderId === selectedFolder : true;
-      const matchType = selectedType ? n.type === selectedType : true;
-      return matchSearch && matchFolder && matchType;
+  /* Filter + group */
+  const counts = useMemo(() => {
+    const now = Date.now();
+    return {
+      all: notes.length,
+      favorites: notes.filter((n) => n.favorite).length,
+      recent: notes.filter((n) => now - new Date(n.updatedAt).getTime() < RECENT_WINDOW).length,
+      archived: notes.filter((n) => now - new Date(n.updatedAt).getTime() > ARCHIVE_WINDOW).length,
+      byType: types.reduce<Record<string, number>>((acc, t) => {
+        acc[t] = notes.filter((n) => n.type === t).length;
+        return acc;
+      }, {}),
+    };
+  }, [notes, types]);
+
+  const filtered = useMemo(() => {
+    const now = Date.now();
+    const q = search.trim().toLowerCase();
+    return notes
+      .filter((n) => {
+        if (selectedType && n.type !== selectedType) return false;
+        const age = now - new Date(n.updatedAt).getTime();
+        if (view === "favorites" && !n.favorite) return false;
+        if (view === "recent" && age >= RECENT_WINDOW) return false;
+        if (view === "archived" && age <= ARCHIVE_WINDOW) return false;
+        if (q) {
+          const hay = `${n.title} ${extractPreview(n.content)}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }, [notes, view, selectedType, search]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, NoteSummary[]>();
+    for (const n of filtered) {
+      const key = monthKey(new Date(n.updatedAt));
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(n);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  const toggleMonth = (key: string) => {
+    setCollapsedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
     });
+  };
 
-  // Count notes by type
-  const typeCounts = types.map((type) => ({
-    type,
-    count: notes.filter((n) => n.type === type).length,
-  }));
-
-  const limitMsg = getLimitMessage("notes");
-
-  // Drag & drop upload to Vault directly from Notes
-  const [dragActive, setDragActive] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  /* Drag-drop */
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     setUploading(true);
@@ -158,174 +260,287 @@ export default function Notes() {
       const form = new FormData();
       form.append("file", file);
       await vaultApi.upload(form);
-      toast({ title: "File uploaded", description: `${file.name} added to your Vault.` });
+      toast({ title: "Sent to Vault", description: file.name });
     } catch {
       toast({ title: "Upload failed", variant: "destructive" });
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+    }
   };
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); e.stopPropagation();
+  const dragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
   };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+  const dragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
   };
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-white/40" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const limitMsg = getLimitMessage("notes");
+  const viewLabel =
+    view === "all" ? "Archive" : view === "favorites" ? "Favorites" : view === "recent" ? "Recent" : "Dormant";
 
   return (
     <AppLayout>
       <div
-        className="px-6 lg:px-12 py-10 max-w-6xl mx-auto relative"
-        onDragEnter={handleDragOver}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        className="relative min-h-full"
+        onDragEnter={dragOver}
+        onDragOver={dragOver}
+        onDragLeave={dragLeave}
         onDrop={handleFileDrop}
       >
         {dragActive && (
-          <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-            <div className="border-2 border-dashed border-white/40 rounded-xl p-12 text-center">
-              <Upload className="w-8 h-8 mx-auto mb-3 text-white/80" />
-              <p className="text-white text-sm">Drop file to upload to Vault</p>
+          <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="rounded-md border border-dashed border-white/30 px-10 py-8 text-center">
+              <Upload className="mx-auto mb-3 h-6 w-6 text-white/70" />
+              <p className="text-sm text-white/80">Release to save in Vault</p>
             </div>
           </div>
         )}
         {uploading && (
-          <div className="fixed top-4 right-4 z-50 bg-card border border-border rounded-md px-3 py-2 flex items-center gap-2 text-xs">
-            <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+          <div className="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-md border border-white/10 bg-black/90 px-3 py-2 text-[11px] text-white/70 backdrop-blur-xl">
+            <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
           </div>
         )}
 
-        {/* Header — same pattern as /entities */}
-        <header className="flex items-end justify-between border-b border-white/10 pb-6 mb-8">
-          <div>
-            <p className="label-caps mb-2">Index</p>
-            <h1 className="font-serif text-5xl tracking-tight">Notes</h1>
-            <p className="mt-2 text-sm text-white/50">
-              {limitMsg || "Your thoughts, written down. Drag any file here to send it to Vault."}
-            </p>
-          </div>
-          <button
-            onClick={handleCreateNote}
-            className="btn-primary"
-            disabled={!canCreateNote && canCreateNote !== undefined}
-          >
-            <Plus className="w-4 h-4" /> New note
-          </button>
-        </header>
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-10 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
+          {/* ─── Sidebar ─────────────────────────────────────────── */}
+          <aside className="lg:sticky lg:top-16 lg:w-52 lg:shrink-0 lg:self-start">
+            <div className="space-y-7">
+              <div>
+                <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Index</p>
+                <div className="space-y-0.5">
+                  <NavItem label="Archive" count={counts.all} active={view === "all"} onClick={() => setView("all")} />
+                  <NavItem label="Recent" count={counts.recent} active={view === "recent"} onClick={() => setView("recent")} />
+                  <NavItem
+                    label="Favorites"
+                    count={counts.favorites}
+                    active={view === "favorites"}
+                    onClick={() => setView("favorites")}
+                  />
+                  <NavItem
+                    label="Dormant"
+                    count={counts.archived}
+                    active={view === "archived"}
+                    onClick={() => setView("archived")}
+                  />
+                </div>
+              </div>
 
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="lg:w-44 lg:shrink-0 space-y-4">
-            
-            {/* Types section */}
-            <div>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-3">Types</h3>
-              <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+              {types.length > 0 && (
+                <div>
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Types</p>
+                  <div className="space-y-0.5">
+                    <NavItem
+                      label="All types"
+                      count={counts.all}
+                      active={!selectedType}
+                      onClick={() => setSelectedType(null)}
+                    />
+                    {types.map((t) => (
+                      <NavItem
+                        key={t}
+                        label={t}
+                        count={counts.byType[t] || 0}
+                        active={selectedType === t}
+                        onClick={() => setSelectedType(t)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* ─── Main ────────────────────────────────────────────── */}
+          <main className="min-w-0 flex-1">
+            {/* Header */}
+            <header className="mb-8">
+              <div className="flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{viewLabel}</p>
+                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">Notes</h1>
+                </div>
                 <button
-                  onClick={() => setSelectedType(null)}
-                  className={cn(
-                    "flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all shrink-0",
-                    !selectedType ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
+                  onClick={handleCreate}
+                  className="group flex shrink-0 items-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white/80 transition-colors hover:border-white/40 hover:text-white"
                 >
-                  All Types
+                  <Plus className="h-3.5 w-3.5" /> New entry
                 </button>
-                {types.length > 0 ? (
-                  types.map((type) => {
-                    const count = typeCounts.find((t) => t.type === type)?.count || 0;
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => setSelectedType(type)}
-                        className={cn(
-                          "flex items-center justify-between gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm transition-all w-full",
-                          selectedType === type ? "bg-white/10 text-white font-medium" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                        )}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="text-xs">#</span> {type}
-                        </span>
-                        <span className="text-xs font-semibold bg-white/10 px-2 py-0.5 rounded">{count}</span>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <p className="text-xs text-muted-foreground px-3 py-1">No types yet. Add types to your notes to filter here.</p>
-                )}
+              </div>
+              {limitMsg && <p className="mt-3 text-xs text-white/40">{limitMsg}</p>}
+            </header>
+
+            {/* Sticky search */}
+            <div className="sticky top-14 z-10 -mx-4 mb-10 border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Navigate your memory…"
+                  className="w-full border-0 bg-transparent pl-6 text-sm text-white placeholder:italic placeholder:text-white/30 focus:outline-none focus:ring-0"
+                />
               </div>
             </div>
-          </div>
 
-          <div className="flex-1 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search notes..." className="pl-9 bg-accent border-border/50" />
-            </div>
-
+            {/* Content */}
             {loading ? (
-              <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-16 space-y-2">
-                <StickyNote className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-                <p className="text-muted-foreground text-sm">No notes found</p>
+              <div className="flex justify-center py-24">
+                <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+              </div>
+            ) : grouped.length === 0 ? (
+              <div className="py-24 text-center">
+                <p className="font-serif text-2xl italic text-white/40">
+                  {search
+                    ? "Nothing matches that search."
+                    : view === "favorites"
+                      ? "You haven't pinned anything yet."
+                      : view === "recent"
+                        ? "Nothing written in the last few days."
+                        : view === "archived"
+                          ? "No dormant entries — your archive is alive."
+                          : "Your archive is still empty."}
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map((note) => (
-                  <div
-                    key={note.id}
-                    onClick={() => navigate(`/notes/${note.id}`)}
-                    className="group relative p-4 rounded-xl cursor-pointer transition-all borders-white/10 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 hover:shadow-lg min-h-40 flex flex-col"
-                  >
-                    {/* Header with favorite button */}
-                    <div className="flex items-start justify-between mb-3 gap-2">
-                      <h3 className="text-sm font-semibold text-white/90 line-clamp-2 flex-1">{note.title || "Untitled"}</h3>
+              <div className="space-y-12">
+                {grouped.map(([key, items]) => {
+                  const collapsed = collapsedMonths.has(key);
+                  return (
+                    <section key={key}>
                       <button
-                        onClick={(e) => toggleFavorite(note.id, e)}
-                        className="flex-shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/10"
+                        onClick={() => toggleMonth(key)}
+                        className="group mb-5 flex w-full items-center justify-between border-b border-white/10 pb-2 text-left"
                       >
-                        <Heart className={cn("w-4 h-4", note.favorite ? "fill-zinc-400 text-zinc-400" : "text-white/40 hover:text-white/60")} />
+                        <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-white/40 group-hover:text-white/70">
+                          {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          {formatMonth(key)}
+                        </span>
+                        <span className="font-mono text-[10px] text-white/30 tabular-nums">
+                          {items.length} {items.length === 1 ? "entry" : "entries"}
+                        </span>
                       </button>
-                    </div>
 
-                    {/* Type badge */}
-                    {note.type && (
-                      <div className={cn("inline-block text-xs font-medium px-2 py-1 rounded mb-3 w-fit", getTypeBadgeColor(note.type))}>
-                        {note.type}
-                      </div>
-                    )}
+                      {!collapsed && (
+                        <ul className="divide-y divide-white/[0.06]">
+                          {items.map((note) => {
+                            const preview = extractPreview(note.content);
+                            return (
+                              <li key={note.id}>
+                                <button
+                                  onClick={() => navigate(`/notes/${note.id}`)}
+                                  className="group relative flex w-full items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02]"
+                                >
+                                  {/* Hover accent line */}
+                                  <span
+                                    aria-hidden
+                                    className="absolute left-0 top-1/2 h-8 w-px -translate-x-3 -translate-y-1/2 bg-white opacity-0 transition-opacity group-hover:opacity-100"
+                                  />
 
-                    {/* Preview */}
-                    <p className="text-xs text-white/50 line-clamp-2 mb-auto flex-1">{getPreview(note.content)}</p>
+                                  {/* Date column */}
+                                  <div className="hidden w-20 shrink-0 pt-1 sm:block">
+                                    <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
+                                      {relativeDate(note.updatedAt)}
+                                    </p>
+                                  </div>
 
-                    {/* Footer with date and delete */}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
-                      <span className="text-xs text-white/40">{new Date(note.updatedAt).toLocaleDateString("en-US")}</span>
-                      <button
-                        onClick={(e) => handleDeleteNote(note, e)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-zinc-500/20"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-zinc-400/60 hover:text-zinc-400" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                                  {/* Content */}
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className="font-serif text-xl leading-snug text-white/90 transition-colors group-hover:text-white">
+                                      {note.title || "Untitled"}
+                                    </h3>
+                                    {preview && (
+                                      <p className="mt-1 line-clamp-1 text-sm text-white/45">{preview}</p>
+                                    )}
+                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/35">
+                                      {note.type && (
+                                        <span className="uppercase tracking-[0.18em]">{note.type}</span>
+                                      )}
+                                      <span className="sm:hidden">{relativeDate(note.updatedAt)}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Actions */}
+                                  <div className="flex shrink-0 items-center gap-1 pt-1">
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={(e) => toggleFavorite(note.id, e)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                          e.preventDefault();
+                                          toggleFavorite(note.id, e as unknown as React.MouseEvent);
+                                        }
+                                      }}
+                                      className={cn(
+                                        "cursor-pointer rounded-sm p-1.5 transition-colors",
+                                        note.favorite
+                                          ? "text-white"
+                                          : "text-white/20 opacity-0 hover:text-white/70 group-hover:opacity-100"
+                                      )}
+                                      aria-label={note.favorite ? "Unfavorite" : "Favorite"}
+                                    >
+                                      {note.favorite ? (
+                                        <BookmarkCheck className="h-3.5 w-3.5 fill-current" />
+                                      ) : (
+                                        <Bookmark className="h-3.5 w-3.5" />
+                                      )}
+                                    </span>
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        setPendingDelete(note);
+                                      }}
+                                      className="cursor-pointer rounded-sm p-1.5 text-white/20 opacity-0 transition hover:text-white/70 group-hover:opacity-100"
+                                      aria-label="Delete"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </span>
+                                  </div>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
             )}
-          </div>
+          </main>
         </div>
       </div>
+
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="You've reached the notes limit for your plan." />
       <ConfirmDialog
-        open={!!pendingDeleteNote}
-        onOpenChange={(open) => !open && setPendingDeleteNote(null)}
-        title="Delete note?"
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Remove this entry?"
         description={
-          pendingDeleteNote
-            ? `${pendingDeleteNote.title || "Untitled"} will be permanently removed.`
+          pendingDelete
+            ? `"${pendingDelete.title || "Untitled"}" will be permanently removed from your archive.`
             : "This action cannot be undone."
         }
-        confirmText="Delete"
+        confirmText="Remove"
         destructive
-        onConfirm={confirmDeleteNote}
+        onConfirm={confirmDelete}
       />
     </AppLayout>
   );
