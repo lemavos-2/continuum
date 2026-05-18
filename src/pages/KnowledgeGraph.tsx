@@ -32,6 +32,9 @@ interface GraphNode {
   degree: number;
   recent?: boolean;
   createdAt?: string;
+  periodKey?: string;
+  periodX?: number;
+  periodY?: number;
 }
 
 interface GraphEdge {
