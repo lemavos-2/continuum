@@ -163,9 +163,9 @@ export function SessionNavBar() {
               <button
                 type="button"
                 onClick={() => {
-                  // Trigger CMD+K command palette
-                  window.dispatchEvent(
-                    new KeyboardEvent("keydown", { key: "k", metaKey: true, ctrlKey: true }),
+                  // Trigger Ctrl+K command palette (dispatch on document so listeners on document receive it)
+                  document.dispatchEvent(
+                    new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true, cancelable: true }),
                   );
                 }}
                 className="flex h-9 w-full items-center rounded-md px-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
@@ -179,7 +179,7 @@ export function SessionNavBar() {
                   variants={labelVariants}
                   className="ml-auto rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500"
                 >
-                  {!isCollapsed && "⌘K"}
+                  {!isCollapsed && "Ctrl+K"}
                 </motion.span>
               </button>
 

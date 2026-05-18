@@ -64,7 +64,7 @@ export default function Subscription() {
     <AppLayout>
       <div className="w-full">
         {sub && (
-          <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-2 relative z-50 mb-8">
+          <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-2 relative z-10 mb-8">
             <div className="bento-card p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

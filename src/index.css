@@ -135,19 +135,19 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-medium text-sm transition-colors duration-150;
-    background-color: #fff;
-    color: #000;
-    border: 1px solid #fff;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-sm font-medium text-[11px] uppercase tracking-[0.22em] transition-colors duration-150;
+    background-color: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
   }
-  .btn-primary:hover { background: #e6e6e6; }
+  .btn-primary:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-medium text-sm transition-colors duration-150;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-sm font-medium text-[11px] uppercase tracking-[0.22em] transition-colors duration-150;
     background-color: transparent;
     color: #fff;
-    border: 1px solid hsl(0 0% 100% / 0.16);
+    border: 1px solid rgba(255,255,255,0.16);
   }
   .btn-secondary:hover { background: hsl(0 0% 100% / 0.06); border-color: hsl(0 0% 100% / 0.32); }
 

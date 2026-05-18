@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { Button } from "@/components/ui/button";
 import { notesApi, vaultApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -411,12 +412,9 @@ export default function Notes() {
                   >
                     <SlidersHorizontal className="h-3.5 w-3.5" />
                   </button>
-                  <button
-                    onClick={handleCreate}
-                    className="group flex items-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white/80 transition-colors hover:border-white/40 hover:text-white"
-                  >
+                  <Button onClick={handleCreate} className="gap-2">
                     <Plus className="h-3.5 w-3.5" /> New entry
-                  </button>
+                  </Button>
                 </div>
               </div>
               {limitMsg && <p className="mt-3 text-xs text-white/40">{limitMsg}</p>}
