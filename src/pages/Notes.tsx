@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { notesApi, vaultApi } from "@/lib/api";
@@ -16,7 +16,9 @@ import {
   Upload,
   ChevronDown,
   ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -127,10 +129,28 @@ export default function Notes() {
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<NoteSummary | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Drag-drop upload to vault
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Edge swipe to open mobile filter drawer
+  const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const onSwipeStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (t.clientX > 32) return; // only left edge
+    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s = swipeRef.current;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = Math.abs(t.clientY - s.y);
+    if (dx > 60 && dy < 60 && Date.now() - s.t < 600) setFilterDrawerOpen(true);
+    swipeRef.current = null;
+  };
 
   /* Load */
   const fetchData = async () => {
@@ -292,6 +312,43 @@ export default function Notes() {
   const viewLabel =
     view === "all" ? "Archive" : view === "favorites" ? "Favorites" : view === "recent" ? "Recent" : "Dormant";
 
+  const SidebarContent = (
+    <div className="space-y-7">
+      <div>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Index</p>
+        <div className="space-y-0.5">
+          <NavItem label="Archive" count={counts.all} active={view === "all"} onClick={() => { setView("all"); setFilterDrawerOpen(false); }} />
+          <NavItem label="Recent" count={counts.recent} active={view === "recent"} onClick={() => { setView("recent"); setFilterDrawerOpen(false); }} />
+          <NavItem label="Favorites" count={counts.favorites} active={view === "favorites"} onClick={() => { setView("favorites"); setFilterDrawerOpen(false); }} />
+          <NavItem label="Dormant" count={counts.archived} active={view === "archived"} onClick={() => { setView("archived"); setFilterDrawerOpen(false); }} />
+        </div>
+      </div>
+
+      {types.length > 0 && (
+        <div>
+          <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Types</p>
+          <div className="space-y-0.5">
+            <NavItem
+              label="All types"
+              count={counts.all}
+              active={!selectedType}
+              onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
+            />
+            {types.map((t) => (
+              <NavItem
+                key={t}
+                label={t}
+                count={counts.byType[t] || 0}
+                active={selectedType === t}
+                onClick={() => { setSelectedType(t); setFilterDrawerOpen(false); }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <AppLayout>
       <div
@@ -300,6 +357,8 @@ export default function Notes() {
         onDragOver={dragOver}
         onDragLeave={dragLeave}
         onDrop={handleFileDrop}
+        onTouchStart={onSwipeStart}
+        onTouchEnd={onSwipeEnd}
       >
         {dragActive && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -315,53 +374,24 @@ export default function Notes() {
           </div>
         )}
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-10 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
-          {/* ─── Sidebar ─────────────────────────────────────────── */}
-          <aside className="lg:sticky lg:top-16 lg:w-52 lg:shrink-0 lg:self-start">
-            <div className="space-y-7">
-              <div>
-                <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Index</p>
-                <div className="space-y-0.5">
-                  <NavItem label="Archive" count={counts.all} active={view === "all"} onClick={() => setView("all")} />
-                  <NavItem label="Recent" count={counts.recent} active={view === "recent"} onClick={() => setView("recent")} />
-                  <NavItem
-                    label="Favorites"
-                    count={counts.favorites}
-                    active={view === "favorites"}
-                    onClick={() => setView("favorites")}
-                  />
-                  <NavItem
-                    label="Dormant"
-                    count={counts.archived}
-                    active={view === "archived"}
-                    onClick={() => setView("archived")}
-                  />
-                </div>
-              </div>
+        {/* Edge swipe hint (mobile only) */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed left-0 top-1/2 z-20 hidden h-24 w-[3px] -translate-y-1/2 rounded-r bg-white/15 max-lg:block"
+        />
 
-              {types.length > 0 && (
-                <div>
-                  <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Types</p>
-                  <div className="space-y-0.5">
-                    <NavItem
-                      label="All types"
-                      count={counts.all}
-                      active={!selectedType}
-                      onClick={() => setSelectedType(null)}
-                    />
-                    {types.map((t) => (
-                      <NavItem
-                        key={t}
-                        label={t}
-                        count={counts.byType[t] || 0}
-                        active={selectedType === t}
-                        onClick={() => setSelectedType(t)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* Mobile filter drawer */}
+        <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+          <SheetContent side="left" className="w-[280px] border-white/10 bg-black/95 p-6">
+            <p className="mb-6 font-serif text-2xl text-white">Filters</p>
+            {SidebarContent}
+          </SheetContent>
+        </Sheet>
+
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-10 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
+          {/* ─── Sidebar (desktop only) ──────────────────────────── */}
+          <aside className="hidden lg:sticky lg:top-16 lg:block lg:w-52 lg:shrink-0 lg:self-start">
+            {SidebarContent}
           </aside>
 
           {/* ─── Main ────────────────────────────────────────────── */}
@@ -373,12 +403,21 @@ export default function Notes() {
                   <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{viewLabel}</p>
                   <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">Notes</h1>
                 </div>
-                <button
-                  onClick={handleCreate}
-                  className="group flex shrink-0 items-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white/80 transition-colors hover:border-white/40 hover:text-white"
-                >
-                  <Plus className="h-3.5 w-3.5" /> New entry
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => setFilterDrawerOpen(true)}
+                    className="grid h-9 w-9 place-items-center rounded-sm border border-white/15 text-white/80 transition-colors hover:border-white/40 hover:text-white lg:hidden"
+                    aria-label="Open filters"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={handleCreate}
+                    className="group flex items-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white/80 transition-colors hover:border-white/40 hover:text-white"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> New entry
+                  </button>
+                </div>
               </div>
               {limitMsg && <p className="mt-3 text-xs text-white/40">{limitMsg}</p>}
             </header>

@@ -1,5 +1,0 @@
-[run]
-build = "npm run build"
-
-[deploy]
-publish = "dist"

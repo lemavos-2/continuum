@@ -32,6 +32,9 @@ interface GraphNode {
   degree: number;
   recent?: boolean;
   createdAt?: string;
+  periodKey?: string;
+  periodX?: number;
+  periodY?: number;
 }
 
 interface GraphEdge {
@@ -138,6 +141,8 @@ export default function KnowledgeGraph() {
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "30d">("all");
   const [legendOpen, setLegendOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [clusterByPeriod, setClusterByPeriod] = useState(true);
 
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
@@ -164,6 +169,8 @@ export default function KnowledgeGraph() {
   const sizeRef = useRef({ w: 0, h: 0 });
   const pinchRef = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   const tappedAtRef = useRef(0);
+  const focusModeRef = useRef(false);
+  const clusterRef = useRef(true);
 
   useEffect(() => { selectedRef.current = selectedNode; alphaRef.current = Math.max(alphaRef.current, 0.3); }, [selectedNode]);
   useEffect(() => { hoveredRef.current = hoveredNode; }, [hoveredNode]);
@@ -172,6 +179,9 @@ export default function KnowledgeGraph() {
   useEffect(() => { showLabelsRef.current = showLabels; }, [showLabels]);
   useEffect(() => { showEdgesRef.current = showEdges; }, [showEdges]);
   useEffect(() => { timeFilterRef.current = timeFilter; alphaRef.current = Math.max(alphaRef.current, 0.4); }, [timeFilter]);
+
+  useEffect(() => { focusModeRef.current = focusMode; alphaRef.current = Math.max(alphaRef.current, 0.3); }, [focusMode]);
+  useEffect(() => { clusterRef.current = clusterByPeriod; alphaRef.current = 0.8; }, [clusterByPeriod]);
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
@@ -235,6 +245,7 @@ export default function KnowledgeGraph() {
     const idealLen = 110;
     const damping = 0.86;
     const centerForce = 0.010;
+    const periodPull = clusterRef.current ? 0.025 : 0;
     const alpha = alphaRef.current;
 
     // Bounding box
@@ -250,10 +261,15 @@ export default function KnowledgeGraph() {
     const root = makeQuad(minX - pad, minY - pad, w, w);
     for (const n of nodes) quadInsert(root, n);
 
-    // Repulsion via quadtree
+    // Repulsion via quadtree + period pull
     for (const n of nodes) {
-      n.vx -= n.x * centerForce;
-      n.vy -= n.y * centerForce;
+      if (periodPull > 0 && n.periodX !== undefined && n.periodY !== undefined) {
+        n.vx += (n.periodX - n.x) * periodPull;
+        n.vy += (n.periodY - n.y) * periodPull;
+      } else {
+        n.vx -= n.x * centerForce;
+        n.vy -= n.y * centerForce;
+      }
       quadForce(root, n, 0.9, repulsion);
     }
 
@@ -311,6 +327,8 @@ export default function KnowledgeGraph() {
     const sq = searchRef.current;
     const showL = showLabelsRef.current;
 
+    const focusOn = focusModeRef.current && hasSelection;
+
     // Edges
     if (showEdgesRef.current) {
       ctx.lineCap = "round";
@@ -318,6 +336,7 @@ export default function KnowledgeGraph() {
         const a = nodeMap.get(e.source), b = nodeMap.get(e.target);
         if (!a || !b) continue;
         if (!isNodeVisible(a) || !isNodeVisible(b)) continue;
+        if (focusOn && !(neighbors.has(e.source) && neighbors.has(e.target))) continue;
         const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
         if (hasSelection && !isHighlighted) {
           ctx.strokeStyle = "hsla(0,0%,100%,0.025)";
@@ -340,6 +359,7 @@ export default function KnowledgeGraph() {
 
     // Nodes
     for (const n of nodes) {
+      if (focusOn && !neighbors.has(n.id)) continue;
       const visible = isNodeVisible(n);
       const r = (BASE_RADIUS[n.type] || 5) + Math.min(8, n.degree * 0.6);
       const color = TYPE_COLORS[n.type] || "hsl(0,0%,40%)";
@@ -445,7 +465,7 @@ export default function KnowledgeGraph() {
         return;
       }
 
-      // Degree map + adjacency
+      // Degree map + adjacency (build full adj for selection neighbors)
       const degree = new Map<string, number>();
       const adj = new Map<string, Set<string>>();
       for (const e of rawEdges as GraphEdge[]) {
@@ -458,31 +478,71 @@ export default function KnowledgeGraph() {
       }
       adjRef.current = adj;
 
+      // Reduce edges: cap per-node degree to top-N strongest connections
+      // (a node only keeps its 6 most-connected partners visually)
+      const MAX_EDGES_PER_NODE = 6;
+      const keptCount = new Map<string, number>();
+      const sortedEdges = [...(rawEdges as GraphEdge[])].sort((a, b) => {
+        const da = (degree.get(a.source) || 0) + (degree.get(a.target) || 0);
+        const db = (degree.get(b.source) || 0) + (degree.get(b.target) || 0);
+        return db - da;
+      });
+      const prunedEdges: GraphEdge[] = [];
+      for (const e of sortedEdges) {
+        const s = keptCount.get(e.source) || 0;
+        const t = keptCount.get(e.target) || 0;
+        if (s >= MAX_EDGES_PER_NODE || t >= MAX_EDGES_PER_NODE) continue;
+        keptCount.set(e.source, s + 1);
+        keptCount.set(e.target, t + 1);
+        prunedEdges.push(e);
+      }
+
       const entityMap = new Map(entities.map(e => [e.id, e]));
       const recentLimit = Date.now() - 7 * 86400000;
+
+      // Compute period (month) centers along a horizontal timeline
+      const monthOf = (iso?: string) => {
+        if (!iso) return "unknown";
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return "unknown";
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      };
+      const allMonths = Array.from(new Set(rawNodes.map((n: any) => {
+        const ent = entityMap.get(n.id);
+        return monthOf(ent?.createdAt);
+      }))).sort() as string[];
+      const monthIndex = new Map<string, number>();
+      allMonths.forEach((m: string, i: number) => monthIndex.set(m, i));
+      const monthCount = Math.max(1, allMonths.length);
+      const spacingX = 360;
 
       const nextNodes: GraphNode[] = rawNodes.map((n: any, i: number) => {
         const ent = entityMap.get(n.id);
         const createdAt = ent?.createdAt;
-        const angle = (i / rawNodes.length) * Math.PI * 2;
-        const radius = Math.sqrt(rawNodes.length) * 25;
+        const periodKey = monthOf(createdAt);
+        const idx = monthIndex.get(periodKey) ?? 0;
+        const periodX = (idx - (monthCount - 1) / 2) * spacingX;
+        const periodY = (Math.sin(i * 0.7) * 0.5) * 220;
         return {
           id: n.id,
           label: n.label,
           type: String(n.type),
-          x: Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
-          y: Math.sin(angle) * radius + (Math.random() - 0.5) * 40,
+          x: periodX + (Math.random() - 0.5) * 160,
+          y: periodY + (Math.random() - 0.5) * 160,
           vx: 0,
           vy: 0,
           degree: degree.get(n.id) || 0,
           createdAt,
+          periodKey,
+          periodX,
+          periodY,
           recent: createdAt ? new Date(createdAt).getTime() > recentLimit : false,
         };
       });
 
       nodesRef.current = nextNodes;
-      edgesRef.current = rawEdges as GraphEdge[];
-      setGraphStats({ nodes: nextNodes.length, edges: (rawEdges as GraphEdge[]).length });
+      edgesRef.current = prunedEdges;
+      setGraphStats({ nodes: nextNodes.length, edges: prunedEdges.length });
       alphaRef.current = 1;
 
       // Center view
@@ -791,6 +851,23 @@ export default function KnowledgeGraph() {
               >
                 <ZoomOut className="h-4 w-4" />
               </button>
+              <button
+                type="button"
+                onClick={() => setFocusMode(f => !f)}
+                className={`grid h-10 w-10 place-items-center rounded-full border bg-black/80 text-white transition ${focusMode ? "border-white/60 bg-white/15" : "border-white/10 hover:bg-white/10"}`}
+                aria-label="Toggle focus mode"
+                title="Focus mode"
+              >
+                {focusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOptionsOpen(true)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10 sm:hidden"
+                aria-label="Open graph options"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
@@ -898,6 +975,18 @@ export default function KnowledgeGraph() {
                       >
                         {legendOpen ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
                         {legendOpen ? "Legend on" : "Legend off"}
+                      </button>
+                      <button
+                        onClick={() => setClusterByPeriod(prev => !prev)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${clusterByPeriod ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {clusterByPeriod ? "Period clusters on" : "Period clusters off"}
+                      </button>
+                      <button
+                        onClick={() => setFocusMode(prev => !prev)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${focusMode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {focusMode ? "Focus on" : "Focus off"}
                       </button>
                     </div>
                   </div>
