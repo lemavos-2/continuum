@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowUpRight, Calendar, Link2, Network, StickyNote, X, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +98,8 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                   : "",
             createdAt: noteData.createdAt || "",
             updatedAt: noteData.updatedAt || noteData.createdAt || "",
+            // preserve custom note type for inspector UI
+            noteType: typeof noteData.type === "string" ? noteData.type : "",
           } satisfies InspectableNote);
           setResolvedFromApi(true);
           return;
@@ -145,6 +148,8 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   if (!entity) {
     return null;
   }
+
+  const { toast } = useToast();
 
   const displayEntity = resolvedEntity || entity;
   const config = ENTITY_TYPE_CONFIG[displayEntity.type] || ENTITY_TYPE_CONFIG.TOPIC;
@@ -247,6 +252,37 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                               </span>
                               <span>{formatDate((displayEntity as InspectableNote).updatedAt)}</span>
                             </div>
+                              {/* Note Type display + clear action */}
+                              {displayEntity?.noteType ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Tag className="h-3.5 w-3.5" />
+                                    Note Type
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-foreground">{(displayEntity as any).noteType}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={async () => {
+                                        try {
+                                          setLoading(true);
+                                          await notesApi.update(displayEntity.id, { type: "" });
+                                          // update local state
+                                          setResolvedEntity((prev) => prev ? ({ ...prev, noteType: "" } as any) : prev);
+                                          toast({ title: "Type removed" });
+                                        } catch {
+                                          toast({ title: "Failed to remove type", variant: "destructive" });
+                                        } finally {
+                                          setLoading(false);
+                                        }
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : null}
                           </div>
                         </CardContent>
                       </Card>

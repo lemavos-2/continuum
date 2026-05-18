@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Loader2, Check, PanelRight, PanelRightClose, Settings, Paperclip } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Check, PanelRight, PanelRightClose, Settings, Paperclip, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TiptapEditor, type TiptapEditorHandle } from "@/components/TiptapEditor";
 import { BacklinksPanel } from "@/components/BacklinksPanel";
@@ -264,7 +264,7 @@ export default function NoteEditor() {
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="note-type">Note Type (optional)</Label>
-                      <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                         <div className="flex-1">
                           {availableTypes.length > 0 ? (
                             <Select value={type} onValueChange={handleTypeChange}>
@@ -288,6 +288,21 @@ export default function NoteEditor() {
                             placeholder="Or create new..."
                             maxLength={100}
                           />
+                        </div>
+                        {/* Clear type button */}
+                        <div className="ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (!note?.id) return;
+                              setType("");
+                              scheduleAutoSave(title, currentJSON.current, "");
+                            }}
+                            title="Clear type"
+                          >
+                            <X className="w-4 h-4 text-muted-foreground" />
+                          </Button>
                         </div>
                       </div>
                     </div>
