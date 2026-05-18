@@ -6,13 +6,11 @@ import {
   Loader2,
   ZoomIn,
   ZoomOut,
-  Maximize2,
   Brain,
   Search,
   Settings,
   Eye,
   EyeOff,
-  Spline,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +28,7 @@ interface GraphNode {
   vx: number;
   vy: number;
   degree: number;
+  mass: number;
   recent?: boolean;
   createdAt?: string;
   periodKey?: string;
@@ -42,15 +41,14 @@ interface GraphEdge {
   target: string;
 }
 
-// Monochrome palette — different greys per type, no rainbow.
-// Notes pop slightly brighter; people/topics sit calmer.
+// Paleta estilo Obsidian (Monocromática, limpa e com bom contraste)
 const TYPE_COLORS: Record<string, string> = {
-  NOTE: "hsl(0, 0%, 96%)",
-  ACTIVITY: "hsl(0, 0%, 78%)",
-  PERSON: "hsl(0, 0%, 70%)",
-  PROJECT: "hsl(0, 0%, 88%)",
-  TOPIC: "hsl(0, 0%, 60%)",
-  ORGANIZATION: "hsl(0, 0%, 50%)",
+  NOTE: "hsl(0, 0%, 85%)",
+  ACTIVITY: "hsl(0, 0%, 65%)",
+  PERSON: "hsl(0, 0%, 60%)",
+  PROJECT: "hsl(0, 0%, 75%)",
+  TOPIC: "hsl(0, 0%, 50%)",
+  ORGANIZATION: "hsl(0, 0%, 45%)",
 };
 const HIGHLIGHT_COLOR = "hsl(0, 0%, 100%)";
 
@@ -64,10 +62,10 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const BASE_RADIUS: Record<string, number> = {
-  NOTE: 5, ACTIVITY: 6, PERSON: 6, PROJECT: 7, TOPIC: 6, ORGANIZATION: 7,
+  NOTE: 4, ACTIVITY: 5, PERSON: 5, PROJECT: 6, TOPIC: 5, ORGANIZATION: 6,
 };
 
-// ── Barnes-Hut quadtree (mutable for perf) ──────────────────────────────
+// ── Barnes-Hut quadtree otimizado (Massa baseada em conexões) ────────
 interface QuadNode {
   x: number; y: number; w: number; h: number;
   cx: number; cy: number; mass: number;
@@ -82,11 +80,10 @@ function makeQuad(x: number, y: number, w: number, h: number): QuadNode {
 function quadInsert(q: QuadNode, n: GraphNode, depth = 0) {
   if (depth > 16) return;
   if (q.mass === 0 && q.node === null) {
-    q.node = n; q.cx = n.x; q.cy = n.y; q.mass = 1;
+    q.node = n; q.cx = n.x; q.cy = n.y; q.mass = n.mass;
     return;
   }
   if (q.children === null) {
-    // subdivide
     const hw = q.w / 2, hh = q.h / 2;
     q.children = [
       makeQuad(q.x, q.y, hw, hh),
@@ -100,9 +97,9 @@ function quadInsert(q: QuadNode, n: GraphNode, depth = 0) {
       quadInsert(q.children[idx]!, old, depth + 1);
     }
   }
-  q.cx = (q.cx * q.mass + n.x) / (q.mass + 1);
-  q.cy = (q.cy * q.mass + n.y) / (q.mass + 1);
-  q.mass += 1;
+  q.cx = (q.cx * q.mass + n.x * n.mass) / (q.mass + n.mass);
+  q.cy = (q.cy * q.mass + n.y * n.mass) / (q.mass + n.mass);
+  q.mass += n.mass;
   const hw = q.w / 2, hh = q.h / 2;
   const idx = (n.x >= q.x + hw ? 1 : 0) + (n.y >= q.y + hh ? 2 : 0);
   quadInsert(q.children[idx]!, n, depth + 1);
@@ -113,9 +110,10 @@ function quadForce(q: QuadNode, n: GraphNode, theta: number, repulsion: number) 
   if (q.node === n) return;
   const dx = q.cx - n.x;
   const dy = q.cy - n.y;
-  const d2 = dx * dx + dy * dy + 0.01;
+  const d2 = dx * dx + dy * dy + 1; // +1 evita divisão por zero
   if (q.children === null || (q.w * q.w) / d2 < theta * theta) {
     const dist = Math.sqrt(d2);
+    // Repulsão escala com a massa do cluster
     const force = (repulsion * q.mass) / d2;
     n.vx -= (dx / dist) * force;
     n.vy -= (dy / dist) * force;
@@ -142,12 +140,13 @@ export default function KnowledgeGraph() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [clusterByPeriod, setClusterByPeriod] = useState(true);
+  // Default false para formação orgânica estilo Obsidian
+  const [clusterByPeriod, setClusterByPeriod] = useState(false); 
 
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
 
-  // Refs (avoid re-renders during simulation)
+  // Refs mutáveis para o loop de animação
   const nodesRef = useRef<GraphNode[]>([]);
   const edgesRef = useRef<GraphEdge[]>([]);
   const adjRef = useRef<Map<string, Set<string>>>(new Map());
@@ -157,7 +156,8 @@ export default function KnowledgeGraph() {
   const panningRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0 });
   const animFrameRef = useRef<number>(0);
-  const alphaRef = useRef(1);
+  const alphaRef = useRef(1); // Temperatura da simulação
+  
   const selectedRef = useRef<GraphNode | null>(null);
   const hoveredRef = useRef<GraphNode | null>(null);
   const filtersRef = useRef<Set<string>>(typeFilters);
@@ -170,18 +170,18 @@ export default function KnowledgeGraph() {
   const pinchRef = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   const tappedAtRef = useRef(0);
   const focusModeRef = useRef(false);
-  const clusterRef = useRef(true);
+  const clusterRef = useRef(false);
 
-  useEffect(() => { selectedRef.current = selectedNode; alphaRef.current = Math.max(alphaRef.current, 0.3); }, [selectedNode]);
+  // Re-aquecer a simulação ao mudar seleções
+  useEffect(() => { selectedRef.current = selectedNode; alphaRef.current = Math.max(alphaRef.current, 0.4); }, [selectedNode]);
   useEffect(() => { hoveredRef.current = hoveredNode; }, [hoveredNode]);
-  useEffect(() => { filtersRef.current = typeFilters; }, [typeFilters]);
+  useEffect(() => { filtersRef.current = typeFilters; alphaRef.current = 0.5; }, [typeFilters]);
   useEffect(() => { searchRef.current = search.trim().toLowerCase(); }, [search]);
   useEffect(() => { showLabelsRef.current = showLabels; }, [showLabels]);
   useEffect(() => { showEdgesRef.current = showEdges; }, [showEdges]);
-  useEffect(() => { timeFilterRef.current = timeFilter; alphaRef.current = Math.max(alphaRef.current, 0.4); }, [timeFilter]);
-
-  useEffect(() => { focusModeRef.current = focusMode; alphaRef.current = Math.max(alphaRef.current, 0.3); }, [focusMode]);
-  useEffect(() => { clusterRef.current = clusterByPeriod; alphaRef.current = 0.8; }, [clusterByPeriod]);
+  useEffect(() => { timeFilterRef.current = timeFilter; alphaRef.current = 0.5; }, [timeFilter]);
+  useEffect(() => { focusModeRef.current = focusMode; alphaRef.current = 0.5; }, [focusMode]);
+  useEffect(() => { clusterRef.current = clusterByPeriod; alphaRef.current = 1; }, [clusterByPeriod]);
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
@@ -194,7 +194,6 @@ export default function KnowledgeGraph() {
       const limit = tf === "7d" ? 7 * 86400000 : 30 * 86400000;
       if (diff > limit) return false;
     } else if (tf !== "all" && !n.createdAt) {
-      // fallback: hide unknown-date nodes when filtering
       return false;
     }
     return true;
@@ -221,11 +220,11 @@ export default function KnowledgeGraph() {
     const w = screenToWorld(sx, sy);
     const z = zoomRef.current;
     const nodes = nodesRef.current;
-    const hitPad = (isMobile ? 10 : 4) / z;
+    const hitPad = (isMobile ? 12 : 6) / z;
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
       if (!isNodeVisible(n)) continue;
-      const r = (BASE_RADIUS[n.type] || 5) + Math.min(6, n.degree * 0.6) + hitPad;
+      const r = (BASE_RADIUS[n.type] || 4) + Math.min(8, n.degree * 0.4) + hitPad;
       const dx = n.x - w.x;
       const dy = n.y - w.y;
       if (dx * dx + dy * dy < r * r) return n;
@@ -233,22 +232,20 @@ export default function KnowledgeGraph() {
     return null;
   }, [screenToWorld, isMobile, isNodeVisible]);
 
-  // ── Simulation step (Barnes-Hut, cooling) ────────────────────────────
+  // ── Física de Simulação Profissional (Obsidian-like) ───────────────
   const simulate = useCallback(() => {
     const nodes = nodesRef.current;
     const edges = edgesRef.current;
-    if (nodes.length === 0) return;
-    if (alphaRef.current < 0.01) return;
+    if (nodes.length === 0 || alphaRef.current < 0.005) return;
 
-    const repulsion = 320;
-    const attraction = 0.035;
-    const idealLen = 110;
-    const damping = 0.86;
-    const centerForce = 0.010;
-    const periodPull = clusterRef.current ? 0.025 : 0;
+    // Constantes aprimoradas
+    const repulsion = 450; 
+    const attraction = 0.015; 
+    const damping = 0.90; // Deslizamento suave
+    const centerForce = 0.015; 
+    const periodPull = clusterRef.current ? 0.03 : 0;
     const alpha = alphaRef.current;
 
-    // Bounding box
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const n of nodes) {
       if (n.x < minX) minX = n.x;
@@ -256,13 +253,13 @@ export default function KnowledgeGraph() {
       if (n.x > maxX) maxX = n.x;
       if (n.y > maxY) maxY = n.y;
     }
-    const pad = 50;
-    const w = Math.max(maxX - minX, maxY - minY, 200) + pad * 2;
+    const pad = 100;
+    const w = Math.max(maxX - minX, maxY - minY, 300) + pad * 2;
     const root = makeQuad(minX - pad, minY - pad, w, w);
     for (const n of nodes) quadInsert(root, n);
 
-    // Repulsion via quadtree + period pull
     for (const n of nodes) {
+      // Força para o centro ou período
       if (periodPull > 0 && n.periodX !== undefined && n.periodY !== undefined) {
         n.vx += (n.periodX - n.x) * periodPull;
         n.vy += (n.periodY - n.y) * periodPull;
@@ -270,21 +267,51 @@ export default function KnowledgeGraph() {
         n.vx -= n.x * centerForce;
         n.vy -= n.y * centerForce;
       }
-      quadForce(root, n, 0.9, repulsion);
+      // Força de repulsão via quadtree
+      quadForce(root, n, 0.85, repulsion);
     }
 
-    // Spring attraction
+    // Força das Molas (Edges) com Distância Dinâmica
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
     for (const e of edges) {
       const a = nodeMap.get(e.source), b = nodeMap.get(e.target);
       if (!a || !b) continue;
       const dx = b.x - a.x, dy = b.y - a.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      
+      // Distância ideal baseada nos graus: Hubs ficam mais distantes
+      const idealLen = 40 + (a.degree + b.degree) * 3;
       const force = (dist - idealLen) * attraction;
       const fx = (dx / dist) * force;
       const fy = (dy / dist) * force;
+      
       a.vx += fx; a.vy += fy;
       b.vx -= fx; b.vy -= fy;
+    }
+
+    // Passe de Colisão Rígida (Evita nós sobrepostos)
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      const rA = (BASE_RADIUS[a.type] || 4) + Math.min(8, a.degree * 0.4);
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = nodes[j];
+        const rB = (BASE_RADIUS[b.type] || 4) + Math.min(8, b.degree * 0.4);
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist2 = dx * dx + dy * dy;
+        const minD = rA + rB + 6; // Raio + padding
+
+        if (dist2 < minD * minD && dist2 > 0) {
+          const dist = Math.sqrt(dist2);
+          const force = (minD - dist) / dist * 0.3; // Resolver colisão
+          const fx = dx * force;
+          const fy = dy * force;
+          // Nós com menos conexões cedem mais no impacto
+          const massRatioA = b.mass / (a.mass + b.mass);
+          const massRatioB = a.mass / (a.mass + b.mass);
+          a.vx -= fx * massRatioA; a.vy -= fy * massRatioA;
+          b.vx += fx * massRatioB; b.vy += fy * massRatioB;
+        }
+      }
     }
 
     const drag = draggingRef.current;
@@ -296,11 +323,11 @@ export default function KnowledgeGraph() {
       n.y += n.vy * alpha;
     }
 
-    // Slow cooling — keeps the graph "alive" longer with subtle motion
-    alphaRef.current = Math.max(0.05, alphaRef.current * 0.992);
+    // Resfriamento logarítmico para parada suave
+    alphaRef.current = Math.max(0.0, alphaRef.current * 0.985);
   }, []);
 
-  // ── Render ───────────────────────────────────────────────────────────
+  // ── Renderização Avançada ────────────────────────────────────────────
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -326,10 +353,9 @@ export default function KnowledgeGraph() {
     const z = zoomRef.current;
     const sq = searchRef.current;
     const showL = showLabelsRef.current;
-
     const focusOn = focusModeRef.current && hasSelection;
 
-    // Edges
+    // Renderizar Arestas
     if (showEdgesRef.current) {
       ctx.lineCap = "round";
       for (const e of edges) {
@@ -337,18 +363,19 @@ export default function KnowledgeGraph() {
         if (!a || !b) continue;
         if (!isNodeVisible(a) || !isNodeVisible(b)) continue;
         if (focusOn && !(neighbors.has(e.source) && neighbors.has(e.target))) continue;
+        
         const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
+        const isHoveredEdge = hovered && (hovered.id === e.source || hovered.id === e.target);
+        
         if (hasSelection && !isHighlighted) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.025)";
-          ctx.lineWidth = 0.8 / z;
-        } else if (isHighlighted) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.9)";
-          ctx.lineWidth = 2.2 / z;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.02)";
+          ctx.lineWidth = 0.5 / z;
+        } else if (isHighlighted || isHoveredEdge) {
+          ctx.strokeStyle = "hsla(0,0%,100%,0.6)";
+          ctx.lineWidth = 1.8 / z;
         } else {
-          // Subtle edges; thickness still informs the eye
-          const w = Math.min(2.2, 0.8 + (a.degree + b.degree) * 0.04) / z;
-          ctx.strokeStyle = "hsla(0,0%,100%,0.12)";
-          ctx.lineWidth = w;
+          ctx.strokeStyle = "hsla(0,0%,100%,0.15)";
+          ctx.lineWidth = Math.min(1.5, 0.8 + (a.degree + b.degree) * 0.02) / z;
         }
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -357,11 +384,11 @@ export default function KnowledgeGraph() {
       }
     }
 
-    // Nodes
+    // Renderizar Nós
     for (const n of nodes) {
       if (focusOn && !neighbors.has(n.id)) continue;
       const visible = isNodeVisible(n);
-      const r = (BASE_RADIUS[n.type] || 5) + Math.min(8, n.degree * 0.6);
+      const r = (BASE_RADIUS[n.type] || 4) + Math.min(8, n.degree * 0.4);
       const color = TYPE_COLORS[n.type] || "hsl(0,0%,40%)";
       const isHovered = hovered?.id === n.id;
       const isSelected = selected?.id === n.id;
@@ -369,15 +396,15 @@ export default function KnowledgeGraph() {
       const matchesSearch = sq.length > 0 && n.label.toLowerCase().includes(sq);
       const dimmed = !visible || (hasSelection && !isNeighbor) || (sq.length > 0 && !matchesSearch);
 
-      const drawRadius = isHovered || isSelected ? r + 3 : r;
-      const nodeAlpha = dimmed ? 0.07 : 1;
+      const drawRadius = isHovered || isSelected ? r + 2.5 : r;
+      const nodeAlpha = dimmed ? 0.1 : 1;
 
-      // glow
-      if (!dimmed && (isSelected || isHovered || isNeighbor || matchesSearch || n.recent)) {
+      // Glow suave
+      if (!dimmed && (isSelected || isHovered || isNeighbor || matchesSearch)) {
         ctx.save();
-        ctx.globalAlpha = isSelected ? 0.5 : matchesSearch ? 0.45 : isHovered ? 0.35 : 0.2;
+        ctx.globalAlpha = isSelected ? 0.6 : matchesSearch ? 0.5 : isHovered ? 0.4 : 0.15;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, drawRadius + 8, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, drawRadius + 7, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
         ctx.restore();
@@ -390,30 +417,38 @@ export default function KnowledgeGraph() {
       ctx.fillStyle = color;
       ctx.fill();
 
-      if (isSelected) {
+      // Borda indicativa
+      if (isSelected || matchesSearch) {
         ctx.strokeStyle = HIGHLIGHT_COLOR;
-        ctx.lineWidth = 1.8 / z;
-        ctx.stroke();
-      } else if (matchesSearch) {
-        ctx.strokeStyle = "hsla(0,0%,100%,0.95)";
-        ctx.lineWidth = 1.4 / z;
+        ctx.lineWidth = 1.5 / z;
         ctx.stroke();
       }
 
-      // labels
+      // Lógica profissional para exibição de texto
+      // No Obsidian, labels aparecem ao dar zoom ou em nós muito importantes
+      const isImportantNode = n.degree >= 4;
       const labelable = !dimmed && showL && (
         isHovered || isSelected || isNeighbor || matchesSearch ||
-        z > 1.1 || (z > 0.55 && n.degree >= 3)
+        z > 1.8 || (z > 0.8 && isImportantNode) || (z > 0.4 && n.degree >= 10)
       );
+      
       if (labelable) {
         const fontSize = Math.max(10, 11 / z);
-        ctx.font = `${isSelected || isHovered ? "600" : "400"} ${fontSize}px Inter, sans-serif`;
+        ctx.font = `${isSelected || isHovered ? "500" : "400"} ${fontSize}px Inter, sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillStyle = isSelected || isHovered
+        
+        // Fundo sutil para o texto facilitar a leitura nas linhas
+        const text = n.label.length > 25 ? n.label.slice(0, 24) + "…" : n.label;
+        const textY = n.y + drawRadius + fontSize + 3;
+        
+        ctx.fillStyle = "hsla(0,0%,0%,0.5)";
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillRect(n.x - textWidth/2 - 2, textY - fontSize, textWidth + 4, fontSize + 2);
+
+        ctx.fillStyle = isSelected || isHovered || matchesSearch
           ? "hsl(0,0%,100%)"
-          : "hsla(0,0%,100%,0.55)";
-        const text = n.label.length > 22 ? n.label.slice(0, 21) + "…" : n.label;
-        ctx.fillText(text, n.x, n.y + drawRadius + fontSize + 2);
+          : "hsla(0,0%,100%,0.75)";
+        ctx.fillText(text, n.x, textY);
       }
       ctx.restore();
     }
@@ -425,7 +460,6 @@ export default function KnowledgeGraph() {
     animFrameRef.current = requestAnimationFrame(tick);
   }, [simulate, draw]);
 
-  // ── Resize handling (only resize canvas on size change) ──────────────
   const resizeCanvas = useCallback(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -440,20 +474,16 @@ export default function KnowledgeGraph() {
     canvas.style.height = `${h}px`;
     dprRef.current = dpr;
     sizeRef.current = { w, h };
-    alphaRef.current = Math.max(alphaRef.current, 0.3);
+    alphaRef.current = Math.max(alphaRef.current, 0.5);
   }, [isMobile]);
 
   // ── Load graph ──────────────────────────────────────────────────────
   const loadGraph = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('Loading graph data...');
       const [graphRes, entitiesRes] = await Promise.all([graphApi.data(), entitiesApi.list()]);
-      console.log('Graph response:', graphRes);
-      console.log('Entities response:', entitiesRes);
       const data = graphRes.data;
       const entities = Array.isArray(entitiesRes.data) ? entitiesRes.data : [];
-      console.log('Entities data:', entities);
       setAllEntities(entities);
 
       const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
@@ -465,7 +495,6 @@ export default function KnowledgeGraph() {
         return;
       }
 
-      // Degree map + adjacency (build full adj for selection neighbors)
       const degree = new Map<string, number>();
       const adj = new Map<string, Set<string>>();
       for (const e of rawEdges as GraphEdge[]) {
@@ -478,9 +507,9 @@ export default function KnowledgeGraph() {
       }
       adjRef.current = adj;
 
-      // Reduce edges: cap per-node degree to top-N strongest connections
-      // (a node only keeps its 6 most-connected partners visually)
-      const MAX_EDGES_PER_NODE = 6;
+      // Mantemos todas as arestas se possível, Obsidian suporta muitas. 
+      // Mas para performance purista, capamos apenas hubs extremamentes densos (ex: > 30)
+      const MAX_EDGES_PER_NODE = 25; 
       const keptCount = new Map<string, number>();
       const sortedEdges = [...(rawEdges as GraphEdge[])].sort((a, b) => {
         const da = (degree.get(a.source) || 0) + (degree.get(a.target) || 0);
@@ -500,7 +529,6 @@ export default function KnowledgeGraph() {
       const entityMap = new Map(entities.map(e => [e.id, e]));
       const recentLimit = Date.now() - 7 * 86400000;
 
-      // Compute period (month) centers along a horizontal timeline
       const monthOf = (iso?: string) => {
         if (!iso) return "unknown";
         const d = new Date(iso);
@@ -514,24 +542,28 @@ export default function KnowledgeGraph() {
       const monthIndex = new Map<string, number>();
       allMonths.forEach((m: string, i: number) => monthIndex.set(m, i));
       const monthCount = Math.max(1, allMonths.length);
-      const spacingX = 360;
+      const spacingX = 400;
 
-      const nextNodes: GraphNode[] = rawNodes.map((n: any, i: number) => {
+      const nextNodes: GraphNode[] = rawNodes.map((n: any) => {
         const ent = entityMap.get(n.id);
         const createdAt = ent?.createdAt;
         const periodKey = monthOf(createdAt);
         const idx = monthIndex.get(periodKey) ?? 0;
         const periodX = (idx - (monthCount - 1) / 2) * spacingX;
-        const periodY = (Math.sin(i * 0.7) * 0.5) * 220;
+        const periodY = 0;
+        const deg = degree.get(n.id) || 0;
+        
         return {
           id: n.id,
           label: n.label,
           type: String(n.type),
-          x: periodX + (Math.random() - 0.5) * 160,
-          y: periodY + (Math.random() - 0.5) * 160,
+          // Dispersão inicial circular e orgânica
+          x: (Math.random() - 0.5) * 500,
+          y: (Math.random() - 0.5) * 500,
           vx: 0,
           vy: 0,
-          degree: degree.get(n.id) || 0,
+          degree: deg,
+          mass: 1 + deg * 0.5, // Hubs têm massa maior
           createdAt,
           periodKey,
           periodX,
@@ -543,9 +575,8 @@ export default function KnowledgeGraph() {
       nodesRef.current = nextNodes;
       edgesRef.current = prunedEdges;
       setGraphStats({ nodes: nextNodes.length, edges: prunedEdges.length });
-      alphaRef.current = 1;
+      alphaRef.current = 1; // Dispara a simulação
 
-      // Center view
       requestAnimationFrame(() => {
         resizeCanvas();
         const { w, h } = sizeRef.current;
@@ -578,7 +609,7 @@ export default function KnowledgeGraph() {
     return () => observer.disconnect();
   }, [resizeCanvas]);
 
-  // ── Interaction ─────────────────────────────────────────────────────
+  // ── Interação ───────────────────────────────────────────────────────
   const focusNode = useCallback((node: GraphNode) => {
     setSelectedNode(node);
     const entity = allEntities.find(e => e.id === node.id);
@@ -593,7 +624,6 @@ export default function KnowledgeGraph() {
         ownerId: "",
       });
     }
-    // Smooth re-center
     const { w, h } = sizeRef.current;
     const z = zoomRef.current;
     panRef.current = { x: w / 2 - node.x * z, y: h / 2 - node.y * z };
@@ -607,7 +637,7 @@ export default function KnowledgeGraph() {
     if (node) {
       draggingRef.current = node;
       focusNode(node);
-      alphaRef.current = Math.max(alphaRef.current, 0.3);
+      alphaRef.current = Math.max(alphaRef.current, 0.5); // Acorda a simulação ao tocar
     } else {
       panningRef.current = true;
       setSelectedNode(null);
@@ -647,7 +677,8 @@ export default function KnowledgeGraph() {
     if (!rect) return;
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     const oldZ = zoomRef.current;
-    const newZ = Math.max(0.15, Math.min(5, oldZ * (e.deltaY < 0 ? 1.1 : 0.9)));
+    // Permite zoomar mais de perto como no Obsidian (0.1 -> 8)
+    const newZ = Math.max(0.1, Math.min(8, oldZ * (e.deltaY < 0 ? 1.15 : 0.85)));
     panRef.current.x = sx - (sx - panRef.current.x) * (newZ / oldZ);
     panRef.current.y = sy - (sy - panRef.current.y) * (newZ / oldZ);
     zoomRef.current = newZ;
@@ -667,7 +698,7 @@ export default function KnowledgeGraph() {
     const { w, h } = sizeRef.current;
     const cx = w / 2, cy = h / 2;
     const oldZ = zoomRef.current;
-    const newZ = Math.max(0.15, Math.min(5, oldZ * (dir > 0 ? 1.3 : 0.77)));
+    const newZ = Math.max(0.1, Math.min(8, oldZ * (dir > 0 ? 1.4 : 0.7)));
     panRef.current.x = cx - (cx - panRef.current.x) * (newZ / oldZ);
     panRef.current.y = cy - (cy - panRef.current.y) * (newZ / oldZ);
     zoomRef.current = newZ;
@@ -682,7 +713,7 @@ export default function KnowledgeGraph() {
     setTimeFilter("all");
     setSelectedNode(null);
     closeInspector();
-    alphaRef.current = 0.5;
+    alphaRef.current = 0.8; // Reorganiza
   };
 
   const handleShowAll = () => {
@@ -691,10 +722,9 @@ export default function KnowledgeGraph() {
     setTimeFilter("all");
     setSelectedNode(null);
     closeInspector();
-    alphaRef.current = 0.3;
+    alphaRef.current = 0.8;
   };
 
-  // ── Touch handlers (pinch + drag + tap) ─────────────────────────────
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const t1 = e.touches[0], t2 = e.touches[1];
@@ -715,14 +745,17 @@ export default function KnowledgeGraph() {
     const node = findNodeAt(sx, sy);
     const now = Date.now();
     if (node && now - tappedAtRef.current < 300) {
-      // double-tap → open
       if (node.type === "NOTE") navigate(`/notes/${node.id}`);
       else navigate(`/entities/${node.id}`);
       tappedAtRef.current = 0;
       return;
     }
     tappedAtRef.current = now;
-    if (node) { draggingRef.current = node; focusNode(node); }
+    if (node) { 
+      draggingRef.current = node; 
+      focusNode(node); 
+      alphaRef.current = Math.max(alphaRef.current, 0.5);
+    }
     else { panningRef.current = true; setSelectedNode(null); closeInspector(); }
     lastMouseRef.current = { x: touch.clientX, y: touch.clientY };
   };
@@ -738,7 +771,7 @@ export default function KnowledgeGraph() {
       const cy = (t1.clientY + t2.clientY) / 2 - rect.top;
       const oldZ = zoomRef.current;
       const ratio = dist / pinchRef.current.dist;
-      const newZ = Math.max(0.15, Math.min(5, oldZ * ratio));
+      const newZ = Math.max(0.1, Math.min(8, oldZ * ratio));
       panRef.current.x = cx - (cx - panRef.current.x) * (newZ / oldZ);
       panRef.current.y = cy - (cy - panRef.current.y) * (newZ / oldZ);
       zoomRef.current = newZ;
@@ -770,7 +803,6 @@ export default function KnowledgeGraph() {
     }
   };
 
-  // Block native pinch-to-zoom & pull-to-refresh
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -808,16 +840,7 @@ export default function KnowledgeGraph() {
       else next.add(type);
       return next;
     });
-    alphaRef.current = Math.max(alphaRef.current, 0.3);
   };
-
-  const searchResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (q.length === 0) return [];
-    return nodesRef.current
-      .filter(n => n.label.toLowerCase().includes(q))
-      .slice(0, 6);
-  }, [search]);
 
   return (
     <AppLayout>
@@ -833,7 +856,6 @@ export default function KnowledgeGraph() {
           </button>
 
           <div className="absolute right-4 top-5 z-30 flex flex-col items-end gap-2">
-            {/* Alterado de 'flex items-center' para 'flex flex-col items-center' */}
             <div className="flex flex-col items-center gap-0.5">
               <button
                 type="button"
@@ -1027,7 +1049,7 @@ export default function KnowledgeGraph() {
             {!empty && (
               <canvas
                 ref={canvasRef}
-                className="bg-background select-none"
+                className="bg-black select-none" // Obsidian é tradicionalmente escuro
                 style={{ display: "block", touchAction: "none" }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -1058,13 +1080,13 @@ export default function KnowledgeGraph() {
 
             {hoveredNode && tooltipPos && !selectedNode && (
               <div
-                className="absolute z-20 pointer-events-none px-2.5 py-1.5 rounded-md bg-popover/95 backdrop-blur-sm border border-border/50 shadow-lg"
+                className="absolute z-20 pointer-events-none px-2.5 py-1.5 rounded-md bg-black/90 backdrop-blur-sm border border-white/10 shadow-lg"
                 style={{
                   left: Math.min(tooltipPos.x + 12, (containerRef.current?.clientWidth || 300) - 180),
                   top: Math.max(8, tooltipPos.y - 40),
                 }}
               >
-                <p className="text-xs font-medium text-foreground truncate max-w-[160px]">{hoveredNode.label}</p>
+                <p className="text-xs font-medium text-white truncate max-w-[160px]">{hoveredNode.label}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {TYPE_LABELS[hoveredNode.type] || hoveredNode.type} · {hoveredNode.degree} link{hoveredNode.degree === 1 ? "" : "s"}
                 </p>
