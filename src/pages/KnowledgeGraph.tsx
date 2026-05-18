@@ -141,6 +141,8 @@ export default function KnowledgeGraph() {
   const [timeFilter, setTimeFilter] = useState<"all" | "7d" | "30d">("all");
   const [legendOpen, setLegendOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [clusterByPeriod, setClusterByPeriod] = useState(true);
 
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
@@ -167,6 +169,8 @@ export default function KnowledgeGraph() {
   const sizeRef = useRef({ w: 0, h: 0 });
   const pinchRef = useRef<{ dist: number; cx: number; cy: number } | null>(null);
   const tappedAtRef = useRef(0);
+  const focusModeRef = useRef(false);
+  const clusterRef = useRef(true);
 
   useEffect(() => { selectedRef.current = selectedNode; alphaRef.current = Math.max(alphaRef.current, 0.3); }, [selectedNode]);
   useEffect(() => { hoveredRef.current = hoveredNode; }, [hoveredNode]);
@@ -175,6 +179,9 @@ export default function KnowledgeGraph() {
   useEffect(() => { showLabelsRef.current = showLabels; }, [showLabels]);
   useEffect(() => { showEdgesRef.current = showEdges; }, [showEdges]);
   useEffect(() => { timeFilterRef.current = timeFilter; alphaRef.current = Math.max(alphaRef.current, 0.4); }, [timeFilter]);
+
+  useEffect(() => { focusModeRef.current = focusMode; alphaRef.current = Math.max(alphaRef.current, 0.3); }, [focusMode]);
+  useEffect(() => { clusterRef.current = clusterByPeriod; alphaRef.current = 0.8; }, [clusterByPeriod]);
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
