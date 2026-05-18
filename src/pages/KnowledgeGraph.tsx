@@ -327,6 +327,8 @@ export default function KnowledgeGraph() {
     const sq = searchRef.current;
     const showL = showLabelsRef.current;
 
+    const focusOn = focusModeRef.current && hasSelection;
+
     // Edges
     if (showEdgesRef.current) {
       ctx.lineCap = "round";
@@ -334,6 +336,7 @@ export default function KnowledgeGraph() {
         const a = nodeMap.get(e.source), b = nodeMap.get(e.target);
         if (!a || !b) continue;
         if (!isNodeVisible(a) || !isNodeVisible(b)) continue;
+        if (focusOn && !(neighbors.has(e.source) && neighbors.has(e.target))) continue;
         const isHighlighted = hasSelection && neighbors.has(e.source) && neighbors.has(e.target);
         if (hasSelection && !isHighlighted) {
           ctx.strokeStyle = "hsla(0,0%,100%,0.025)";
@@ -356,6 +359,7 @@ export default function KnowledgeGraph() {
 
     // Nodes
     for (const n of nodes) {
+      if (focusOn && !neighbors.has(n.id)) continue;
       const visible = isNodeVisible(n);
       const r = (BASE_RADIUS[n.type] || 5) + Math.min(8, n.degree * 0.6);
       const color = TYPE_COLORS[n.type] || "hsl(0,0%,40%)";
