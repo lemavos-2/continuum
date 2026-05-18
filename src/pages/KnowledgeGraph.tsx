@@ -506,9 +506,9 @@ export default function KnowledgeGraph() {
       const allMonths = Array.from(new Set(rawNodes.map((n: any) => {
         const ent = entityMap.get(n.id);
         return monthOf(ent?.createdAt);
-      }))).sort();
+      }))).sort() as string[];
       const monthIndex = new Map<string, number>();
-      allMonths.forEach((m, i) => monthIndex.set(m, i));
+      allMonths.forEach((m: string, i: number) => monthIndex.set(m, i));
       const monthCount = Math.max(1, allMonths.length);
       const spacingX = 360;
 
