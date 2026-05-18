@@ -851,6 +851,23 @@ export default function KnowledgeGraph() {
               >
                 <ZoomOut className="h-4 w-4" />
               </button>
+              <button
+                type="button"
+                onClick={() => setFocusMode(f => !f)}
+                className={`grid h-10 w-10 place-items-center rounded-full border bg-black/80 text-white transition ${focusMode ? "border-white/60 bg-white/15" : "border-white/10 hover:bg-white/10"}`}
+                aria-label="Toggle focus mode"
+                title="Focus mode"
+              >
+                {focusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOptionsOpen(true)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10 sm:hidden"
+                aria-label="Open graph options"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
