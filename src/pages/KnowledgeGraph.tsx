@@ -976,6 +976,18 @@ export default function KnowledgeGraph() {
                         {legendOpen ? <Eye className="inline h-3 w-3 mr-1" /> : <EyeOff className="inline h-3 w-3 mr-1" />}
                         {legendOpen ? "Legend on" : "Legend off"}
                       </button>
+                      <button
+                        onClick={() => setClusterByPeriod(prev => !prev)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${clusterByPeriod ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {clusterByPeriod ? "Period clusters on" : "Period clusters off"}
+                      </button>
+                      <button
+                        onClick={() => setFocusMode(prev => !prev)}
+                        className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${focusMode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                      >
+                        {focusMode ? "Focus on" : "Focus off"}
+                      </button>
                     </div>
                   </div>
                 </div>
