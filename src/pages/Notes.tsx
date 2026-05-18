@@ -16,7 +16,9 @@ import {
   Upload,
   ChevronDown,
   ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -127,10 +129,28 @@ export default function Notes() {
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<NoteSummary | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Drag-drop upload to vault
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Edge swipe to open mobile filter drawer
+  const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const onSwipeStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (t.clientX > 32) return; // only left edge
+    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s = swipeRef.current;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = Math.abs(t.clientY - s.y);
+    if (dx > 60 && dy < 60 && Date.now() - s.t < 600) setFilterDrawerOpen(true);
+    swipeRef.current = null;
+  };
 
   /* Load */
   const fetchData = async () => {
