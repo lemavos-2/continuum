@@ -461,7 +461,7 @@ export default function KnowledgeGraph() {
         return;
       }
 
-      // Degree map + adjacency
+      // Degree map + adjacency (build full adj for selection neighbors)
       const degree = new Map<string, number>();
       const adj = new Map<string, Set<string>>();
       for (const e of rawEdges as GraphEdge[]) {
@@ -474,31 +474,71 @@ export default function KnowledgeGraph() {
       }
       adjRef.current = adj;
 
+      // Reduce edges: cap per-node degree to top-N strongest connections
+      // (a node only keeps its 6 most-connected partners visually)
+      const MAX_EDGES_PER_NODE = 6;
+      const keptCount = new Map<string, number>();
+      const sortedEdges = [...(rawEdges as GraphEdge[])].sort((a, b) => {
+        const da = (degree.get(a.source) || 0) + (degree.get(a.target) || 0);
+        const db = (degree.get(b.source) || 0) + (degree.get(b.target) || 0);
+        return db - da;
+      });
+      const prunedEdges: GraphEdge[] = [];
+      for (const e of sortedEdges) {
+        const s = keptCount.get(e.source) || 0;
+        const t = keptCount.get(e.target) || 0;
+        if (s >= MAX_EDGES_PER_NODE || t >= MAX_EDGES_PER_NODE) continue;
+        keptCount.set(e.source, s + 1);
+        keptCount.set(e.target, t + 1);
+        prunedEdges.push(e);
+      }
+
       const entityMap = new Map(entities.map(e => [e.id, e]));
       const recentLimit = Date.now() - 7 * 86400000;
+
+      // Compute period (month) centers along a horizontal timeline
+      const monthOf = (iso?: string) => {
+        if (!iso) return "unknown";
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return "unknown";
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      };
+      const allMonths = Array.from(new Set(rawNodes.map((n: any) => {
+        const ent = entityMap.get(n.id);
+        return monthOf(ent?.createdAt);
+      }))).sort();
+      const monthIndex = new Map<string, number>();
+      allMonths.forEach((m, i) => monthIndex.set(m, i));
+      const monthCount = Math.max(1, allMonths.length);
+      const spacingX = 360;
 
       const nextNodes: GraphNode[] = rawNodes.map((n: any, i: number) => {
         const ent = entityMap.get(n.id);
         const createdAt = ent?.createdAt;
-        const angle = (i / rawNodes.length) * Math.PI * 2;
-        const radius = Math.sqrt(rawNodes.length) * 25;
+        const periodKey = monthOf(createdAt);
+        const idx = monthIndex.get(periodKey) ?? 0;
+        const periodX = (idx - (monthCount - 1) / 2) * spacingX;
+        const periodY = (Math.sin(i * 0.7) * 0.5) * 220;
         return {
           id: n.id,
           label: n.label,
           type: String(n.type),
-          x: Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
-          y: Math.sin(angle) * radius + (Math.random() - 0.5) * 40,
+          x: periodX + (Math.random() - 0.5) * 160,
+          y: periodY + (Math.random() - 0.5) * 160,
           vx: 0,
           vy: 0,
           degree: degree.get(n.id) || 0,
           createdAt,
+          periodKey,
+          periodX,
+          periodY,
           recent: createdAt ? new Date(createdAt).getTime() > recentLimit : false,
         };
       });
 
       nodesRef.current = nextNodes;
-      edgesRef.current = rawEdges as GraphEdge[];
-      setGraphStats({ nodes: nextNodes.length, edges: (rawEdges as GraphEdge[]).length });
+      edgesRef.current = prunedEdges;
+      setGraphStats({ nodes: nextNodes.length, edges: prunedEdges.length });
       alphaRef.current = 1;
 
       // Center view
