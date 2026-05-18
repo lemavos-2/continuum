@@ -245,6 +245,7 @@ export default function KnowledgeGraph() {
     const idealLen = 110;
     const damping = 0.86;
     const centerForce = 0.010;
+    const periodPull = clusterRef.current ? 0.025 : 0;
     const alpha = alphaRef.current;
 
     // Bounding box
@@ -260,10 +261,15 @@ export default function KnowledgeGraph() {
     const root = makeQuad(minX - pad, minY - pad, w, w);
     for (const n of nodes) quadInsert(root, n);
 
-    // Repulsion via quadtree
+    // Repulsion via quadtree + period pull
     for (const n of nodes) {
-      n.vx -= n.x * centerForce;
-      n.vy -= n.y * centerForce;
+      if (periodPull > 0 && n.periodX !== undefined && n.periodY !== undefined) {
+        n.vx += (n.periodX - n.x) * periodPull;
+        n.vy += (n.periodY - n.y) * periodPull;
+      } else {
+        n.vx -= n.x * centerForce;
+        n.vy -= n.y * centerForce;
+      }
       quadForce(root, n, 0.9, repulsion);
     }
 
