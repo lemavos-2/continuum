@@ -257,7 +257,7 @@ export default function Dashboard() {
     <AppLayout>
       <div className="px-6 lg:px-12 py-10 max-w-6xl mx-auto space-y-6">
         
-        {/* HEADER COM ESTILO PREMIUM DARK */}
+        {/* HEADER COM BOTÃO "NEW NOTE" COMBINANDO COM O VAULT / DESIGN SISTEMA */}
         <header className="border-b border-white/5 pb-6 mb-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[10px] tracking-wider uppercase text-neutral-500 font-semibold mb-1">Overview</p>
@@ -270,8 +270,9 @@ export default function Dashboard() {
           </div>
           <Button 
             onClick={() => navigate("/notes")} 
-            size="sm" 
-            className="gap-2 bg-neutral-100 text-neutral-900 hover:bg-neutral-200 font-medium rounded-xl transition-colors self-start sm:self-auto shadow-lg"
+            size="sm"
+            variant="outline"
+            className="gap-2 border-white/5 bg-neutral-900/40 text-neutral-200 hover:bg-neutral-900/80 hover:text-white rounded-xl self-start sm:self-auto transition-all shadow-md h-9"
           >
             <Plus className="h-4 w-4" /> New note
           </Button>
@@ -362,7 +363,7 @@ export default function Dashboard() {
                         {usage.notesCount} / {limits.maxNotes === -1 ? "∞" : limits.maxNotes}
                       </span>
                     </div>
-                    <Progress value={limits.maxNotes === -1 ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-1 bg-white/5" />
+                    <Progress value={limits.maxNotes === -1 ? "0" : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-1 bg-white/5" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
@@ -371,14 +372,14 @@ export default function Dashboard() {
                         {usage.entitiesCount} / {limits.maxEntities === -1 ? "∞" : limits.maxEntities}
                       </span>
                     </div>
-                    <Progress value={limits.maxEntities === -1 ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1 bg-white/5" />
+                    <Progress value={limits.maxEntities === -1 ? "0" : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1 bg-white/5" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-neutral-400">Vault storage</span>
                       <span className="text-neutral-200 font-mono tabular-nums">{storageUsed} / {storageLimit}</span>
                     </div>
-                    <Progress value={limits.maxVaultSizeMB === -1 ? 0 : Math.min((usage.vaultSizeMB / limits.maxVaultSizeMB) * 100, 100)} className="h-1 bg-white/5" />
+                    <Progress value={limits.maxVaultSizeMB === -1 ? "0" : Math.min((usage.vaultSizeMB / limits.maxVaultSizeMB) * 100, 100)} className="h-1 bg-white/5" />
                   </div>
                 </div>
               ) : (
@@ -590,4 +591,4 @@ export default function Dashboard() {
       </div>
     </AppLayout>
   );
-}
+                  }
