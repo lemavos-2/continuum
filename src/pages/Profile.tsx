@@ -106,81 +106,85 @@ export default function Profile() {
 
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-50">Profile</h1>
-            <p className="text-sm text-slate-400 mt-1">Manage your account information.</p>
-          </div>
-        </div>
+      <div className="px-6 lg:px-12 py-10 max-w-5xl mx-auto space-y-8">
+        
+        {/* HEADER */}
+        <header className="border-b border-white/5 pb-6">
+          <p className="text-[10px] tracking-wider uppercase text-neutral-500 font-semibold mb-1">Settings</p>
+          <h1 className="font-serif text-4xl tracking-tight text-neutral-100">Profile</h1>
+          <p className="text-xs text-neutral-500 mt-1">Manage your account information and system preferences.</p>
+        </header>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Account Section */}
+          
+          {/* ACCOUNT SECTION */}
           <section className="space-y-4">
-            <div className="space-y-2">
-              <h2 className="font-display text-xl font-semibold text-white/90">Account</h2>
-              <p className="text-sm text-white/50">Manage your information and preferences.</p>
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-neutral-200">Account details</h2>
+              <p className="text-xs text-neutral-500">Your personal identity inside the network.</p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-4">
+            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-5 sm:p-6 space-y-4 shadow-inner">
               <div className="space-y-2">
-                <Label htmlFor="profile-username" className="text-xs text-white/70 uppercase tracking-wider">Username</Label>
+                <Label htmlFor="profile-username" className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Username</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
                   <Input
                     id="profile-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Your username"
-                    className="pl-10 bg-white/5 border border-white/10 text-white/90 placeholder:text-white/30 focus:border-white/30 focus:bg-white/10 transition-colors"
+                    className="pl-10 bg-neutral-900/40 border-white/5 text-neutral-200 placeholder:text-neutral-600 focus:border-white/10 focus:bg-neutral-900/60 transition-all rounded-xl h-10"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profile-email" className="text-xs text-white/70 uppercase tracking-wider">Email</Label>
+                <Label htmlFor="profile-email" className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Email address</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
                   <Input
                     id="profile-email"
                     type="email"
                     value={email}
                     readOnly
-                    className="pl-10 pr-16 bg-white/5 border border-white/10 text-white/50 cursor-not-allowed"
+                    className="pl-10 pr-16 bg-neutral-900/20 border-white/5 text-neutral-500 cursor-not-allowed rounded-xl h-10"
                   />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-white/50 bg-white/10 px-2 py-1 rounded">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 bg-white/5 border border-white/5 px-2 py-0.5 rounded-md">
                     Google
                   </span>
                 </div>
-                <p className="text-xs text-white/40">Connected via Google Sign-In</p>
+                <p className="text-[11px] text-neutral-500">Connected via secure Google Sign-In</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
-                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Plan</p>
-                  <p className="text-base font-semibold text-white/90">{currentPlan}</p>
+                <div className="rounded-xl border border-white/5 bg-neutral-900/30 p-3 flex flex-col gap-0.5">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Plan tier</p>
+                  <p className="text-sm font-semibold text-neutral-300">{currentPlan}</p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-1">
-                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Member Since</p>
-                  <p className="text-base font-semibold text-white/90">
-                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US") : "—"}
+                <div className="rounded-xl border border-white/5 bg-neutral-900/30 p-3 flex flex-col gap-0.5">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Member since</p>
+                  <p className="text-sm font-semibold text-neutral-300">
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                   </p>
                 </div>
               </div>
 
+              {/* BOTÃO SALVAR REESTILIZADO PARA ESCURO TRASLÚCIDO OUTLINE */}
               <Button
                 onClick={() => setSaveConfirmOpen(true)}
                 disabled={saving || !username.trim()}
-                className="w-full bg-white text-black hover:bg-gray-100 font-semibold shadow-lg transition-all"
+                variant="outline"
+                className="w-full border-white/5 bg-neutral-900/40 text-neutral-200 hover:bg-neutral-900/80 hover:text-white rounded-xl font-medium transition-all shadow-md h-10 mt-2"
               >
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
+                Save changes
               </Button>
               <ConfirmDialog
                 open={saveConfirmOpen}
                 onOpenChange={setSaveConfirmOpen}
                 title="Save profile changes?"
-                description="Your username change will be saved to your account."
+                description="Your username change will be updated across your account network."
                 confirmText="Save"
                 onConfirm={async () => {
                   setSaveConfirmOpen(false);
@@ -189,154 +193,129 @@ export default function Profile() {
               />
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-zinc-500/20 border border-zinc-500/30 flex items-center justify-center">
-                <BadgeCheck className="w-5 h-5 text-zinc-400" />
+            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-inner">
+              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                <BadgeCheck className="w-4 h-4 text-neutral-400" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-white/90">Account Status</p>
-                <p className="text-xs text-white/50">Email {user?.emailVerified ? "verified" : "pending verification"}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-neutral-200">Account status</p>
+                <p className="text-[11px] text-neutral-500 truncate">Email {user?.emailVerified ? "verified and synchronized" : "pending verification"}</p>
               </div>
             </div>
           </section>
 
-          {/* Preferences & Security Section */}
+          {/* PREFERENCES SECTION */}
           <section className="space-y-4">
-            <div className="space-y-2">
-              <h2 className="font-display text-xl font-semibold text-white/90">Preferences</h2>
-              <p className="text-sm text-white/50">Customize your experience.</p>
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-neutral-200">Preferences</h2>
+              <p className="text-xs text-neutral-500">Tailor your interface and system runtime.</p>
             </div>
 
             {/* Theme Toggle */}
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5 space-y-4">
+            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-5 sm:p-6 shadow-inner">
               <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-white/90">Dark Mode</p>
-                  <p className="text-xs text-white/50">Toggle interface theme</p>
+                <div>
+                  <p className="text-xs font-semibold text-neutral-200">Dark Mode theme</p>
+                  <p className="text-[11px] text-neutral-500">Switch application skin preference</p>
                 </div>
-                <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-2">
-                  <Sun className="w-4 h-4 text-white/40" />
+                <div className="flex items-center gap-2.5 bg-neutral-900/40 border border-white/5 rounded-xl p-1.5 shrink-0">
+                  <Sun className="w-3.5 h-3.5 text-neutral-500" />
                   <Switch
                     checked={mounted ? theme !== "light" : true}
                     onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
                     disabled={!mounted}
                   />
-                  <Moon className="w-4 h-4 text-white/40" />
+                  <Moon className="w-3.5 h-3.5 text-neutral-500" />
                 </div>
               </div>
             </div>
 
             {/* History Info */}
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-zinc-500/20 border border-zinc-500/30 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-zinc-400" />
+            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-inner">
+              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 text-neutral-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-white/90">History Retention</p>
-                <p className="text-xs text-white/50">{formatLimitValue(limits.historyDays, " days")}</p>
+                <p className="text-xs font-semibold text-neutral-200">History retention</p>
+                <p className="text-[11px] text-neutral-500">{formatLimitValue(limits.historyDays, " days")}</p>
               </div>
             </div>
 
             {/* Security Info */}
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-zinc-500/20 border border-zinc-500/30 flex items-center justify-center">
-                <Lock className="w-5 h-5 text-zinc-400" />
+            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-inner">
+              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                <Lock className="w-4 h-4 text-neutral-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-white/90">Security</p>
-                <p className="text-xs text-white/50">Managed by Google Sign-In</p>
+                <p className="text-xs font-semibold text-neutral-200">Security layer</p>
+                <p className="text-[11px] text-neutral-500">Tokens managed by federated Google auth</p>
               </div>
             </div>
           </section>
         </div>
 
-        {/* Plan Limits Section */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="font-display text-xl font-semibold text-white/90">Plan Limits</h2>
-              <p className="text-sm text-white/50">Current usage synchronized with your account.</p>
-            </div>
+        {/* PLAN LIMITS SECTION */}
+        <section className="space-y-4 pt-2">
+          <div className="space-y-1">
+            <h2 className="text-sm font-semibold text-neutral-200">Plan quotas & limits</h2>
+            <p className="text-xs text-neutral-500">Live operational sync from your subscription tier.</p>
           </div>
 
           {usageLoading && !usage ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-5 h-5 animate-spin text-white/30" />
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-neutral-600" />
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3">
               {usageResources.map((resource) => {
                 const unlimited = resource.max === -1;
                 const percent = unlimited ? 100 : Math.min((resource.current / resource.max) * 100, 100);
-                const isCritical = percent >= 90;
-                const isWarning = percent >= 70;
 
                 return (
                   <div
                     key={resource.label}
-                    className={`rounded-xl border backdrop-blur-sm p-4 space-y-3 transition-all ${
-                      isCritical
-                        ? "border-zinc-500/50 bg-zinc-500/10"
-                        : isWarning
-                        ? "border-zinc-500/50 bg-zinc-500/10"
-                        : "border-white/10 bg-white/5"
-                    }`}
+                    className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-5 shadow-inner space-y-3"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-white/90">{resource.label}</span>
-                      <span className={`text-xs font-mono font-medium ${
-                        isCritical ? "text-zinc-300" : isWarning ? "text-zinc-300" : "text-white/60"
-                      }`}>
+                      <span className="text-xs font-semibold text-neutral-300">{resource.label}</span>
+                      <span className="text-[11px] font-mono font-medium text-neutral-500 tabular-nums">
                         {unlimited ? "∞" : `${resource.current.toFixed(resource.suffix ? 1 : 0)}/${resource.max}${resource.suffix ?? ""}`}
                       </span>
                     </div>
-                    <div className="relative h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          isCritical
-                            ? "bg-gradient-to-r from-zinc-500 to-zinc-400"
-                            : isWarning
-                            ? "bg-gradient-to-r from-zinc-500 to-zinc-400"
-                            : "bg-gradient-to-r from-zinc-500 to-zinc-400"
-                        }`}
-                        style={{ width: `${unlimited ? 0 : percent}%` }}
-                      />
-                    </div>
+                    <Progress value={unlimited ? 0 : percent} className="h-1 bg-white/5" />
                   </div>
                 );
               })}
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* METADATA, RETENTION & BACKUP GRID */}
+          <div className="grid gap-4 md:grid-cols-3">
             {planDetails.map((detail) => (
-              <div key={detail.label} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center justify-between gap-2 text-xs text-white/50">
-                  <span>{detail.label}</span>
-                  <span className="font-semibold text-white/90">{detail.value}</span>
-                </div>
+              <div key={detail.label} className="border border-white/5 bg-neutral-900/20 rounded-xl p-4 flex items-center justify-between gap-3 text-xs">
+                <span className="text-neutral-500">{detail.label}</span>
+                <span className="font-medium text-neutral-300 tabular-nums">{detail.value}</span>
               </div>
             ))}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center justify-between gap-2 text-xs text-white/50">
-                <span>Data export</span>
-                {user?.dataExport ? (
-                  <button
-                    type="button"
-                    onClick={handleExportData}
-                    disabled={exporting}
-                    className="font-semibold text-white/90 underline-offset-2 hover:underline disabled:opacity-50"
-                  >
-                    {exporting ? "Exporting…" : "Download backup"}
-                  </button>
-                ) : (
-                  <span className="font-semibold text-white/60">Upgrade to enable</span>
-                )}
-              </div>
+            
+            <div className="border border-white/5 bg-neutral-900/20 rounded-xl p-4 flex items-center justify-between gap-3 text-xs">
+              <span className="text-neutral-500">Data export</span>
+              {user?.dataExport ? (
+                <button
+                  type="button"
+                  onClick={handleExportData}
+                  disabled={exporting}
+                  className="font-medium text-neutral-300 underline underline-offset-4 hover:text-white disabled:opacity-50 transition-colors"
+                >
+                  {exporting ? "Exporting…" : "Download backup"}
+                </button>
+              ) : (
+                <span className="text-neutral-600 font-medium">Upgrade to enable</span>
+              )}
             </div>
           </div>
         </section>
       </div>
     </AppLayout>
   );
-}
+                    }
