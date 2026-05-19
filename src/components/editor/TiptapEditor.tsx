@@ -17,12 +17,12 @@ import Dropcursor from "@tiptap/extension-dropcursor";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { common, createLowlight } from "lowlight";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
 import type { ChangeEvent } from "react";
 import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion";
 import {
   Bold, Italic, Strikethrough, Code, Link as LinkIcon, Upload,
-  Heading1, Heading2, Quote, List, ListOrdered,
+  Heading1, Heading2, Quote, List, ListOrdered, Trash2
 } from "lucide-react";
 import { entitiesApi, notesApi, vaultApi } from "@/lib/api";
 import type { Entity } from "@/types";
@@ -101,7 +101,7 @@ const loadNotes = async () => {
 /* ── Suggestion factory ── */
 const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => ({
   char: variant === "entity" ? "@" : "#",
-  allowSpaces: variant === "note", // Allow spaces for notes, not for entities
+  allowSpaces: variant === "note", 
   startOfLine: false,
   items: async ({ query }: { query: string }): Promise<MentionItem[]> => {
     const q = query.toLowerCase().trim();
@@ -146,7 +146,7 @@ const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => 
       const title = item.title.trim();
       if (!title) return;
       if (item.createKind === "entity") {
-        const entityType = item.type || "TOPIC"; // Use the selected type from MentionList
+        const entityType = item.type || "TOPIC"; 
         entitiesApi.create(title, entityType).then((res) => {
           const created = res.data as Entity;
           entityCache.data = [created, ...entityCache.data];
@@ -218,6 +218,14 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
   ({ content, onChange, editable = true, className, currentNoteId }, ref) => {
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
+    
+    const [isUploading, setIsUploading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const { toast } = useToast();
+
+    // Ref para acessar a função de upload dentro do hook do editor sem gerar dependência cíclica
+    const uploadFileRef = useRef<(file: File) => Promise<void>>();
 
     const editor = useEditor({
       extensions: [
@@ -242,7 +250,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
           autolink: true,
           HTMLAttributes: { class: "text-primary underline underline-offset-4 cursor-pointer" },
         }),
-        Image.configure({ HTMLAttributes: { class: "rounded-lg my-4 max-w-full" } }),
+        Image.configure({ HTMLAttributes: { class: "rounded-lg my-4 max-w-full shadow-lg" } }),
         VaultImage,
         VaultPdf,
         VaultAudio,
@@ -269,22 +277,17 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         attributes: {
           class: `continuum-editor prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60vh] ${className || ""}`,
         },
+        // CORREÇÃO DE BUG: Agora arquivos colados via CTRL+V fazem upload para o seu backend
         handlePaste: (view, event) => {
           const items = event.clipboardData?.items;
           if (!items) return false;
           for (const item of items) {
-            if (item.type.startsWith("image/")) {
+            if (item.type.startsWith("image/") || item.type === "application/pdf" || item.type.startsWith("audio/")) {
               const file = item.getAsFile();
-              if (!file) continue;
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const url = e.target?.result;
-                if (typeof url === "string") {
-                  view.dispatch(view.state.tr.replaceSelectionWith(view.state.schema.nodes.image.create({ src: url })));
-                }
-              };
-              reader.readAsDataURL(file);
-              return true;
+              if (file && uploadFileRef.current) {
+                uploadFileRef.current(file);
+                return true;
+              }
             }
           }
           return false;
@@ -295,33 +298,8 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       },
     });
 
-    const [isUploading, setIsUploading] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const { toast } = useToast();
-
-    const handleUploadClick = () => {
-      fileInputRef.current?.click();
-    };
-
-    const handleDragEnter = (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    const uploadFileToVault = async (file: File) => {
+    const uploadFileToVault = useCallback(async (file: File) => {
+      if (!editor) return;
       const formData = new FormData();
       formData.append("file", file);
 
@@ -369,6 +347,32 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       } finally {
         setIsUploading(false);
       }
+    }, [editor, toast]);
+
+    // Atualiza a ref para o handlePaste ter sempre a função mais recente
+    useEffect(() => {
+      uploadFileRef.current = uploadFileToVault;
+    }, [uploadFileToVault]);
+
+    const handleUploadClick = () => {
+      fileInputRef.current?.click();
+    };
+
+    const handleDragEnter = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
     };
 
     const handleDrop = async (e: React.DragEvent) => {
@@ -424,40 +428,56 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
           onChange={handleFileUpload}
         />
         {editor && (
-          <BubbleMenu
-            editor={editor}
-            options={{ placement: "top" }}
-            className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-popover/95 backdrop-blur-md shadow-2xl px-1 py-1"
-          >
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBold().run()} active={editor.isActive("bold")} icon={Bold} label="Bold" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} icon={Italic} label="Italic" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} icon={Strikethrough} label="Strike" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleCode().run()} active={editor.isActive("code")} icon={Code} label="Code" />
-            <div className="w-px h-5 bg-border/60 mx-0.5" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} icon={Heading1} label="H1" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} icon={Heading2} label="H2" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} icon={Quote} label="Quote" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} icon={List} label="Bullets" />
-            <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} icon={ListOrdered} label="Numbered" />
-            <div className="w-px h-5 bg-border/60 mx-0.5" />
-            <ToolbarBtn
+          <>
+            {/* NOVO BUBBLE MENU - Estilo elegante e translúcido */}
+            <BubbleMenu
               editor={editor}
-              action={(e) => {
-                const url = window.prompt("URL", e.getAttributes("link").href || "https://");
-                if (url === null) return;
-                if (url === "") { e.chain().focus().unsetLink().run(); return; }
-                e.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-              }}
-              active={editor.isActive("link")} icon={LinkIcon} label="Link" />
-            <ToolbarBtn
-              editor={editor}
-              action={() => handleUploadClick()}
-              active={false}
-              icon={Upload}
-              label={isUploading ? "Uploading…" : "Upload file"}
-              disabled={isUploading}
-            />
-          </BubbleMenu>
+              options={{ placement: "top" }}
+              className="flex items-center gap-0.5 rounded-xl border border-white/10 bg-black/90 backdrop-blur-xl shadow-2xl px-1.5 py-1.5"
+            >
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBold().run()} active={editor.isActive("bold")} icon={Bold} label="Bold" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} icon={Italic} label="Italic" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} icon={Strikethrough} label="Strike" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleCode().run()} active={editor.isActive("code")} icon={Code} label="Code" />
+              <div className="w-[1px] h-4 bg-white/10 mx-1" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} icon={Heading1} label="H1" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} icon={Heading2} label="H2" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} icon={Quote} label="Quote" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} icon={List} label="Bullets" />
+              <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} icon={ListOrdered} label="Numbered" />
+              <div className="w-[1px] h-4 bg-white/10 mx-1" />
+              <ToolbarBtn
+                editor={editor}
+                action={(e) => {
+                  const url = window.prompt("URL", e.getAttributes("link").href || "https://");
+                  if (url === null) return;
+                  if (url === "") { e.chain().focus().unsetLink().run(); return; }
+                  e.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+                }}
+                active={editor.isActive("link")} icon={LinkIcon} label="Link" />
+              <ToolbarBtn
+                editor={editor}
+                action={() => handleUploadClick()}
+                active={false}
+                icon={Upload}
+                label={isUploading ? "Uploading…" : "Upload file"}
+                disabled={isUploading}
+              />
+            </BubbleMenu>
+
+            {/* CONTROLE INTELIGENTE DE TABELAS */}
+            {editor.isActive("table") && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 bg-black/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 font-medium">Table</span>
+                <button type="button" className="text-xs h-7 px-3 rounded hover:bg-white/10 text-neutral-300 transition-colors" onClick={() => editor.chain().focus().addColumnAfter().run()}>+ Col</button>
+                <button type="button" className="text-xs h-7 px-3 rounded hover:bg-white/10 text-neutral-300 transition-colors" onClick={() => editor.chain().focus().addRowAfter().run()}>+ Row</button>
+                <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                <button type="button" className="flex items-center text-xs h-7 px-3 rounded hover:bg-red-500/20 text-red-400 transition-colors" onClick={() => editor.chain().focus().deleteTable().run()}>
+                  <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+                </button>
+              </div>
+            )}
+          </>
         )}
         <div
           onDragEnter={handleDragEnter}
@@ -467,10 +487,10 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
           className="relative"
         >
           {isDragging && (
-            <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg z-10 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-xl z-10 flex items-center justify-center pointer-events-none backdrop-blur-[2px]">
               <div className="text-center">
-                <Upload className="w-8 h-8 text-primary mx-auto mb-2" />
-                <p className="text-primary font-medium text-sm">Drop files to insert into note</p>
+                <Upload className="w-8 h-8 text-primary mx-auto mb-2 animate-bounce" />
+                <p className="text-primary font-medium text-sm">Drop files to upload to vault</p>
               </div>
             </div>
           )}
@@ -482,6 +502,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
 );
 TiptapEditor.displayName = "TiptapEditor";
 
+// Componente do botão re-estilizado para combinar com o novo BubbleMenu
 function ToolbarBtn({
   editor, action, active, icon: Icon, label, disabled,
 }: { editor: Editor; action: (e: Editor) => void; active: boolean; icon: typeof Bold; label: string; disabled?: boolean }) {
@@ -491,8 +512,12 @@ function ToolbarBtn({
       title={label}
       onMouseDown={(e) => { e.preventDefault(); if (!disabled) action(editor); }}
       disabled={disabled}
-      className={`p-1.5 rounded-md transition-colors ${
-        disabled ? "cursor-not-allowed opacity-50" : active ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+      className={`p-1.5 rounded-lg transition-colors ${
+        disabled 
+          ? "cursor-not-allowed opacity-40" 
+          : active 
+            ? "bg-primary/20 text-primary" 
+            : "text-neutral-400 hover:bg-white/10 hover:text-white"
       }`}
     >
       <Icon className="w-3.5 h-3.5" />
