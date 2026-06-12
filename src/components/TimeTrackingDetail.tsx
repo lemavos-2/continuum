@@ -6,7 +6,7 @@ import { entitiesApi } from '@/lib/api';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus } from "@/lib/heroicons";
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,

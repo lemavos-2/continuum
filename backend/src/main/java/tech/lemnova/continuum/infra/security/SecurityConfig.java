@@ -73,6 +73,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/google/callback").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/google/url").permitAll()
+                // Allow Stripe webhook endpoint unauthenticated so Stripe can POST events
+                .requestMatchers(HttpMethod.POST, "/api/webhooks/stripe").permitAll()
                 // Swagger / Docs
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
                 // Qualquer outra requisição precisa de JWT
@@ -92,10 +94,8 @@ public class SecurityConfig {
         
         // Allow multiple origins including Lovable domains
         config.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:5173",
-            "https://continuumnodes.lovable.app",
-            "https://*.lovable.app",
-            "https://continuum-backend.onrender.com"
+            "https://appcontinuum.vercel.app",
+            "https://backend-continuum.onrender.com"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));

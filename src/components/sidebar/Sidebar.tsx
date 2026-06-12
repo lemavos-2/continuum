@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ReactNode } from "react";
-import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, ChevronLeft, ChevronRight } from "@/lib/heroicons";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {

@@ -1,6 +1,6 @@
 // Types matching Java backend POJOs exactly
 
-export type Plan = "FREE" | "PLUS" | "PRO" | "VISION";
+export type Plan = "FREE" | "VISION";
 
 export interface User {
   id: string;

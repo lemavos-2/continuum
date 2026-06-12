@@ -2,7 +2,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useEffect, useState } from "react";
 import { resolveVaultBlob } from "@/lib/vault-blob";
-import { Music, Loader2 } from "lucide-react";
+import { Music, Loader2 } from "@/lib/heroicons";
 
 function VaultAudioView({ node }: NodeViewProps) {
   const vaultId: string | null = node.attrs.vaultId ?? null;

@@ -7,7 +7,7 @@ import {
   isSameMonth,
   isSameDay
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, BarChart3 } from "@/lib/heroicons";
 import { useTimeAnalytics } from '@/hooks/useTimeAnalytics';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

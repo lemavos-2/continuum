@@ -1,9 +1,75 @@
-import { Play, Pause, Trash2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
-import { Button } from '@/components/ui/button';
-import './FlipClock.css';
 
+// ============================================================
+// SUBCOMPONENTE: FlipDigit (Alinhamento Robusto e Sem Falhas)
+// ============================================================
+function FlipDigit({ value }: { value: string }) {
+  const [prevValue, setPrevValue] = useState(value);
+  const [isFlipping, setIsFlipping] = useState(false);
+
+  useEffect(() => {
+    if (value !== prevValue) {
+      setIsFlipping(true);
+      const timeout = setTimeout(() => {
+        setPrevValue(value);
+        setIsFlipping(false);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [value, prevValue]);
+
+  return (
+    <div className="relative w-14 h-20 sm:w-20 sm:h-28 lg:w-24 lg:h-36 font-mono font-bold text-white select-none [perspective:1000px]">
+      
+      <style>{`
+        .backface-hidden {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+        .anim-top { animation: flip-top-fall 0.25s ease-in forwards; }
+        .anim-bottom { animation: flip-bottom-reveal 0.25s ease-out 0.25s forwards; }
+        @keyframes flip-top-fall { 0% { transform: rotateX(0deg); } 100% { transform: rotateX(-90deg); } }
+        @keyframes flip-bottom-reveal { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0deg); } }
+      `}</style>
+
+      {/* 1. TOPO BASE */}
+      <div className="absolute top-0 left-0 w-full h-1/2 overflow-hidden rounded-t-xl bg-gradient-to-b from-[#1a1a1c] to-[#111112] border-b border-black/50">
+        <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+          {value}
+        </div>
+      </div>
+
+      {/* 2. BASE DE BAIXO */}
+      <div className="absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-[#111112] to-[#09090a]">
+        <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+          {prevValue}
+        </div>
+      </div>
+
+      {/* 3. CARTA QUE CAI DE CIMA */}
+      <div className={`absolute top-0 left-0 w-full h-1/2 overflow-hidden rounded-t-xl bg-gradient-to-b from-[#1a1a1c] to-[#111112] border-b border-black/50 [transform-origin:bottom] backface-hidden ${isFlipping ? 'anim-top' : ''}`}>
+        <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+          {prevValue}
+        </div>
+      </div>
+
+      {/* 4. CARTA QUE APARECE EM BAIXO */}
+      <div className={`absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-[#111112] to-[#09090a] [transform-origin:top] backface-hidden [transform:rotateX(90deg)] ${isFlipping ? 'anim-bottom' : ''}`}>
+        <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+          {value}
+        </div>
+      </div>
+
+      {/* FRISO CENTRAL */}
+      <div className="absolute top-[calc(50%-1px)] left-0 w-full h-[2px] bg-black/80 z-10 shadow-[0_1px_0px_rgba(255,255,255,0.08)]"></div>
+    </div>
+  );
+}
+
+// ============================================================
+// INTERFACES
+// ============================================================
 interface TimerWidgetProps {
   entityId: string;
   entityName: string;
@@ -12,84 +78,10 @@ interface TimerWidgetProps {
   compact?: boolean;
 }
 
-interface FlipDigitProps {
-  value: string;
-  isColon?: boolean;
-}
-
-function FlipDigit({ value, isColon = false }: FlipDigitProps) {
-  const [previous, setPrevious] = useState(value);
-  const [flipping, setFlipping] = useState(false);
-
-  useEffect(() => {
-    if (value !== previous) {
-      setFlipping(true);
-      const timeout = window.setTimeout(() => {
-        setFlipping(false);
-        setPrevious(value);
-      }, 600);
-      return () => window.clearTimeout(timeout);
-    }
-  }, [value, previous]);
-
-  if (isColon) {
-    return (
-      <div className="flex items-center justify-center w-6 sm:w-10 h-[7rem] sm:h-[10rem] lg:h-[12rem] text-5xl sm:text-7xl lg:text-8xl font-mono font-bold text-white/60">
-        :
-      </div>
-    );
-  }
-
-  return (
-    <div className={`flip-digit ${flipping ? 'flipping' : ''}`}>
-      <div className="flip-top">{flipping ? previous : value}</div>
-      <div className="flip-bottom">{value}</div>
-    </div>
-  );
-}
-
-function FlipClockOverlay({ timeString, onClose }: { timeString: string; onClose: () => void }) {
-  // Parse time string "HH:MM:SS" into individual digits
-  const timeParts = timeString.split(':');
-  const hours = timeParts[0].padStart(2, '0').split('');
-  const minutes = timeParts[1].padStart(2, '0').split('');
-  const seconds = timeParts[2].padStart(2, '0').split('');
-
-  return (
-    <div className="flip-clock-fullscreen fixed inset-0 z-50 flex items-center justify-center bg-black text-white">
-      <div className="relative w-full max-w-7xl px-4">
-        <button
-          onClick={onClose}
-          className="absolute right-6 top-6 z-50 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition-colors hover:bg-white/10"
-          aria-label="Close flip clock"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        <div className="flex flex-col items-center gap-10">
-          <div className="flex items-center justify-center gap-1 sm:gap-2">
-            <FlipDigit value={hours[0]} />
-            <FlipDigit value={hours[1]} />
-            <FlipDigit value=":" isColon />
-            <FlipDigit value={minutes[0]} />
-            <FlipDigit value={minutes[1]} />
-            <FlipDigit value=":" isColon />
-            <FlipDigit value={seconds[0]} />
-            <FlipDigit value={seconds[1]} />
-          </div>
-
-          <div className="text-center text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Press <span className="text-white">Esc</span> to exit
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Reusable timer widget component - uses shared timer state
- */
+// ============================================================
+// COMPONENTE PRINCIPAL: TimerWidget
+// Visual do novo + lógica de save do antigo (useTimeTracking)
+// ============================================================
 export function TimerWidget({
   entityId,
   entityName,
@@ -97,32 +89,62 @@ export function TimerWidget({
   onTimerStop,
   compact = false,
 }: TimerWidgetProps) {
-  const { activeTimers, isTimerActive, getElapsedSeconds, startTimer, stopTimer, isStarting, isStopping, getActiveTimer, formatSeconds } = useTimeTracking();
-  const [isFlipOpen, setIsFlipOpen] = useState(false);
-  const [flipTime, setFlipTime] = useState(0);
-  const fullscreenRef = useRef<HTMLDivElement | null>(null);
+  const {
+    activeTimers,
+    isTimerActive,
+    getElapsedSeconds,
+    startTimer,
+    stopTimer,
+    isStarting,
+    isStopping,
+    getActiveTimer,
+    formatSeconds,
+  } = useTimeTracking();
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { data: activeTimer, isLoading: timerLoading } = getActiveTimer(entityId);
   const isRunning = isTimerActive(entityId);
 
-  // Get the current timer value from the hook's shared state
-  const currentElapsed = isRunning ? getElapsedSeconds(entityId) : (activeTimer?.elapsedSeconds || 0);
+  const currentElapsed = isRunning
+    ? getElapsedSeconds(entityId)
+    : (activeTimer?.elapsedSeconds || 0);
+
   const timeString = formatSeconds(currentElapsed);
 
-  // Update flip time when Flip Clock is open
+  // Deriva dígitos do timeString "HH:MM:SS"
+  const [hh, mm, ss] = timeString.split(':');
+  const hrs = (hh || '00').padStart(2, '0');
+  const mins = (mm || '00').padStart(2, '0');
+  const secs = (ss || '00').padStart(2, '0');
+
+  // Gerencia ativação do Fullscreen Nativo
   useEffect(() => {
-    if (!isFlipOpen) return;
+    if (isFullscreen) {
+      const elem = fullscreenContainerRef.current;
+      if (elem?.requestFullscreen) {
+        elem.requestFullscreen().catch((err) => console.warn('Erro ao forçar fullscreen:', err));
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch((err) => console.warn(err));
+      }
+    }
+  }, [isFullscreen]);
 
-    const updateFlipTime = () => {
-      const elapsed = isRunning ? getElapsedSeconds(entityId) : (activeTimer?.elapsedSeconds || 0);
-      setFlipTime(elapsed);
+  // Sincroniza se o usuário sair do fullscreen pelo botão nativo
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
     };
-
-    updateFlipTime(); // Initial update
-    const interval = setInterval(updateFlipTime, 100); // Update every 100ms for smooth animation
-
-    return () => clearInterval(interval);
-  }, [isFlipOpen, isRunning, getElapsedSeconds, entityId, activeTimer?.elapsedSeconds]);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const handleStart = async () => {
     try {
@@ -145,133 +167,125 @@ export function TimerWidget({
     }
   };
 
-  const openFlipClock = async () => {
-    setIsFlipOpen(true);
-    setFlipTime(currentElapsed);
-
-    // Request fullscreen after a small delay to ensure the element is rendered
-    setTimeout(() => {
-      if (fullscreenRef.current?.requestFullscreen) {
-        fullscreenRef.current.requestFullscreen().catch((error) => {
-          console.warn('Fullscreen request failed:', error);
-        });
-      }
-    }, 100);
-  };
-
-  const closeFlipClock = async () => {
-    setIsFlipOpen(false);
-    if (document.fullscreenElement) {
-      try {
-        await document.exitFullscreen();
-      } catch (error) {
-        console.warn('Exit fullscreen failed:', error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const onFullScreenChange = () => {
-      if (!document.fullscreenElement) {
-        setIsFlipOpen(false);
-      }
-    };
-
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isFlipOpen) {
-        closeFlipClock();
-      }
-    };
-
-    document.addEventListener('fullscreenchange', onFullScreenChange);
-    document.addEventListener('keydown', onEscape);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', onFullScreenChange);
-      document.removeEventListener('keydown', onEscape);
-    };
-  }, [isFlipOpen]);
-
+  // Modo compacto (igual ao antigo)
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        <span className="font-mono text-sm text-zinc-400">
-          {timeString}
-        </span>
+        <span className="font-mono text-sm text-zinc-400">{timeString}</span>
         {isRunning ? (
-          <Button
-            size="sm"
-            variant="destructive"
+          <button
             onClick={handleStop}
             disabled={isStopping}
-            className="h-6 w-6 p-0"
             title="Stop timer"
+            className="h-6 w-6 flex items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition text-xs"
           >
-            <Pause className="w-3 h-3" />
-          </Button>
+            ■
+          </button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
+          <button
             onClick={handleStart}
             disabled={isStarting}
-            className="h-6 w-6 p-0"
             title="Start timer"
+            className="h-6 w-6 flex items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition text-xs"
           >
-            <Play className="w-3 h-3" />
-          </Button>
+            ▶
+          </button>
         )}
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col items-center gap-4 p-4 bg-zinc-900/50 rounded-lg border border-white/5">
-      <h3 className="text-lg font-medium text-white">{entityName}</h3>
+    <div className="p-6 bg-[#0d0d0e] text-white rounded-xl shadow-2xl max-w-sm border border-zinc-800/80">
+      <span className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-500">
+        {entityName}
+      </span>
 
-      <div className="text-4xl font-mono font-bold text-zinc-400">
-        {timeString}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {isRunning ? (
-          <Button
-            onClick={handleStop}
-            disabled={isStopping || timerLoading}
-            variant="destructive"
-            className="gap-2"
-          >
-            <Pause className="w-4 h-4" />
-            Stop & Save
-          </Button>
-        ) : (
-          <Button
-            onClick={handleStart}
-            disabled={isStarting || timerLoading}
-            variant="default"
-            className="gap-2"
-          >
-            <Play className="w-4 h-4" />
-            Start Timer
-          </Button>
-        )}
-
-        <Button
-          onClick={openFlipClock}
-          variant="secondary"
-          className="gap-2"
-        >
-          Go to Flip Clock
-        </Button>
+      <div className="text-4xl font-mono font-bold text-center my-6 tracking-widest text-zinc-100">
+        {hrs}:{mins}:{secs}
       </div>
 
       {timerLoading && (
-        <p className="text-xs text-zinc-500">Loading timer status...</p>
+        <p className="text-xs text-zinc-600 text-center mb-2">Carregando timer...</p>
       )}
 
-      {isFlipOpen && (
-        <div ref={fullscreenRef} className="fixed inset-0 z-50 bg-black">
-          <FlipClockOverlay timeString={formatSeconds(flipTime)} onClose={closeFlipClock} />
+      {/* BOTÕES — MONOCROMÁTICOS */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        {!isRunning ? (
+          <button
+            onClick={handleStart}
+            disabled={isStarting || timerLoading}
+            className="py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold rounded-lg transition text-sm disabled:opacity-50"
+          >
+            {isStarting ? 'Iniciando...' : 'Start Timer'}
+          </button>
+        ) : (
+          <button
+            onClick={handleStop}
+            disabled={isStopping || timerLoading}
+            className="py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-100 font-semibold rounded-lg transition text-sm border border-zinc-800 disabled:opacity-50"
+          >
+            {isStopping ? 'Salvando...' : 'Stop Timer'}
+          </button>
+        )}
+        {/* Reset só disponível quando parado — limpa visualmente mas não apaga o histórico */}
+        <button
+          onClick={() => {/* reset visual não é necessário: o tempo vem do hook */}}
+          disabled={isRunning || timerLoading}
+          className="py-2.5 bg-zinc-900/40 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 font-semibold rounded-lg transition text-sm border border-zinc-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Reset
+        </button>
+      </div>
+
+      <button
+        onClick={() => setIsFullscreen(true)}
+        className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-lg text-xs tracking-wider uppercase transition text-center border border-zinc-800"
+      >
+        Go to Flip Clock
+      </button>
+
+      {/* FULLSCREEN COM FLIPDIGIT ANIMADO */}
+      {isFullscreen && (
+        <div
+          ref={fullscreenContainerRef}
+          className="fixed inset-0 w-screen h-[100dvh] z-50 flex flex-col justify-center items-center bg-black select-none"
+        >
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-6 right-6 text-slate-600 hover:text-white text-2xl font-light w-12 h-12 flex items-center justify-center rounded-full border border-slate-800 hover:border-slate-600 transition bg-black hover:bg-slate-900"
+          >
+            ✕
+          </button>
+
+          <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4">
+            <FlipDigit value={hrs[0]} />
+            <FlipDigit value={hrs[1]} />
+
+            <div className="flex flex-col gap-2 sm:gap-4 px-1 opacity-40 animate-pulse">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full"></span>
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full"></span>
+            </div>
+
+            <FlipDigit value={mins[0]} />
+            <FlipDigit value={mins[1]} />
+
+            <div className="flex flex-col gap-2 sm:gap-4 px-1 opacity-40 animate-pulse">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full"></span>
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full"></span>
+            </div>
+
+            <FlipDigit value={secs[0]} />
+            <FlipDigit value={secs[1]} />
+          </div>
+
+          <div className="absolute bottom-10 text-[10px] font-mono tracking-widest text-zinc-700 uppercase hidden sm:block">
+            Press{' '}
+            <span className="text-zinc-500 bg-zinc-950 px-2 py-1 rounded border border-zinc-900">
+              ESC
+            </span>{' '}
+            to exit
+          </div>
         </div>
       )}
     </div>

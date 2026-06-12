@@ -1,6 +1,6 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LucideIcon, ChevronDown } from "lucide-react";
+import { LucideIcon, ChevronDown } from "@/lib/heroicons";
 import { cn } from "@/lib/utils";
 import { SidebarTooltip } from "@/components/sidebar/SidebarTooltip";
 import { SidebarItem } from "@/components/sidebar/SidebarItem";

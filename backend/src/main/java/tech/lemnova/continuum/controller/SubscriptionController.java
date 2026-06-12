@@ -30,10 +30,12 @@ public class SubscriptionController {
     public ResponseEntity<CheckoutResponse> checkout(
             @AuthenticationPrincipal CustomUserDetails user,
             @RequestBody Map<String, String> body) {
-        String priceId = body.get("priceId");
-        if (priceId == null || priceId.isBlank()) throw new BadRequestException("priceId is required");
+        // Accept either { priceId } (direct Stripe price) or { planId: "VISION" } (plan code).
+        String priceOrPlan = body.getOrDefault("priceId", body.get("planId"));
+        if (priceOrPlan == null || priceOrPlan.isBlank())
+            throw new BadRequestException("priceId or planId is required");
         return ResponseEntity.ok(
-                subscriptionService.createCheckout(user.getUserId(), user.getEmail(), priceId));
+                subscriptionService.createCheckout(user.getUserId(), user.getEmail(), priceOrPlan));
     }
 
     @PostMapping("/cancel")

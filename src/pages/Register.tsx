@@ -1,11 +1,34 @@
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "@/lib/heroicons";
+
+export default function Register() {
+  const { loginWithGoogle } = useAuth();
+
+  useEffect(() => {
+    loginWithGoogle();
+  }, [loginWithGoogle]);
+
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="text-sm text-white/70">Redirecting to Google login...</p>
+      </div>
+    </div>
+  );
+}
+
+/*
+// Hidden: Original email/password registration form - kept for future use
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/heroicons";
 import { useToast } from "@/hooks/use-toast";
 import AuthShell from "@/components/auth/AuthShell";
 
-export default function Register() {
+export default function RegisterOld() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,65 +54,5 @@ export default function Register() {
       setLoading(false);
     }
   };
+*/
 
-  return (
-    <AuthShell
-      title="Create account."
-      subtitle="Three fields. Forever yours."
-      footer={
-        <>
-          Already with us?{" "}
-          <Link to="/login" className="text-white underline underline-offset-4 hover:opacity-80">
-            Sign in
-          </Link>
-        </>
-      }
-    >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-1.5">
-          <label htmlFor="username" className="label-caps">Username</label>
-          <input
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="johndoe"
-            required
-            className="w-full bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-base outline-none transition-colors"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="label-caps">Email</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-            className="w-full bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-base outline-none transition-colors"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="password" className="label-caps">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
-            required
-            minLength={8}
-            className="w-full bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-base outline-none transition-colors"
-          />
-        </div>
-
-        <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {loading ? "Creating…" : "Create account"}
-        </button>
-      </form>
-    </AuthShell>
-  );
-}

@@ -8,7 +8,7 @@ export interface MentionedEntity {
   cursorPosition?: number;
 }
 
-export type InspectableNote = Note & { type: 'NOTE'; description?: string };
+export type InspectableNote = Note & { type: 'NOTE'; description?: string; noteType?: string };
 export type InspectableEntity = Entity | InspectableNote;
 
 export interface EntityContextState {

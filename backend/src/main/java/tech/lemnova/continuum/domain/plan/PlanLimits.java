@@ -14,14 +14,6 @@ public record PlanLimits(
         return new PlanLimits(20, 50, 30, 10, maxVaultSizeMB, false, false, false);
     }
 
-    public static PlanLimits plus(int maxVaultSizeMB) {
-        return new PlanLimits(100, 500, 180, 50, maxVaultSizeMB, true, false, false);
-    }
-
-    public static PlanLimits pro(int maxVaultSizeMB) {
-        return new PlanLimits(Integer.MAX_VALUE, Integer.MAX_VALUE, 730, 500, maxVaultSizeMB, true, true, true);
-    }
-
     public static PlanLimits vision(int maxVaultSizeMB) {
         return new PlanLimits(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, 2048, maxVaultSizeMB, true, true, true);
     }

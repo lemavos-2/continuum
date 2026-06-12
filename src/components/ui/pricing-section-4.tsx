@@ -5,7 +5,7 @@ import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
 import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { useRef } from "react";
-import { Check } from "lucide-react";
+import { Check } from "@/lib/heroicons";
 
 const plans = [
   {

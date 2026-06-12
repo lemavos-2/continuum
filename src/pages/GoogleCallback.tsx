@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { extractAuthTokensFromLocation, sanitizeAuthRedirectUrl } from "@/lib/auth-redirect";
+import { Loader2 } from "@/lib/heroicons";
 import { useToast } from "@/hooks/use-toast";
 
 export default function GoogleCallback() {
@@ -12,20 +13,19 @@ export default function GoogleCallback() {
   const hasCalled = useRef(false);
 
   useEffect(() => {
-    const parseRedirectTokens = () => {
-      const searchParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
+    const authTokens = extractAuthTokensFromLocation();
+    sanitizeAuthRedirectUrl();
 
-      return {
-        accessToken: getValue("access_token") ?? getValue("token") ?? getValue("jwt"),
-        refreshToken: getValue("refresh_token"),
-        code: getValue("code"),
-        state: getValue("state"),
-      };
-    };
+    const accessToken = authTokens?.accessToken;
+    const refreshToken = authTokens?.refreshToken;
+    const searchParams = new URLSearchParams(window.location.search);
 
-    const { accessToken, refreshToken, code, state } = parseRedirectTokens();
+    const rawHash = window.location.hash.replace(/^#/, "");
+    const [, hashQuery = ""] = rawHash.split("?", 2);
+    const hashParams = new URLSearchParams(hashQuery);
+
+    const code = searchParams.get("code") ?? hashParams.get("code");
+    const state = searchParams.get("state") ?? hashParams.get("state");
 
     // Se já existem tokens na URL (redirecionamento direto)
     if (accessToken) {
@@ -41,13 +41,32 @@ export default function GoogleCallback() {
 
     // Se recebemos um código para trocar no backend
     if (code) {
+      if (!state) {
+        console.error("Google Auth callback missing state parameter", { code, state });
+        toast({
+          title: "Authentication error",
+          description: "Google login redirect is missing state data. Please try again.",
+          variant: "destructive",
+        });
+        navigate("/");
+        return;
+      }
+
       if (hasCalled.current) return;
       hasCalled.current = true;
 
       authApi
-        .googleCallback(code, state || "")
+        .googleCallback({
+          code,
+          state,
+          redirectUri: window.location.origin + window.location.pathname,
+        })
         .then(async ({ data }) => {
           setTokens(data.accessToken, data.refreshToken);
+          // Only mark as new account when the backend says the user was just created
+          if (data.isNewUser) {
+            localStorage.setItem('newAccountCreated', 'true');
+          }
           await refreshUser();
           navigate("/");
         })

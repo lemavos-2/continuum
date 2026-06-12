@@ -1,5 +1,6 @@
 import { useEditor, EditorContent, ReactRenderer, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
+import { useNavigate } from "react-router-dom";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import LinkExtension from "@tiptap/extension-link";
@@ -15,6 +16,12 @@ import Typography from "@tiptap/extension-typography";
 import CharacterCount from "@tiptap/extension-character-count";
 import Dropcursor from "@tiptap/extension-dropcursor";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import Highlight from "@tiptap/extension-highlight";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
+import Underline from "@tiptap/extension-underline";
+import { Mathematics } from "@tiptap/extension-mathematics";
+import "katex/dist/katex.min.css";
 import { common, createLowlight } from "lowlight";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
@@ -23,7 +30,7 @@ import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion
 import {
   Bold, Italic, Strikethrough, Code, Link as LinkIcon, Upload,
   Heading1, Heading2, Quote, List, ListOrdered, Trash2
-} from "lucide-react";
+} from "@/lib/heroicons";
 import { entitiesApi, notesApi, vaultApi } from "@/lib/api";
 import type { Entity } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +39,12 @@ import { SlashCommands } from "./SlashCommands";
 import { VaultImage } from "./VaultImage";
 import { VaultPdf } from "./VaultPdf";
 import { VaultAudio } from "./VaultAudio";
+import { AutoPair } from "./extensions/AutoPair";
+import { EditorShortcuts } from "./extensions/EditorShortcuts";
+import { LinkHover } from "./extensions/LinkHover";
+import { SearchHighlight } from "./extensions/SearchHighlight";
+import { FindReplace } from "./FindReplace";
+import { StatusBar } from "./StatusBar";
 
 const IMAGE_MIME_RE = /^image\//i;
 const IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif|svg)$/i;
@@ -43,6 +56,23 @@ const AUDIO_EXT_RE = /\.(mp3|m4a|wav|ogg|aac)$/i;
 const isAudioFile = (file: File) => AUDIO_MIME_RE.test(file.type) || AUDIO_EXT_RE.test(file.name);
 
 const lowlight = createLowlight(common);
+
+const isSafeEditorUrl = (href: string) => {
+  const trimmed = href.trim();
+  if (!trimmed) return false;
+
+  const lowered = trimmed.toLowerCase();
+  if (lowered.startsWith("javascript:") || lowered.startsWith("data:") || lowered.startsWith("vbscript:")) return false;
+  if (lowered.startsWith("mailto:") || lowered.startsWith("tel:")) return true;
+  if (trimmed.startsWith("/") || trimmed.startsWith("#")) return true;
+
+  try {
+    const parsed = new URL(trimmed, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 const NoteMention = Mention.extend({
   name: "noteMention",
@@ -64,7 +94,10 @@ type Cache<T> = { token: string | null; at: number; data: T[]; pending: Promise<
 const entityCache: Cache<Entity> = { token: null, at: 0, data: [], pending: null };
 const noteCache: Cache<{ id: string; title: string }> = { token: null, at: 0, data: [], pending: null };
 
-const getToken = () => (typeof window !== "undefined" ? window.localStorage.getItem("access_token") : null);
+const getToken = () => {
+  if (typeof window === "undefined") return null;
+  return window.sessionStorage.getItem("access_token") ?? window.localStorage.getItem("access_token");
+};
 
 export const resetEditorCaches = () => {
   Object.assign(entityCache, { token: null, at: 0, data: [], pending: null });
@@ -212,27 +245,43 @@ interface Props {
   editable?: boolean;
   className?: string;
   currentNoteId?: string;
+  onSave?: () => void;
 }
 
 export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
-  ({ content, onChange, editable = true, className, currentNoteId }, ref) => {
+  ({ content, onChange, editable = true, className, currentNoteId, onSave }, ref) => {
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
-    
+    const onSaveRef = useRef(onSave);
+    onSaveRef.current = onSave;
+    const navigate = useNavigate();
+
     const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [findOpen, setFindOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const { toast } = useToast();
 
-    // Ref para acessar a função de upload dentro do hook do editor sem gerar dependência cíclica
     const uploadFileRef = useRef<(file: File) => Promise<void>>();
 
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
-          heading: { levels: [1, 2, 3] },
+          heading: { levels: [1, 2, 3, 4, 5, 6] },
           codeBlock: false,
           dropcursor: false,
+        }),
+        Underline,
+        Highlight.configure({ multicolor: false }),
+        Subscript,
+        Superscript,
+        Mathematics,
+        AutoPair,
+        LinkHover,
+        SearchHighlight,
+        EditorShortcuts.configure({
+          onSave: () => onSaveRef.current?.(),
+          onFind: () => setFindOpen(true),
         }),
         Placeholder.configure({
           placeholder: ({ node }) => {
@@ -246,8 +295,9 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         CharacterCount,
         Dropcursor.configure({ color: "hsl(var(--primary))", width: 2 }),
         LinkExtension.configure({
-          openOnClick: true,
+          openOnClick: false,
           autolink: true,
+          validate: (href) => isSafeEditorUrl(href),
           HTMLAttributes: { class: "text-primary underline underline-offset-4 cursor-pointer" },
         }),
         Image.configure({ HTMLAttributes: { class: "rounded-lg my-4 max-w-full shadow-lg" } }),
@@ -263,10 +313,30 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         CodeBlockLowlight.configure({ lowlight }),
         Mention.configure({
           HTMLAttributes: { class: "continuum-entity-mention" },
+          renderHTML: ({ node, HTMLAttributes }: any) => [
+            "span",
+            {
+              ...HTMLAttributes,
+              "data-id": node.attrs.id,
+              "data-label": node.attrs.label,
+              "data-mention-type": "entity",
+            },
+            `@${node.attrs.label || node.attrs.id}`,
+          ],
           suggestion: buildSuggestion("entity") as any,
         }),
         NoteMention.configure({
           HTMLAttributes: { class: "continuum-note-mention" },
+          renderHTML: ({ node, HTMLAttributes }: any) => [
+            "span",
+            {
+              ...HTMLAttributes,
+              "data-id": node.attrs.id,
+              "data-label": node.attrs.label,
+              "data-mention-type": "note",
+            },
+            `#${node.attrs.label || node.attrs.id}`,
+          ],
           suggestion: buildSuggestion("note", currentNoteId) as any,
         }),
         SlashCommands,
@@ -277,7 +347,17 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         attributes: {
           class: `continuum-editor prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60vh] ${className || ""}`,
         },
-        // CORREÇÃO DE BUG: Agora arquivos colados via CTRL+V fazem upload para o seu backend
+        handleClickOn: (_view, _pos, node, _nodePos, event) => {
+          const name = node.type.name;
+          if (name !== "mention" && name !== "noteMention") return false;
+          const id = (node.attrs as any)?.id;
+          if (!id) return false;
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+          event.preventDefault();
+          if (name === "noteMention") navigate(`/notes/${id}`);
+          else navigate(`/entities/${id}`);
+          return true;
+        },
         handlePaste: (view, event) => {
           const items = event.clipboardData?.items;
           if (!items) return false;
@@ -349,7 +429,6 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       }
     }, [editor, toast]);
 
-    // Atualiza a ref para o handlePaste ter sempre a função mais recente
     useEffect(() => {
       uploadFileRef.current = uploadFileToVault;
     }, [uploadFileToVault]);
@@ -429,7 +508,6 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         />
         {editor && (
           <>
-            {/* NOVO BUBBLE MENU - Estilo elegante e translúcido */}
             <BubbleMenu
               editor={editor}
               options={{ placement: "top" }}
@@ -442,6 +520,18 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
               <div className="w-[1px] h-4 bg-white/10 mx-1" />
               <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} icon={Heading1} label="H1" />
               <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} icon={Heading2} label="H2" />
+              <button
+                type="button"
+                title="H3"
+                onMouseDown={(ev) => { ev.preventDefault(); editor.chain().focus().toggleHeading({ level: 3 }).run(); }}
+                className={`px-1.5 h-7 text-[11px] font-semibold rounded-lg transition-colors ${editor.isActive("heading", { level: 3 }) ? "bg-primary/20 text-primary" : "text-neutral-400 hover:bg-white/10 hover:text-white"}`}
+              >H3</button>
+              <button
+                type="button"
+                title="Highlight"
+                onMouseDown={(ev) => { ev.preventDefault(); editor.chain().focus().toggleHighlight().run(); }}
+                className={`px-1.5 h-7 text-[11px] rounded-lg transition-colors ${editor.isActive("highlight") ? "bg-yellow-300/30 text-yellow-200" : "text-neutral-400 hover:bg-white/10 hover:text-white"}`}
+              >==</button>
               <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} icon={Quote} label="Quote" />
               <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} icon={List} label="Bullets" />
               <ToolbarBtn editor={editor} action={(e) => e.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} icon={ListOrdered} label="Numbered" />
@@ -452,6 +542,14 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
                   const url = window.prompt("URL", e.getAttributes("link").href || "https://");
                   if (url === null) return;
                   if (url === "") { e.chain().focus().unsetLink().run(); return; }
+                  if (!isSafeEditorUrl(url)) {
+                    toast({
+                      title: "Invalid link",
+                      description: "Only http(s), mailto, tel, or internal paths are allowed.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
                   e.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
                 }}
                 active={editor.isActive("link")} icon={LinkIcon} label="Link" />
@@ -465,7 +563,6 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
               />
             </BubbleMenu>
 
-            {/* CONTROLE INTELIGENTE DE TABELAS */}
             {editor.isActive("table") && (
               <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 bg-black/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 font-medium">Table</span>
@@ -484,6 +581,36 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+
+            const target = e.target as HTMLElement;
+
+            const mentionTarget = target.closest<HTMLElement>(".continuum-entity-mention, .continuum-note-mention");
+            if (mentionTarget) {
+              const mentionId = mentionTarget.getAttribute("data-id");
+              if (!mentionId) return;
+              e.preventDefault();
+              if (mentionTarget.classList.contains("continuum-note-mention")) {
+                navigate(`/notes/${mentionId}`);
+              } else {
+                navigate(`/entities/${mentionId}`);
+              }
+              return;
+            }
+
+            const linkTarget = target.closest<HTMLAnchorElement>("a");
+            if (linkTarget) {
+              const href = linkTarget.getAttribute("href");
+              if (!href) return;
+
+              if (href.startsWith("/") || href.startsWith(window.location.origin)) {
+                e.preventDefault();
+                const path = href.replace(window.location.origin, "");
+                navigate(path);
+              }
+            }
+          }}
           className="relative"
         >
           {isDragging && (
@@ -495,14 +622,15 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
             </div>
           )}
           <EditorContent editor={editor} />
+          <StatusBar editor={editor} />
         </div>
+        <FindReplace editor={editor} open={findOpen} onClose={() => setFindOpen(false)} />
       </>
     );
   }
 );
 TiptapEditor.displayName = "TiptapEditor";
 
-// Componente do botão re-estilizado para combinar com o novo BubbleMenu
 function ToolbarBtn({
   editor, action, active, icon: Icon, label, disabled,
 }: { editor: Editor; action: (e: Editor) => void; active: boolean; icon: typeof Bold; label: string; disabled?: boolean }) {

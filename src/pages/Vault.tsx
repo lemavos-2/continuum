@@ -10,13 +10,14 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   FileText, Image as ImageIcon, File as FileGeneric,
   Loader2, HardDrive, Trash2, Music, ExternalLink,
-} from "lucide-react";
+} from "@/lib/heroicons";
 import type { VaultFile } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { getPlanLimits } from "@/lib/plan";
+import { getPlanLimits, isUnlimited } from "@/lib/plan";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { resolveVaultBlob, invalidateVaultBlob } from "@/lib/vault-blob";
 
@@ -52,28 +53,30 @@ function useBlobUrl(fileId: string | null) {
   return { url, error };
 }
 
+/* ── Componentes de Itens Modificados pro Novo Design ────────────────── */
+
 function ImageThumb({ file, onDelete }: { file: VaultFile; onDelete: (f: VaultFile) => void }) {
   const { url, error } = useBlobUrl(file.id);
   return (
-    <div className="group relative rounded-xl overflow-hidden border border-white/5 bg-neutral-900/40 aspect-square backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:scale-[1.02] hover:shadow-xl">
+    <div className="group relative rounded-sm overflow-hidden border border-white/5 bg-black/10 aspect-square transition-colors hover:border-white/20">
       {error ? (
-        <div className="flex items-center justify-center h-full text-xs text-destructive">Failed to load</div>
+        <div className="flex items-center justify-center h-full text-[11px] text-red-400/70 font-mono">ERROR</div>
       ) : url ? (
-        <img src={url} alt={file.fileName} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <img src={url} alt={file.fileName} className="w-full h-full object-cover transition-opacity duration-300 opacity-80 group-hover:opacity-100" />
       ) : (
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-3 w-3 animate-spin text-white/20" />
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-neutral-950 via-neutral-950/70 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <p className="text-xs font-medium text-white truncate">{file.fileName}</p>
-        <p className="text-[10px] text-neutral-400 mt-0.5">{formatSize(file.size)}</p>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <p className="text-xs text-white/90 truncate">{file.fileName}</p>
+        <p className="text-[10px] font-mono text-white/40 mt-0.5">{formatSize(file.size)}</p>
       </div>
       <Button
         type="button"
         size="icon"
-        variant="destructive"
-        className="absolute top-2 right-2 h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-90 group-hover:scale-100 shadow-lg"
+        variant="ghost"
+        className="absolute top-2 right-2 h-7 w-7 rounded-sm bg-black/40 text-white/40 hover:text-red-400 hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-all"
         onClick={() => onDelete(file)}
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -85,28 +88,33 @@ function ImageThumb({ file, onDelete }: { file: VaultFile; onDelete: (f: VaultFi
 function AudioPlayer({ file, onDelete }: { file: VaultFile; onDelete: (f: VaultFile) => void }) {
   const { url, error } = useBlobUrl(file.id);
   return (
-    <div className="rounded-xl border border-white/5 bg-neutral-900/30 backdrop-blur-sm p-4 space-y-3 transition-all duration-300 hover:border-white/10 hover:bg-neutral-900/50">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner">
-          <Music className="h-4 w-4 text-primary" />
-        </div>
+    <div className="group relative flex flex-col justify-between rounded-sm border border-white/5 bg-black/10 p-4 transition-colors hover:border-white/10">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-neutral-200 truncate">{file.fileName}</p>
-          <p className="text-xs text-neutral-500 mt-0.5">{formatSize(file.size)}</p>
+          <p className="text-sm font-serif text-white/80 truncate group-hover:text-white transition-colors">{file.fileName}</p>
+          <p className="text-[10px] font-mono text-white/30 mt-0.5">{formatSize(file.size)}</p>
         </div>
-        <Button type="button" size="icon" variant="ghost" onClick={() => onDelete(file)} className="h-8 w-8 rounded-lg text-neutral-400 hover:text-destructive hover:bg-destructive/10 transition-colors">
-          <Trash2 className="h-4 w-4" />
+        <Button 
+          type="button" 
+          size="icon" 
+          variant="ghost" 
+          onClick={() => onDelete(file)} 
+          className="h-7 w-7 rounded-sm text-white/20 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-white/5 transition-all"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
-      {error ? (
-        <p className="text-xs text-destructive">Failed to load audio</p>
-      ) : url ? (
-        <audio src={url} controls className="w-full h-9 accent-primary filter invert dark:invert-0 opacity-80 hover:opacity-100 transition-opacity" />
-      ) : (
-        <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <Loader2 className="h-3 w-3 animate-spin text-primary" /> Loading audio player…
-        </div>
-      )}
+      <div className="mt-4">
+        {error ? (
+          <p className="text-[11px] font-mono text-red-400/60">Failed to load audio source</p>
+        ) : url ? (
+          <audio src={url} controls className="w-full h-8 accent-white filter invert opacity-40 hover:opacity-70 transition-opacity" />
+        ) : (
+          <div className="flex items-center gap-2 text-[11px] font-mono text-white/30">
+            <Loader2 className="h-3 w-3 animate-spin" /> Fetching payload...
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -114,33 +122,32 @@ function AudioPlayer({ file, onDelete }: { file: VaultFile; onDelete: (f: VaultF
 function PdfCard({ file, onDelete, onOpen }: { file: VaultFile; onDelete: (f: VaultFile) => void; onOpen: (f: VaultFile) => void }) {
   const { url, error } = useBlobUrl(file.id);
   return (
-    <div className="rounded-xl border border-white/5 bg-neutral-900/30 backdrop-blur-sm overflow-hidden flex flex-col transition-all duration-300 hover:border-white/10 hover:shadow-xl group">
-      <button type="button" onClick={() => onOpen(file)} className="aspect-[3/4] bg-neutral-950 relative overflow-hidden border-b border-white/5">
+    <div className="rounded-sm border border-white/5 bg-black/10 overflow-hidden flex flex-col transition-colors hover:border-white/10 group">
+      <button type="button" onClick={() => onOpen(file)} className="aspect-[4/3] bg-black/40 relative overflow-hidden border-b border-white/5 flex items-center justify-center">
         {error ? (
-          <div className="flex items-center justify-center h-full text-xs text-destructive">Failed to load</div>
+          <div className="text-[11px] font-mono text-red-400/60">ERROR</div>
         ) : url ? (
-          <iframe src={`${url}#toolbar=0&navpanes=0`} title={file.fileName} className="w-full h-full pointer-events-none opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+          <iframe src={`${url}#toolbar=0&navpanes=0`} title={file.fileName} className="w-full h-full pointer-events-none opacity-20 group-hover:opacity-40 transition-opacity" />
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          </div>
+          <Loader2 className="h-3 w-3 animate-spin text-white/20" />
         )}
-        <div className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[1px]">
-          <span className="text-xs font-medium bg-neutral-900/90 border border-white/10 px-3 py-1.5 rounded-lg shadow-2xl text-neutral-200 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">Quick Preview</span>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[11px] bg-black border border-white/10 px-2.5 py-1 text-white/80 rounded-sm">View Document</span>
         </div>
       </button>
-      <div className="p-3 flex items-center gap-2 bg-neutral-900/20">
-        <FileText className="h-4 w-4 text-primary shrink-0" />
+      <div className="p-3 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-neutral-200 truncate">{file.fileName}</p>
-          <p className="text-[10px] text-neutral-500 mt-0.5">{formatSize(file.size)}</p>
+          <p className="text-xs font-serif text-white/80 truncate group-hover:text-white">{file.fileName}</p>
+          <p className="text-[10px] font-mono text-white/30 mt-0.5">{formatSize(file.size)}</p>
         </div>
-        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-neutral-400 hover:text-white" onClick={() => onOpen(file)}>
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Button>
-        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-neutral-400 hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(file)}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center shrink-0">
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-sm text-white/30 hover:text-white hover:bg-white/5" onClick={() => onOpen(file)}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-sm text-white/30 hover:text-red-400 hover:bg-white/5" onClick={() => onDelete(file)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -148,24 +155,33 @@ function PdfCard({ file, onDelete, onOpen }: { file: VaultFile; onDelete: (f: Va
 
 function OtherFileRow({ file, onDelete }: { file: VaultFile; onDelete: (f: VaultFile) => void }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/5 bg-neutral-900/20 hover:bg-neutral-900/40 hover:border-white/10 transition-all duration-200">
-      <div className="h-8 w-8 rounded-lg bg-neutral-800/50 flex items-center justify-center border border-white/5 shrink-0">
-        <FileGeneric className="w-4 h-4 text-neutral-400" />
+    <div className="group relative flex items-center justify-between py-4 border-b border-white/[0.06] hover:bg-white/[0.01] transition-colors">
+      <div className="flex items-center gap-3 min-w-0">
+        <FileGeneric className="w-3.5 h-3.5 text-white/30 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-serif text-white/80 truncate group-hover:text-white transition-colors">{file.fileName}</p>
+          <p className="text-[10px] font-mono text-white/30 mt-0.5">
+            {formatSize(file.size)} &middot; {new Date(file.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          </p>
+        </div>
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-neutral-200 truncate">{file.fileName}</p>
-        <p className="text-xs text-neutral-500 mt-0.5">
-          {formatSize(file.size)} · {new Date(file.createdAt).toLocaleDateString()}
-        </p>
-      </div>
-      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-neutral-400 hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={() => onDelete(file)}>
-        <Trash2 className="h-4 w-4" />
+      <Button 
+        type="button" 
+        size="icon" 
+        variant="ghost" 
+        className="h-7 w-7 rounded-sm text-white/20 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-white/5 transition-all" 
+        onClick={() => onDelete(file)}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
       </Button>
     </div>
   );
 }
 
+/* ── Main Vault Page Component ────────────────────────────────────────── */
+
 export default function Vault() {
+  const { t } = useLanguage();
   const [files, setFiles] = useState<VaultFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<VaultFile | null>(null);
@@ -205,7 +221,7 @@ export default function Vault() {
       invalidateVaultBlob(file.id);
       setFiles((cur) => cur.filter((f) => f.id !== file.id));
       applyUsageDelta({ vaultSizeMB: -Number((file.size / (1024 * 1024)).toFixed(2)) });
-      toast({ title: "File deleted", description: file.fileName });
+      toast({ title: "File removed from vault" });
     } catch {
       toast({ title: "Delete failed", variant: "destructive" });
     }
@@ -216,8 +232,8 @@ export default function Vault() {
   if (authLoading) {
     return (
       <AppLayout>
-        <div className="flex justify-center items-center h-full">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-white/40" />
         </div>
       </AppLayout>
     );
@@ -225,139 +241,153 @@ export default function Vault() {
 
   const vaultUsedMB = files.reduce((t, f) => t + f.size / (1024 * 1024), 0);
   const vaultMaxMB = limits.maxVaultSizeMB;
-  const vaultPct = vaultMaxMB === -1 ? 0 : Math.min((vaultUsedMB / vaultMaxMB) * 100, 100);
+  const vaultPct = isUnlimited(vaultMaxMB) ? 0 : Math.min((vaultUsedMB / vaultMaxMB) * 100, 100);
 
   return (
     <AppLayout>
-      <div className="px-6 lg:px-12 py-10 max-w-6xl mx-auto space-y-6">
-        
-        {/* HEADER MINIMALISTA SEM BOTÕES OU DISPARADORES DE UPLOAD */}
-        <header className="border-b border-white/5 pb-6 mb-2">
-          <div>
-            <p className="text-[10px] tracking-wider uppercase text-neutral-500 font-semibold mb-1">Storage</p>
-            <h1 className="font-serif text-4xl tracking-tight text-neutral-100">Vault</h1>
-            <p className="mt-1 text-xs text-neutral-500">
-              Browse and manage your stored files. Upload by dragging files directly into the Notes editor.
-            </p>
-          </div>
-        </header>
-
-        {/* INDICADOR DE ESPAÇO GLASSMORPHIC */}
-        <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 space-y-3 shadow-inner">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-neutral-400" />
-              <span className="text-xs font-medium text-neutral-300">Storage Usage</span>
-            </div>
-            <span className="text-xs font-mono text-neutral-400">
-              {vaultMaxMB === -1 ? `${vaultUsedMB.toFixed(1)} MB used` : `${vaultUsedMB.toFixed(1)} / ${vaultMaxMB} MB`}
-            </span>
-          </div>
-          <Progress value={vaultMaxMB === -1 ? 0 : vaultPct} className="h-1 bg-white/5" />
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-24">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : files.length === 0 ? (
-          /* EMPTY STATE LIMPO */
-          <div className="text-center py-20 border border-dashed border-white/5 rounded-2xl bg-neutral-900/5 backdrop-blur-sm space-y-2">
-            <HardDrive className="w-6 h-6 text-neutral-600 mx-auto mb-1" />
-            <p className="text-neutral-300 font-medium text-sm">No files in Vault yet</p>
-            <p className="text-neutral-500 text-xs max-w-xs mx-auto">M medias added inside your editor notes will automatically appear here.</p>
-          </div>
-        ) : (
+      <div className="mx-auto max-w-4xl px-6 py-10 lg:px-12 lg:py-16">
+        <main className="min-w-0 flex-1">
           
-          /* CONTROLE DE ABAS ESTILO NOTION DARK */
-          <Tabs defaultValue="images" className="w-full">
-            <TabsList className="flex w-full max-w-xl bg-neutral-900/40 border border-white/5 p-1 rounded-xl h-10 gap-0.5 backdrop-blur-md">
-              <TabsTrigger value="images" className="flex-1 text-xs rounded-lg data-[state=active]:bg-white/5 data-[state=active]:text-white transition-all"><ImageIcon className="h-3.5 w-3.5 mr-1.5" />Photos ({grouped.images.length})</TabsTrigger>
-              <TabsTrigger value="audio" className="flex-1 text-xs rounded-lg data-[state=active]:bg-white/5 data-[state=active]:text-white transition-all"><Music className="h-3.5 w-3.5 mr-1.5" />Audio ({grouped.audio.length})</TabsTrigger>
-              <TabsTrigger value="pdf" className="flex-1 text-xs rounded-lg data-[state=active]:bg-white/5 data-[state=active]:text-white transition-all"><FileText className="h-3.5 w-3.5 mr-1.5" />PDFs ({grouped.pdf.length})</TabsTrigger>
-              <TabsTrigger value="other" className="flex-1 text-xs rounded-lg data-[state=active]:bg-white/5 data-[state=active]:text-white transition-all"><FileGeneric className="h-3.5 w-3.5 mr-1.5" />Other ({grouped.other.length})</TabsTrigger>
-            </TabsList>
+          {/* Cabeçalho idêntico ao do Notes e do TimeTracking */}
+          <header className="mb-8">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">
+                Storage
+              </p>
+              <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">
+                {t("vault_title")}
+              </h1>
+            </div>
+            <p className="mt-3 text-sm text-white/40">
+              Browse and manage your stored assets. Uploads happen natively by dragging items into your notes.
+            </p>
+          </header>
 
-            <TabsContent value="images" className="mt-6 outline-none">
-              {grouped.images.length === 0 ? (
-                <p className="text-xs text-neutral-500 text-center py-12 border border-dashed border-white/5 rounded-xl">No images stored.</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {grouped.images.map((f) => (
-                    <ImageThumb key={f.id} file={f} onDelete={setPendingDelete} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+          {/* Indicador de Espaço Sutil (Removido o bloco chamativo) */}
+          <div className="mb-6 border-b border-white/5 pb-5 pt-2">
+            <div className="flex items-center justify-between text-[11px] font-mono text-white/40 mb-2">
+              <div className="flex items-center gap-1.5">
+                <HardDrive className="w-3 h-3 text-white/30" />
+                <span>VOLUME CAPACITY</span>
+              </div>
+              <span>
+                {isUnlimited(vaultMaxMB) ? `${vaultUsedMB.toFixed(1)} MB` : `${vaultUsedMB.toFixed(1)} / ${vaultMaxMB} MB`}
+              </span>
+            </div>
+            <Progress value={isUnlimited(vaultMaxMB) ? 0 : vaultPct} className="h-[2px] bg-white/5 text-white" />
+          </div>
 
-            <TabsContent value="audio" className="mt-6 outline-none">
-              {grouped.audio.length === 0 ? (
-                <p className="text-xs text-neutral-500 text-center py-12 border border-dashed border-white/5 rounded-xl">No audio files stored.</p>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {grouped.audio.map((f) => (
-                    <AudioPlayer key={f.id} file={f} onDelete={setPendingDelete} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+          {loading ? (
+            <div className="flex justify-center py-24">
+              <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+            </div>
+          ) : files.length === 0 ? (
+            /* Empty State poético e limpo igual ao do seu Notes */
+            <div className="py-24 text-center">
+              <p className="font-serif text-2xl italic text-white/40">
+                {t("vault_empty")}
+              </p>
+            </div>
+          ) : (
+            
+            /* Tabs minimalistas estilo Notion/Axiom UI */
+            <Tabs defaultValue="images" className="w-full">
+              <TabsList className="flex items-center gap-4 bg-transparent border-b border-white/5 p-0 rounded-none h-10 w-full justify-start">
+                <TabsTrigger value="images" className="bg-transparent border-b-2 border-transparent px-1 py-2 text-xs text-white/45 data-[state=active]:border-white data-[state=active]:text-white rounded-none shadow-none transition-all">
+                  Photos <span className="font-mono text-[10px] text-white/30 ml-1">({grouped.images.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="audio" className="bg-transparent border-b-2 border-transparent px-1 py-2 text-xs text-white/45 data-[state=active]:border-white data-[state=active]:text-white rounded-none shadow-none transition-all">
+                  Audio <span className="font-mono text-[10px] text-white/30 ml-1">({grouped.audio.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="pdf" className="bg-transparent border-b-2 border-transparent px-1 py-2 text-xs text-white/45 data-[state=active]:border-white data-[state=active]:text-white rounded-none shadow-none transition-all">
+                  PDFs <span className="font-mono text-[10px] text-white/30 ml-1">({grouped.pdf.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="other" className="bg-transparent border-b-2 border-transparent px-1 py-2 text-xs text-white/45 data-[state=active]:border-white data-[state=active]:text-white rounded-none shadow-none transition-all">
+                  Other <span className="font-mono text-[10px] text-white/30 ml-1">({grouped.other.length})</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="pdf" className="mt-6 outline-none">
-              {grouped.pdf.length === 0 ? (
-                <p className="text-xs text-neutral-500 text-center py-12 border border-dashed border-white/5 rounded-xl">No PDF files stored.</p>
-              ) : (
-                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                  {grouped.pdf.map((f) => (
-                    <PdfCard key={f.id} file={f} onDelete={setPendingDelete} onOpen={setPdfPreview} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+              <TabsContent value="images" className="mt-8 outline-none">
+                {grouped.images.length === 0 ? (
+                  <p className="text-sm font-serif italic text-white/30 py-12">No images preserved.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {grouped.images.map((f) => (
+                      <ImageThumb key={f.id} file={f} onDelete={setPendingDelete} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
-            <TabsContent value="other" className="mt-6 outline-none">
-              {grouped.other.length === 0 ? (
-                <p className="text-xs text-neutral-500 text-center py-12 border border-dashed border-white/5 rounded-xl">No other files stored.</p>
-              ) : (
-                <div className="space-y-2">
-                  {grouped.other.map((f) => (
-                    <OtherFileRow key={f.id} file={f} onDelete={setPendingDelete} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
+              <TabsContent value="audio" className="mt-8 outline-none">
+                {grouped.audio.length === 0 ? (
+                  <p className="text-sm font-serif italic text-white/30 py-12">No audio tracks recorded.</p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {grouped.audio.map((f) => (
+                      <AudioPlayer key={f.id} file={f} onDelete={setPendingDelete} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="pdf" className="mt-8 outline-none">
+                {grouped.pdf.length === 0 ? (
+                  <p className="text-sm font-serif italic text-white/30 py-12">No document sheets mapped.</p>
+                ) : (
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                    {grouped.pdf.map((f) => (
+                      <PdfCard key={f.id} file={f} onDelete={setPendingDelete} onOpen={setPdfPreview} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="other" className="mt-8 outline-none">
+                {grouped.other.length === 0 ? (
+                  <p className="text-sm font-serif italic text-white/30 py-12">No additional files categorized.</p>
+                ) : (
+                  <div className="divide-y divide-white/[0.06]">
+                    {grouped.other.map((f) => (
+                      <OtherFileRow key={f.id} file={f} onDelete={setPendingDelete} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+        </main>
       </div>
 
-      {/* ALERT DIALOG DE EXCLUSÃO */}
+      {/* CONFIRM DIALOG — Adaptado para seguir o design limpo do app */}
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
-        <AlertDialogContent className="bg-neutral-950 border border-white/10 rounded-2xl">
+        <AlertDialogContent className="bg-black border border-white/10 rounded-sm max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-neutral-100">Delete file?</AlertDialogTitle>
-            <AlertDialogDescription className="text-neutral-400 text-xs">
-              The file <span className="text-neutral-200 font-medium">{pendingDelete?.fileName}</span> will be permanently removed from your vault. This cannot be undone.
+            <AlertDialogTitle className="font-serif text-xl font-normal text-white">Remove file?</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/40 text-xs mt-2">
+              "${pendingDelete?.fileName || "This asset"}" will be permanently expunged from storage.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent hover:bg-white/5 text-neutral-300 border-white/10 rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-500 text-white font-medium rounded-xl">Delete</AlertDialogAction>
+          <AlertDialogFooter className="mt-4 gap-2">
+            <AlertDialogCancel className="bg-transparent hover:bg-white/5 text-white/60 border-white/10 rounded-sm text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-white text-black hover:bg-white/90 rounded-sm text-xs font-medium">Remove</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* PREVIEW EXPANDIDO DE PDF */}
+      {/* MODAL EXPANDIDO DE PREVIEW PDF */}
       {pdfPreview && (
-        <div className="fixed inset-0 z-50 bg-neutral-950/80 backdrop-blur-md flex flex-col animate-in fade-in duration-200" onClick={() => setPdfPreview(null)}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-neutral-950/40 backdrop-blur-xl text-white">
-            <p className="text-sm font-medium truncate max-w-xl">{pdfPreview.fileName}</p>
-            <Button size="sm" variant="ghost" onClick={() => setPdfPreview(null)} className="text-neutral-400 hover:text-white rounded-lg hover:bg-white/5">Close</Button>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col transition-all" onClick={() => setPdfPreview(null)}>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/40 backdrop-blur-xl text-white">
+            <p className="font-serif text-sm truncate max-w-xl">{pdfPreview.fileName}</p>
+            <Button size="sm" variant="ghost" onClick={() => setPdfPreview(null)} className="text-white/40 hover:text-white rounded-sm hover:bg-white/5 text-xs">Close</Button>
           </div>
           <div className="flex-1 p-6" onClick={(e) => e.stopPropagation()}>
             {pdfPreviewBlob.url ? (
-              <iframe src={pdfPreviewBlob.url} title={pdfPreview.fileName} className="w-full h-full bg-neutral-900 border border-white/10 rounded-xl shadow-2xl" />
+              <iframe src={pdfPreviewBlob.url} title={pdfPreview.fileName} className="w-full h-full bg-transparent border border-white/10 rounded-sm shadow-2xl" />
             ) : (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="h-5 w-5 animate-spin text-white/30" />
               </div>
             )}
           </div>

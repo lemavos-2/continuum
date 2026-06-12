@@ -47,7 +47,7 @@ export default function Navbar({ onAuthOpen }: NavbarProps) {
           </span>
         </a>
 
-        {/* Botão de Login ultra-discreto (estilo ghost) */}
+        {/* Botão de Login via Google */}
         <div className="flex items-center">
           <button
             onClick={() => {
@@ -56,7 +56,7 @@ export default function Navbar({ onAuthOpen }: NavbarProps) {
             }}
             className="text-white/60 hover:text-white/100 text-xs font-medium tracking-wide transition-colors duration-300 py-2 px-3"
           >
-            Sign in
+            Sign in with Google
           </button>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useEffect, useState } from "react";
 import { resolveVaultBlob } from "@/lib/vault-blob";
-import { Loader2, ImageOff } from "lucide-react";
+import { Loader2, ImageOff } from "@/lib/heroicons";
 
 function VaultImageView({ node }: NodeViewProps) {
   const vaultId: string | null = node.attrs.vaultId ?? null;

@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Clock, X, FileText } from 'lucide-react';
+import { Clock, X, FileText } from "@/lib/heroicons";
 import {
   Dialog,
   DialogContent,

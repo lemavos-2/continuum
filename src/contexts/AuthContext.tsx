@@ -26,7 +26,13 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(() => {
     try {
-      if (!localStorage.getItem("access_token")) {
+      const storedAccessToken = typeof window !== "undefined"
+        ? sessionStorage.getItem("access_token") ?? localStorage.getItem("access_token")
+        : null;
+
+      if (!storedAccessToken) {
+        sessionStorage.removeItem("access_token");
+        localStorage.removeItem("access_token");
         localStorage.removeItem("auth_user");
         return null;
       }
@@ -68,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only 401 means the session is truly invalid. 403 = business rule (plan limits etc).
       // Network errors / 5xx / 403 must NOT clear the session — keep cached user.
       if (status === 401) {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("auth_user");
@@ -79,16 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      fetchUser();
-    } else {
-      localStorage.removeItem("auth_user");
-      setUser(null);
-      setLoading(false);
-    }
+    const initializeSession = async () => {
+      await fetchUser();
+    };
+
+    initializeSession();
 
     const onLogout = () => {
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("refresh_token");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("auth_user");
@@ -98,9 +105,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("auth:logout", onLogout);
   }, []);
 
-  const setTokens = (accessToken: string, refreshToken: string) => {
-    localStorage.setItem("access_token", accessToken);
-    localStorage.setItem("refresh_token", refreshToken);
+  const setTokens = (accessToken: string, _refreshToken: string) => {
+    sessionStorage.setItem("access_token", accessToken);
+
+    // Persist refresh token across reloads so the client can renew sessions
+    // mesmo quando o backend não usa cookie HttpOnly.
+    if (_refreshToken) {
+      localStorage.setItem("refresh_token", _refreshToken);
+    } else {
+      localStorage.removeItem("refresh_token");
+    }
+
+    localStorage.removeItem("access_token");
   };
 
   const login = async (email: string, password: string) => {
@@ -117,6 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (username: string, email: string, password: string) => {
     const { data } = await authApi.register(username, email, password);
     if (data?.accessToken || data?.token) {
+      // Registration always creates a new account -> show onboarding popup
+      localStorage.setItem('newAccountCreated', 'true');
       setTokens(data.accessToken ?? data.token, data.refreshToken ?? "");
       await fetchUser();
     }
@@ -128,6 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("auth_user");

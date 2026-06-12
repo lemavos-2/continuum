@@ -5,13 +5,15 @@ import { entitiesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Flame, Edit, StickyNote, Network, Calendar, Tag, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, Flame, Edit, StickyNote, Network, Calendar, Tag, Clock } from "@/lib/heroicons";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { InsightSignalBadge } from "@/components/InsightSignal";
+
 import { useToast } from "@/hooks/use-toast";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
 import { TimerWidget } from "@/components/TimerWidget";
@@ -225,15 +227,19 @@ export default function EntityDetail() {
     <AppLayout>
       <div className="px-6 lg:px-12 py-10 max-w-4xl mx-auto">
         <button
-          onClick={() => navigate("/entities")}
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/entities"))}
           className="mb-6 inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to entities
+          <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
 
         {/* Premium serif header — matches /entities */}
         <header className="border-b border-white/10 pb-8 mb-8">
-          <p className="label-caps mb-2">{typeLabel}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="label-caps">{typeLabel}</p>
+            <InsightSignalBadge kind="entity" id={entity.id} />
+          </div>
+
           {editingTitle ? (
             <div className="flex gap-2 max-w-xl">
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="New name..." className="flex-1" />

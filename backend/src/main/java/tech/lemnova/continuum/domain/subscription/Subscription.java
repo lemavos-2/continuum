@@ -26,9 +26,9 @@ public class Subscription {
     private String userId;
 
     @Indexed(unique = true, sparse = true)
-    private String stripeSubscriptionId;
+    private String lemonSqueezySubscriptionId;
 
-    private String stripePriceId;
+    private String lemonSqueezyVariantId;
 
     @Builder.Default
     private PlanType planType = PlanType.FREE;

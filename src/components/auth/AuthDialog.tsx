@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/heroicons";
 
 type AuthTab = "login" | "register" | "forgot";
 
@@ -25,50 +25,112 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-md sm:max-w-lg rounded-3xl bg-black/90 border-white/10 shadow-2xl shadow-black/20 p-6 sm:p-8 max-h-[calc(100vh-3rem)] overflow-y-auto">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <DialogHeader>
-                <DialogTitle className="text-3xl">{activeTab === "login" ? "Sign in" : activeTab === "register" ? "Create account" : "Reset password"}</DialogTitle>
-                <DialogDescription className="max-w-xl text-white/70">
-                  {activeTab === "login"
-                    ? "Access your Continuum workspace instantly."
-                    : activeTab === "register"
-                    ? "Start your free account and begin connecting your ideas."
-                    : "Enter your email and we’ll send a recovery link."}
-                </DialogDescription>
-              </DialogHeader>
-            </div>
+      <DialogContent className="w-[calc(100%-1.5rem)] sm:max-w-md p-0 overflow-hidden rounded-2xl border-[hsl(var(--popup-border))] bg-[hsl(var(--popup-background))] text-[hsl(var(--popup-foreground))] shadow-2xl">
+        <div className="relative">
+          {/* Subtle top accent */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
 
-            <div className="flex flex-wrap items-center gap-2 rounded-full bg-white/5 p-1.5">
-              {(["login", "register"] as AuthTab[]).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={
-                    "flex-1 min-w-[110px] whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 " +
-                    (activeTab === tab
-                      ? "bg-white text-black shadow-[0_14px_32px_rgba(255,255,255,0.18)]"
-                      : "text-white/70 hover:text-white hover:bg-white/10")
-                  }
-                >
-                  {tab === "login" ? "Login" : "Register"}
-                </button>
-              ))}
-            </div>
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Header */}
+            <DialogHeader className="space-y-2 text-left">
+              <DialogTitle className="text-2xl sm:text-3xl font-serif tracking-tight">
+                Welcome back
+              </DialogTitle>
+              <DialogDescription className="text-sm text-[hsl(var(--popup-muted))]">
+                Sign in with your Google account to continue.
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Tabs - Hidden for Google-only auth */}
+            {false && activeTab !== "forgot" && (
+              <div className="grid grid-cols-2 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] p-1">
+                {(["login", "register"] as AuthTab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={
+                      "rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition-all " +
+                      (activeTab === tab
+                        ? "bg-white text-black shadow-sm"
+                        : "text-[hsl(var(--popup-muted))] hover:text-white")
+                    }
+                  >
+                    {tab === "login" ? "Sign in" : "Register"}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Email/Password forms - Hidden for Google-only auth */}
+            {false && activeTab === "login" && <LoginForm onSuccess={() => onOpenChange(false)} onForgot={() => setActiveTab("forgot")} />}
+            {false && activeTab === "register" && <RegisterForm onSwitchToLogin={() => setActiveTab("login")} />}
+            {false && activeTab === "forgot" && <ForgotForm onSwitchToLogin={() => setActiveTab("login")} />}
+
+            {/* Google Login - Always visible */}
+            <GoogleOnlyForm onSuccess={() => onOpenChange(false)} />
+
+            {/* Footer */}
+            <p className="text-[10px] text-center text-[hsl(var(--popup-muted))] opacity-70 pt-1">
+              By continuing you agree to our{" "}
+              <a href="#/terms" className="underline underline-offset-2 hover:text-white">Terms</a>
+              {" "}and{" "}
+              <a href="#/privacy" className="underline underline-offset-2 hover:text-white">Privacy</a>.
+            </p>
           </div>
-
-          {activeTab === "login" && <LoginForm onSuccess={() => onOpenChange(false)} onForgot={() => setActiveTab("forgot")} />}
-          {activeTab === "register" && <RegisterForm onSwitchToLogin={() => setActiveTab("login")} />}
-          {activeTab === "forgot" && <ForgotForm onSwitchToLogin={() => setActiveTab("login")} />}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
+function GoogleOnlyForm({ onSuccess }: { onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const { loginWithGoogle } = useAuth();
+  const { toast } = useToast();
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch {
+      toast({
+        title: "Could not start Google login",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleGoogle}
+      disabled={loading}
+      className="w-full h-11 rounded-xl bg-white text-black text-sm font-semibold transition hover:bg-white/90 disabled:opacity-60 flex items-center justify-center gap-2"
+    >
+      {loading ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Signing in…
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+          </svg>
+          Sign in with Google
+        </>
+      )}
+    </button>
+  );
+}
+
+// Hidden: Email/Password Login - kept for future use
 function LoginForm({ onSuccess, onForgot }: { onSuccess: () => void; onForgot: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -111,26 +173,26 @@ function LoginForm({ onSuccess, onForgot }: { onSuccess: () => void; onForgot: (
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="space-y-4">
-        <label className="block text-sm font-medium text-white/70">Email</label>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[hsl(var(--popup-muted))]">Email</label>
         <input
           type="email"
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-white/30 focus:bg-white/10"
+          className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/35 focus:bg-white/[0.06]"
         />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
-          <label className="text-sm font-medium text-white/70">Password</label>
+          <label className="text-sm font-medium text-[hsl(var(--popup-muted))]">Password</label>
           <button
             type="button"
             onClick={onForgot}
-            className="text-sm font-semibold text-white/80 hover:text-white hover:underline"
+            className="text-xs font-medium text-[hsl(var(--popup-muted))] hover:text-white hover:underline"
           >
             Forgot?
           </button>
@@ -141,25 +203,25 @@ function LoginForm({ onSuccess, onForgot }: { onSuccess: () => void; onForgot: (
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder="••••••••"
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-white/30 focus:bg-white/10"
+          className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/35 focus:bg-white/[0.06]"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition shadow-[0_14px_34px_rgba(255,255,255,0.16)] hover:bg-white/95 disabled:opacity-60"
+        className="w-full h-11 rounded-xl bg-white text-black text-sm font-semibold transition hover:bg-white/90 disabled:opacity-60"
       >
         {loading ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Signing in…</span> : "Sign in"}
       </button>
 
-      <div className="text-center text-sm text-white/60">or</div>
+      <div className="text-center text-xs text-[hsl(var(--popup-muted))]">or</div>
 
       <button
         type="button"
         onClick={handleGoogle}
         disabled={loading}
-        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
+        className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-transparent text-sm font-semibold text-white transition hover:bg-white/[0.06] disabled:opacity-60"
       >
         Continue with Google
       </button>
@@ -198,32 +260,32 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="space-y-4">
-        <label className="block text-sm font-medium text-white/70">Username</label>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[hsl(var(--popup-muted))]">Username</label>
         <input
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           placeholder="johndoe"
           required
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-white/30 focus:bg-white/10"
+          className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/35 focus:bg-white/[0.06]"
         />
       </div>
 
-      <div className="space-y-4">
-        <label className="block text-sm font-medium text-white/70">Email</label>
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[hsl(var(--popup-muted))]">Email</label>
         <input
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
           required
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-white/30 focus:bg-white/10"
+          className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/35 focus:bg-white/[0.06]"
         />
       </div>
 
-      <div className="space-y-4">
-        <label className="block text-sm font-medium text-white/70">Password</label>
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[hsl(var(--popup-muted))]">Password</label>
         <input
           type="password"
           value={password}
@@ -231,19 +293,19 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
           placeholder="At least 8 characters"
           required
           minLength={8}
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-white/30 focus:bg-white/10"
+          className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/35 focus:bg-white/[0.06]"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-white/90 disabled:opacity-60"
+        className="w-full h-11 rounded-xl bg-white text-black text-sm font-semibold transition hover:bg-white/90 disabled:opacity-60"
       >
         {loading ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Creating…</span> : "Create account"}
       </button>
 
-      <div className="text-center text-sm text-white/60">
+      <div className="text-center text-xs text-[hsl(var(--popup-muted))]">
         Already have an account?{' '}
         <button type="button" onClick={onSwitchToLogin} className="font-semibold text-white hover:underline">
           Sign in
@@ -278,32 +340,32 @@ function ForgotForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   };
 
   return sent ? (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
+    <div className="rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] p-5 text-sm text-white/80">
       A recovery link has been sent to <span className="font-medium text-white">{email}</span>. Check your inbox and spam folder.
     </div>
   ) : (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="space-y-4">
-        <label className="block text-sm font-medium text-white/70">Email</label>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[hsl(var(--popup-muted))]">Email</label>
         <input
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
           required
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-white/30 focus:bg-white/10"
+          className="w-full h-11 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/35 focus:bg-white/[0.06]"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-white/90 disabled:opacity-60"
+        className="w-full h-11 rounded-xl bg-white text-black text-sm font-semibold transition hover:bg-white/90 disabled:opacity-60"
       >
         {loading ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Sending…</span> : "Send recovery link"}
       </button>
 
-      <div className="text-center text-sm text-white/60">
+      <div className="text-center text-xs text-[hsl(var(--popup-muted))]">
         Remember it?{' '}
         <button type="button" onClick={onSwitchToLogin} className="font-semibold text-white hover:underline">
           Sign in

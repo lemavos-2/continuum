@@ -7,7 +7,9 @@ import tech.lemnova.continuum.controller.dto.metrics.DashboardMetrics;
 import tech.lemnova.continuum.controller.dto.metrics.EntityTimeline;
 import tech.lemnova.continuum.controller.dto.metrics.MentionEntry;
 import tech.lemnova.continuum.controller.dto.metrics.TopEntity;
+import tech.lemnova.continuum.controller.dto.metrics.ScoreTimelineResponse;
 import tech.lemnova.continuum.domain.connection.NoteReference;
+import tech.lemnova.continuum.domain.metrics.UserScoreSnapshot;
 import tech.lemnova.continuum.domain.note.Note;
 import tech.lemnova.continuum.domain.note.NoteIndex;
 import tech.lemnova.continuum.domain.plan.PlanConfiguration;
@@ -18,13 +20,16 @@ import tech.lemnova.continuum.domain.user.User;
 import tech.lemnova.continuum.domain.user.UserRepository;
 import tech.lemnova.continuum.infra.persistence.EntityRepository;
 import tech.lemnova.continuum.infra.persistence.NoteRepository;
+import tech.lemnova.continuum.infra.persistence.UserScoreSnapshotRepository;
 import tech.lemnova.continuum.infra.vault.VaultDataService;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class MetricsService {
@@ -35,7 +40,7 @@ public class MetricsService {
     private final VaultDataService vaultData;
     private final PlanConfiguration planConfig;
     private final EntityService entityService;
-    private final TrackingService trackingService;
+    private final UserScoreSnapshotRepository scoreSnapshotRepo;
 
     public MetricsService(UserRepository userRepo,
                           NoteRepository noteRepo,
@@ -43,14 +48,14 @@ public class MetricsService {
                           VaultDataService vaultData,
                           PlanConfiguration planConfig,
                           EntityService entityService,
-                          TrackingService trackingService) {
+                          UserScoreSnapshotRepository scoreSnapshotRepo) {
         this.userRepo   = userRepo;
         this.noteRepo   = noteRepo;
         this.entityRepo = entityRepo;
         this.vaultData  = vaultData;
         this.planConfig = planConfig;
         this.entityService = entityService;
-        this.trackingService = trackingService;
+        this.scoreSnapshotRepo = scoreSnapshotRepo;
     }
 
     public EntityTimeline getEntityTimeline(String userId, String entityId) {
@@ -192,6 +197,159 @@ public class MetricsService {
                 activitiesCompletedToday, weeklyAverage, globalHeatmap);
     }
 
+    public List<ScoreTimelineResponse.ScorePoint> getUserScoreTimeline(String userId) {
+        User user = getUser(userId);
+
+        List<ScoreTimelineResponse.ScorePoint> computedHistory = buildScoreHistory(user);
+        if (computedHistory.isEmpty()) {
+            return List.of();
+        }
+
+        UserScoreSnapshot snapshot = scoreSnapshotRepo.findByUserId(userId)
+                .orElseGet(UserScoreSnapshot::new);
+
+        Map<String, Double> scoresByDate = snapshot.getScoresByDate() == null
+                ? new LinkedHashMap<>()
+                : new LinkedHashMap<>(snapshot.getScoresByDate());
+
+        if (scoresByDate.isEmpty()) {
+            for (ScoreTimelineResponse.ScorePoint point : computedHistory) {
+                scoresByDate.put(point.date().toString(), point.score());
+            }
+        }
+
+        scoresByDate.put(LocalDate.now().toString(), computedHistory.getLast().score());
+
+        snapshot.setUserId(userId);
+        snapshot.setScoresByDate(scoresByDate);
+        snapshot.setUpdatedAt(Instant.now());
+        scoreSnapshotRepo.save(snapshot);
+
+        return scoresByDate.entrySet().stream()
+                .map(entry -> new ScoreTimelineResponse.ScorePoint(LocalDate.parse(entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(ScoreTimelineResponse.ScorePoint::date))
+                .toList();
+    }
+
+    private List<ScoreTimelineResponse.ScorePoint> buildScoreHistory(User user) {
+        String userId = user.getId();
+        String vaultId = user.getVaultId();
+
+        List<Note> notes = noteRepo.findByUserId(userId).stream()
+                .filter(n -> vaultId == null || vaultId.equals(n.getVaultId()))
+                .toList();
+        List<Entity> entities = entityRepo.findByUserIdAndArchivedAtIsNull(userId).stream()
+                .filter(e -> vaultId == null || vaultId.equals(e.getVaultId()))
+                .toList();
+        List<TrackingEvent> trackingEvents = vaultData.readTrackingEvents(vaultId == null ? userId : vaultId).stream()
+                .filter(e -> userId.equals(e.getUserId()))
+                .toList();
+
+        LocalDate today = LocalDate.now();
+        LocalDate firstNoteDate = notes.stream()
+                .map(note -> {
+                    Instant at = note.getCreatedAt() != null ? note.getCreatedAt() : note.getUpdatedAt();
+                    return at != null ? at.atZone(ZoneOffset.UTC).toLocalDate() : null;
+                })
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+        LocalDate firstEntityDate = entities.stream()
+                .map(entity -> entity.getCreatedAt() != null ? entity.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate() : null)
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+        LocalDate firstEntityTrackingDate = entities.stream()
+                .flatMap(entity -> entity.getTrackingDates() != null ? entity.getTrackingDates().stream() : Stream.<LocalDate>empty())
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+        LocalDate firstTrackingDate = trackingEvents.stream()
+                .map(TrackingEvent::getDate)
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+
+        LocalDate startDate = Stream.of(firstNoteDate, firstEntityDate, firstEntityTrackingDate, firstTrackingDate)
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(today);
+
+        Map<LocalDate, Integer> notesCreatedByDate = new HashMap<>();
+        Map<LocalDate, Integer> linkedNotesCreatedByDate = new HashMap<>();
+        Map<LocalDate, Integer> entitiesCreatedByDate = new HashMap<>();
+        Set<LocalDate> activeTrackingDates = new HashSet<>();
+
+        for (Note note : notes) {
+            Instant createdAt = note.getCreatedAt() != null ? note.getCreatedAt() : note.getUpdatedAt();
+            if (createdAt == null) continue;
+            LocalDate date = createdAt.atZone(ZoneOffset.UTC).toLocalDate();
+            notesCreatedByDate.merge(date, 1, Integer::sum);
+            if (note.getEntityIds() != null && !note.getEntityIds().isEmpty()) {
+                linkedNotesCreatedByDate.merge(date, 1, Integer::sum);
+            }
+        }
+
+        for (Entity entity : entities) {
+            if (entity.getCreatedAt() == null) continue;
+            LocalDate date = entity.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate();
+            entitiesCreatedByDate.merge(date, 1, Integer::sum);
+
+            if (entity.getTrackingDates() != null) {
+                for (LocalDate trackingDate : entity.getTrackingDates()) {
+                    if (trackingDate != null) {
+                        activeTrackingDates.add(trackingDate);
+                    }
+                }
+            }
+        }
+
+        for (TrackingEvent event : trackingEvents) {
+            if (event.getDate() == null) continue;
+            activeTrackingDates.add(event.getDate());
+        }
+
+        int notesSoFar = 0;
+        int linkedNotesSoFar = 0;
+        int entitiesSoFar = 0;
+        Deque<LocalDate> recentActiveDays = new ArrayDeque<>();
+        Deque<Map.Entry<LocalDate, Integer>> recentNotesWindow = new ArrayDeque<>();
+        int recentNotesCount = 0;
+        List<ScoreTimelineResponse.ScorePoint> history = new ArrayList<>();
+
+        for (LocalDate cursor = startDate; !cursor.isAfter(today); cursor = cursor.plusDays(1)) {
+            int notesCreatedToday = notesCreatedByDate.getOrDefault(cursor, 0);
+            notesSoFar += notesCreatedToday;
+            linkedNotesSoFar += linkedNotesCreatedByDate.getOrDefault(cursor, 0);
+            entitiesSoFar += entitiesCreatedByDate.getOrDefault(cursor, 0);
+
+            if (notesCreatedToday > 0) {
+                recentNotesWindow.addLast(Map.entry(cursor, notesCreatedToday));
+                recentNotesCount += notesCreatedToday;
+            }
+            while (!recentNotesWindow.isEmpty() && recentNotesWindow.peekFirst().getKey().isBefore(cursor.minusDays(29))) {
+                recentNotesCount -= recentNotesWindow.removeFirst().getValue();
+            }
+
+            if (activeTrackingDates.contains(cursor)) {
+                recentActiveDays.addLast(cursor);
+            }
+            while (!recentActiveDays.isEmpty() && recentActiveDays.peekFirst().isBefore(cursor.minusDays(29))) {
+                recentActiveDays.removeFirst();
+            }
+
+            double noteDensity = notesSoFar == 0 ? 0.0 : Math.min(35.0, notesSoFar * 1.4);
+            double entityDensity = entitiesSoFar == 0 ? 0.0 : Math.min(25.0, entitiesSoFar * 1.8);
+            double connectionDensity = notesSoFar == 0 ? 0.0 : Math.min(25.0, ((double) linkedNotesSoFar / notesSoFar) * 25.0);
+            double freshness = notesSoFar == 0 ? 0.0 : Math.min(10.0, ((double) recentNotesCount / notesSoFar) * 10.0);
+            double continuity = Math.min(5.0, recentActiveDays.size() / 6.0);
+
+            history.add(new ScoreTimelineResponse.ScorePoint(cursor, round(noteDensity + entityDensity + connectionDensity + freshness + continuity)));
+        }
+
+        return history;
+    }
+
     // ── private ───────────────────────────────────────────────────────────────
 
     private List<TopEntity> topEntities(List<NoteReference> refs, int limit) {
@@ -216,6 +374,10 @@ public class MetricsService {
                     return new TopEntity(types.get(id), id, names.get(id), count, freq);
                 })
                 .collect(Collectors.toList());
+    }
+
+    private static double round(double v) {
+        return Math.round(v * 100.0) / 100.0;
     }
 
     private User getUser(String userId) {

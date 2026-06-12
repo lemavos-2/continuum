@@ -5,7 +5,7 @@
  */
 import { motion } from "framer-motion";
 import { useInView } from "@/hooks/useInView";
-import { PenLine, Hash, Network } from "lucide-react";
+import { PenLine, Hash, Network } from "@/lib/heroicons";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -96,7 +96,7 @@ export default function HowItWorksSection() {
                   {/* Step indicator */}
                   <div className="relative mb-8">
                     <div className="w-14 h-14 rounded-full border-2 border-white/[0.12] bg-[#090909] flex items-center justify-center relative z-10">
-                      <Icon size={22} className="text-white" />
+                      <Icon className="w-5 h-5 text-white" />
                     </div>
                     {/* Number badge */}
                     <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center">

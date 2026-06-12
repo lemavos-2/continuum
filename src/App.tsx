@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UsageProvider } from "@/contexts/UsageContext";
 import { EntityProvider } from "@/contexts/EntityContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -21,35 +22,27 @@ import EntityDetail from "./pages/EntityDetail";
 import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Vault from "./pages/Vault";
 import VaultDownload from "./pages/VaultDownload";
-import TimeTracking from "./pages/TimeTracking";
+import Activities from "./pages/Activities";
+import Projects from "./pages/Projects";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Subscription from "./pages/Subscription";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import { Loader2 } from "lucide-react";
+import Insights from "./pages/Insights";
+import { Loader2 } from "@/lib/heroicons";
+import { extractAuthTokensFromLocation, sanitizeAuthRedirectUrl } from "@/lib/auth-redirect";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const queryClient = new QueryClient();
 
-function parseAuthTokensFromUrl() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const rawHash = window.location.hash.replace(/^#/, "");
-  const hashQuery = rawHash.startsWith("/") ? rawHash.slice(1) : rawHash;
-  const hashParams = new URLSearchParams(hashQuery);
-
-  const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
-  const accessToken = getValue("access_token") ?? getValue("login_token") ?? getValue("token") ?? getValue("jwt");
-  const refreshToken = getValue("refresh_token");
-
-  if (!accessToken) return null;
-  return { accessToken, refreshToken };
-}
-
 function HomeRoute() {
   const { user, loading } = useAuth();
-  const authTokens = parseAuthTokensFromUrl();
+  sanitizeAuthRedirectUrl();
+  const authTokens = extractAuthTokensFromLocation();
 
-  if (authTokens) {
+  if (authTokens?.accessToken) {
     return <LoginSuccess />;
   }
 
@@ -109,13 +102,14 @@ const AppRoutes = () => (
     <Route path="/entities/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     {/* Activity Routes */}
     <Route path="/tracking" element={<Navigate to="/activities" replace />} />
-    <Route path="/activities" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
-    <Route path="/projects" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
+    <Route path="/activities" element={<ProtectedRoute><Activities /></ProtectedRoute>} />
+    <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
     {/* Analytics Routes */}
     <Route path="/tracking/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/activities/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/projects/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
+    <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
     <Route path="/vault/download/:fileId" element={<ProtectedRoute><VaultDownload /></ProtectedRoute>} />
     <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
@@ -126,21 +120,25 @@ const AppRoutes = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <HashRouter>
-        <LanguageProvider>
-          <AuthProvider>
-            <UsageProvider>
-              <EntityProvider>
-                <AppRoutes />
-              </EntityProvider>
-            </UsageProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </HashRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <HashRouter>
+          <LanguageProvider>
+            <AuthProvider>
+              <UsageProvider>
+                <EntityProvider>
+                  <AppRoutes />
+                </EntityProvider>
+              </UsageProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </HashRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+    <Analytics />
+    <SpeedInsights />
   </QueryClientProvider>
 );
 

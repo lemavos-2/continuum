@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { vaultApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download } from "lucide-react";
+import { Loader2, ArrowLeft, Download } from "@/lib/heroicons";
 import { useToast } from "@/hooks/use-toast";
 
 function extractFilename(contentDisposition?: string): string | null {

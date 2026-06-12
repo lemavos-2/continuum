@@ -6,7 +6,10 @@ import org.springframework.web.bind.annotation.*;
 import tech.lemnova.continuum.application.service.MetricsService;
 import tech.lemnova.continuum.controller.dto.metrics.DashboardMetrics;
 import tech.lemnova.continuum.controller.dto.metrics.EntityTimeline;
+import tech.lemnova.continuum.controller.dto.metrics.ScoreTimelineResponse.ScorePoint;
 import tech.lemnova.continuum.infra.security.CustomUserDetails;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/metrics")
@@ -26,6 +29,12 @@ public class MetricsController {
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable String entityId) {
         return ResponseEntity.ok(metricsService.getEntityTimeline(user.getUserId(), entityId));
+    }
+
+    @GetMapping("/score/timeline")
+    public ResponseEntity<List<ScorePoint>> scoreTimeline(
+            @AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(metricsService.getUserScoreTimeline(user.getUserId()));
     }
 }
 

@@ -1,30 +1,60 @@
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { entitiesApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntitySummary } from '@/hooks/useTimeTracking';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Plus, ChevronDown, FolderOpen, Loader2 } from 'lucide-react';
+import { Plus, ChevronDown, FolderOpen, Loader2, Check } from "@/lib/heroicons";
 import { CreateEntityDialog } from '@/components/CreateEntityDialog';
 import { ActivityCompletionCalendar } from '@/components/ActivityCompletionCalendar';
 import type { Entity } from '@/types';
 
-const formatDate = (iso?: string) => {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const todayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const isTrackedToday = (trackingDates?: string[]) => {
+  if (!trackingDates?.length) return false;
+  const key = todayKey();
+  return trackingDates.some((d) => d.split('T')[0] === key);
 };
 
 /**
- * Premium striped table with inline accordion rows. Mirrors the
- * `/entities` aesthetic: serif header, hairline borders, monochrome.
+ * Responsive list of trackable entities (projects / activities).
+ * Card-based layout that works well on mobile and desktop, with a
+ * one-tap "Complete today" action for activities.
  */
-export function TimeTrackingList({ filterType }: { filterType?: string }) {
+export function TimeTrackingList({
+  filterType,
+  search,
+  hideInternalSearch,
+  createOpen,
+  onCreateOpenChange,
+  onCreated,
+}: {
+  filterType?: string;
+  search?: string;
+  sortBy?: "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+  hideInternalSearch?: boolean;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
+  onCreated?: (entity: Entity) => void;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [createOpen, setCreateOpen] = useState(false);
+  const { toast } = useToast();
+  const [internalCreateOpen, setInternalCreateOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const createDialogOpen = onCreateOpenChange ? createOpen ?? false : internalCreateOpen;
+  const setCreateDialogOpen = onCreateOpenChange ? onCreateOpenChange : setInternalCreateOpen;
   const { getAllSummaries } = useTimeTracking();
+
+  const lower = hideInternalSearch ? (search ?? '').trim().toLowerCase() : query.trim().toLowerCase();
 
   const { data: trackableEntities, isLoading: entitiesLoading } = useQuery({
     queryKey: ['entities', 'trackable', filterType],
@@ -43,40 +73,51 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
   const isLoading = entitiesLoading || summariesLoading;
   const typeLabels: Record<string, string> = { PROJECT: 'Project', ACTIVITY: 'Activity' };
 
-  const lower = query.trim().toLowerCase();
-  const filtered = useMemo(() => trackableEntities ?? [], [trackableEntities]);
-  const matches = useMemo(() => {
-    if (!lower) return new Set<number>();
-    const s = new Set<number>();
-    filtered.forEach((e, i) => {
-      if ([e.title, e.description, e.type].filter(Boolean).some((v) => String(v).toLowerCase().includes(lower))) {
-        s.add(i);
-      }
-    });
-    return s;
-  }, [lower, filtered]);
+  const all = useMemo(() => trackableEntities ?? [], [trackableEntities]);
+  const visible = useMemo(() => {
+    if (!lower) return all;
+    return all.filter((e) =>
+      [e.title, e.description, e.type].filter(Boolean).some((v) => String(v).toLowerCase().includes(lower)),
+    );
+  }, [lower, all]);
 
   const placeholder = `Search ${filterType === 'PROJECT' ? 'projects' : filterType === 'ACTIVITY' ? 'activities' : 'entities'}…`;
 
+  const handleQuickComplete = async (entity: Entity) => {
+    if (markingId) return;
+    setMarkingId(entity.id);
+    try {
+      await entitiesApi.track(entity.id);
+      await queryClient.invalidateQueries({ queryKey: ['entities'] });
+      toast({ title: 'Marked as done', description: entity.title || 'Activity' });
+    } catch {
+      toast({ title: 'Could not mark complete', variant: 'destructive' });
+    } finally {
+      setMarkingId(null);
+    }
+  };
+
   return (
     <>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder}
-          className="w-full max-w-sm bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-sm outline-none transition-colors placeholder:text-white/30"
-        />
-        <button onClick={() => setCreateOpen(true)} className="btn-primary shrink-0">
-          <Plus className="w-4 h-4" /> New {filterType ? typeLabels[filterType] : 'Entity'}
-        </button>
-      </div>
+      {!hideInternalSearch && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={placeholder}
+            className="w-full max-w-sm bg-transparent border-0 border-b border-white/15 focus:border-white pb-2 text-sm outline-none transition-colors placeholder:text-white/30"
+          />
+          <button onClick={() => setCreateDialogOpen(true)} className="btn-primary shrink-0">
+            <Plus className="w-4 h-4" /> New {filterType ? typeLabels[filterType] : 'Entity'}
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-24">
           <Loader2 className="w-5 h-5 animate-spin text-white/30" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : visible.length === 0 ? (
         <div className="border border-dashed border-white/10 rounded-md py-16 text-center">
           <FolderOpen className="w-10 h-10 text-white/20 mx-auto mb-3" />
           <p className="text-sm text-white/40">
@@ -84,103 +125,109 @@ export function TimeTrackingList({ filterType }: { filterType?: string }) {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="border-b border-white/10 bg-white/5">
-                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-10"></th>
-                <th className="label-caps text-left px-3 py-3 font-medium text-white/50">Name</th>
-                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-[140px]">Type</th>
-                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-[160px]">Tracked</th>
-                <th className="label-caps text-left px-3 py-3 font-medium text-white/50 w-[120px]">Entries</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((entity, i) => {
-                const dim = lower && !matches.has(i);
-                const summary = getSummaryForEntity(entity.id);
-                const isOpen = openId === entity.id;
-                const showTimer = entity.type === 'PROJECT';
+        <ul className="space-y-3">
+          {visible.map((entity) => {
+            const summary = getSummaryForEntity(entity.id);
+            const isOpen = openId === entity.id;
+            const isProject = entity.type === 'PROJECT';
+            const doneToday = isTrackedToday(entity.trackingDates);
+            const marking = markingId === entity.id;
 
-                return (
-                  <Fragment key={entity.id}>
-                    <tr
-                      onClick={() => setOpenId(isOpen ? null : entity.id)}
+            return (
+              <li
+                key={entity.id}
+                className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/20"
+              >
+                {/* Row header */}
+                <div className="flex items-center gap-3 p-3 sm:p-4">
+                  <button
+                    onClick={() => setOpenId(isOpen ? null : entity.id)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    aria-expanded={isOpen}
+                  >
+                    <ChevronDown className={cn('w-4 h-4 shrink-0 text-white/40 transition-transform', isOpen && 'rotate-180')} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-white">{entity.title || 'Untitled'}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-white/40">
+                        <span className="uppercase tracking-wider">{typeLabels[entity.type] ?? entity.type}</span>
+                        {isProject ? (
+                          <span className="font-mono">{summary?.formattedTotal || '00:00:00'}</span>
+                        ) : (
+                          <span>{entity.trackingDates?.length ?? 0} done</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Quick action: complete today for activities */}
+                  {!isProject && (
+                    <button
+                      onClick={() => !doneToday && handleQuickComplete(entity)}
+                      disabled={doneToday || marking}
                       className={cn(
-                        'group border-b border-white/[0.06] cursor-pointer transition-opacity duration-200 odd:bg-white/5 even:bg-white/0',
-                        dim ? 'opacity-20' : 'opacity-100 hover:bg-white/[0.08]',
+                        'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                        doneToday
+                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                          : 'border-white/15 text-white/80 hover:border-white/40 hover:bg-white/[0.06]',
                       )}
                     >
-                      <td className="px-3 py-4 text-white/40">
-                        <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} />
-                      </td>
-                      <td className="px-3 py-4">
-                        <p className="font-medium text-white truncate">{entity.title || 'Untitled'}</p>
-                        {entity.description && (
-                          <p className="mt-0.5 text-xs text-white/40 truncate">{entity.description}</p>
-                        )}
-                      </td>
-                      <td className="px-3 py-4 text-xs uppercase tracking-wider text-white/60">
-                        {typeLabels[entity.type] ?? entity.type}
-                      </td>
-                      <td className="px-3 py-4 text-sm font-mono text-white/80">
-                        {summary?.formattedTotal || '00:00:00'}
-                      </td>
-                      <td className="px-3 py-4 text-sm text-white/60">{summary?.entriesCount ?? 0}</td>
-                    </tr>
-                    {isOpen && (
-                      <tr key={entity.id + '-detail'} className="border-b border-white/[0.06] bg-black/40">
-                        <td colSpan={5} className="px-6 py-6">
-                          <div className="grid gap-4">
-                            {showTimer ? (
-                              <div className="grid grid-cols-2 gap-4 max-w-md">
-                                <div className="rounded-md border border-white/10 bg-white/5 p-4">
-                                  <p className="label-caps text-white/50">Total time</p>
-                                  <p className="mt-2 font-mono text-white/90">
-                                    {summary?.formattedTotal || '00:00:00'}
-                                  </p>
-                                </div>
-                                <div className="rounded-md border border-white/10 bg-white/5 p-4">
-                                  <p className="label-caps text-white/50">Sessions</p>
-                                  <p className="mt-2 text-white/90">{summary?.entriesCount ?? 0}</p>
-                                </div>
-                              </div>
-                            ) : (
-                              <ActivityCompletionCalendar
-                                entityId={entity.id}
-                                trackingDates={entity.trackingDates}
-                              />
-                            )}
-                            <div className="flex gap-2 pt-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/entities/${entity.id}`);
-                                }}
-                                className="text-xs px-3 py-1.5 rounded-md border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
-                              >
-                                Open detail →
-                              </button>
-                            </div>
+                      {marking ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                      <span>{doneToday ? 'Done today' : 'Complete'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Expanded detail */}
+                {isOpen && (
+                  <div className="border-t border-white/[0.06] bg-black/30 p-4 sm:p-6">
+                    <div className="grid gap-4">
+                      {isProject ? (
+                        <div className="grid grid-cols-2 gap-3 max-w-md">
+                          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <p className="label-caps text-white/50">Total time</p>
+                            <p className="mt-2 font-mono text-white/90">{summary?.formattedTotal || '00:00:00'}</p>
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <p className="label-caps text-white/50">Sessions</p>
+                            <p className="mt-2 text-white/90">{summary?.entriesCount ?? 0}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <ActivityCompletionCalendar
+                          entityId={entity.id}
+                          trackingDates={entity.trackingDates}
+                          onMarkComplete={() => queryClient.invalidateQueries({ queryKey: ['entities'] })}
+                        />
+                      )}
+                      <div>
+                        <button
+                          onClick={() => navigate(`/entities/${entity.id}`)}
+                          className="text-xs px-3 py-1.5 rounded-md border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
+                        >
+                          Open detail →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       <CreateEntityDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
         defaultType={filterType || 'PROJECT'}
         lockType={!!filterType}
         onCreated={(entity) => {
           queryClient.invalidateQueries({ queryKey: ['entities'] });
+          onCreated?.(entity);
           navigate(`/entities/${entity.id}`);
         }}
       />

@@ -4,7 +4,7 @@
  * The final conversion moment. No distractions.
  */
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/lib/heroicons";
 import { useNavigate } from "react-router-dom";
 import { useInView } from "@/hooks/useInView";
 
@@ -86,7 +86,7 @@ export default function CTASection() {
                   className="btn-primary animate-pulse-glow text-lg"
                 >
                   Create account
-                  <ArrowRight size={20} />
+                  <ArrowRight className="w-5 h-5" />
                 </button>
               </motion.div>
 

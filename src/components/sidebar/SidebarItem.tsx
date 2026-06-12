@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon } from "@/lib/heroicons";
 import { cn } from "@/lib/utils";
 import { SidebarTooltip } from "@/components/sidebar/SidebarTooltip";
 
@@ -13,6 +13,7 @@ interface SidebarItemProps {
 }
 
 export function SidebarItem({ icon: Icon, label, to, badge, collapsed = false, onClick }: SidebarItemProps) {
+  // Item renderizado quando NÃO possui um link (apenas clique/botão)
   const item = (
     <div
       className={cn(
@@ -35,28 +36,32 @@ export function SidebarItem({ icon: Icon, label, to, badge, collapsed = false, o
     </div>
   );
 
+  // Item renderizado quando POSSUI um link de navegação
   const link = (
     <NavLink
       to={to!}
       className={({ isActive }) =>
         cn(
-          "group flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-250 ease-out",
+          // REMOVIDO: overflow-hidden para permitir que a sombra (glow) apareça para fora do container
+          "group relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-250 ease-out",
           "text-slate-200 hover:text-white hover:bg-white/5",
-          isActive && "bg-white/7 text-white shadow-[0_12px_40px_rgba(255,255,255,0.08)]",
+          // CORRIGIDO: bg-white/[0.07] com colchetes e um shadow com raio centralizado e maior opacidade para o glow
+          isActive && "bg-white/[0.07] text-white shadow-[0_0_20px_rgba(255,255,255,0.18)] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-white/15 before:pointer-events-none",
         )
       }
       onClick={onClick}
     >
-      <Icon className="h-5 w-5 text-slate-300 transition-colors duration-200 group-hover:text-white" />
-      {!collapsed && <span className="truncate text-sm font-medium">{label}</span>}
+      <Icon className="h-5 w-5 text-slate-300 transition-colors duration-200 group-hover:text-white relative z-10" />
+      {!collapsed && <span className="truncate text-sm font-medium relative z-10">{label}</span>}
       {badge != null && !collapsed && (
-        <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
+        <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200 relative z-10">
           {badge}
         </span>
       )}
     </NavLink>
   );
 
+  // Retorno condicional baseado no estado (com link, colapsado ou botão puro)
   if (to) {
     return collapsed ? (
       <SidebarTooltip content={label}>{link}</SidebarTooltip>

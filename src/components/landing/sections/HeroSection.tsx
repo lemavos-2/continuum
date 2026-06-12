@@ -5,7 +5,7 @@
  * Background: near-black with subtle radial gradient + grid
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Play } from "@/lib/heroicons";
 import { Link } from "react-router-dom";
 import KnowledgeGraph from "@/components/landing/KnowledgeGraph";
 
@@ -69,10 +69,10 @@ export default function HeroSection() {
             <motion.div {...fadeUp(0.4)} className="flex flex-wrap gap-3">
               <Link to="/register" className="btn-primary animate-pulse-glow">
                 Get started
-                <ArrowRight size={16} />
+                <ArrowRight className="w-4 h-4" />
               </Link>
               <a href="#how-it-works" className="btn-secondary">
-                <Play size={14} className="opacity-70" />
+                <Play className="w-3.5 h-3.5 opacity-70" />
                 See how it works
               </a>
             </motion.div>

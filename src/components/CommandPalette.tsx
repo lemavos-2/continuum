@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { StickyNote, Network, Plus, Search } from "lucide-react";
+import { StickyNote, Network, Plus, Search } from "@/lib/heroicons";
 import { searchApi, notesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import type { SuggestionKeyDownProps } from "@tiptap/suggestion";
-import { Hash, AtSign, Plus, FileText, User, Folder, Building2, Tag, CircleDot, ChevronDown } from "lucide-react";
+import { Hash, AtSign, Plus, FileText, User, Folder, Building2, Tag, CircleDot, ChevronDown } from "@/lib/heroicons";
 
 export interface MentionItem {
   id: string;

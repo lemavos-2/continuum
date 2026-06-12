@@ -11,7 +11,7 @@ import tech.lemnova.continuum.domain.plan.PlanType;
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email);
     Optional<User> findByUsername(String username);
-    Optional<User> findByStripeCustomerId(String stripeCustomerId);
+    Optional<User> findByLemonSqueezyCustomerId(String lemonSqueezyCustomerId);
     Optional<User> findByVerificationToken(String token);
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);

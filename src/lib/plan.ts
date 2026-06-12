@@ -19,7 +19,7 @@ export function getPlanLimits(user: User | null): CurrentPlanLimits {
 }
 
 export function isUnlimited(limit: number) {
-  return limit === -1;
+  return limit === -1 || limit === 2147483647;
 }
 
 export function isPremiumPlan(user: User | null): boolean {

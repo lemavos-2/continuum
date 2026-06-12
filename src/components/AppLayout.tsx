@@ -7,17 +7,21 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   LayoutDashboard,
   StickyNote,
-  Network,
+  Tag,
   LogOut,
   User as UserIcon,
   Menu,
-  GitGraph,
+  GlobeAlt,
   Settings,
   Timer,
-  Activity,
-  HardDrive,
+  Clock,
+  Lock,
+  BarChart3,
   X,
-} from "lucide-react";
+  FolderOpen,
+  Squares2x2,
+  ArrowLeft,
+} from "@/lib/heroicons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,26 +30,39 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MobileSidebar } from "@/components/sidebar/MobileSidebar";
+
 import { SessionNavBar } from "@/components/ui/session-nav-bar";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mobileItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
-  { to: "/notes", icon: StickyNote, label: "Notes" },
-  { to: "/entities", icon: Network, label: "Entities" },
-  { to: "/vault", icon: HardDrive, label: "Vault" },
-  { to: "/projects", icon: Timer, label: "Projects" },
-  { to: "/activities", icon: Activity, label: "Activities" },
-  { to: "/graph", icon: GitGraph, label: "Graph" },
+  { to: "/", icon: Squares2x2, key: "nav_dashboard", end: true },
+  { to: "/notes", icon: StickyNote, key: "nav_notes" },
+  { to: "/entities", icon: Tag, key: "nav_entities" },
+  { to: "/insights", icon: BarChart3, key: "nav_insights" },
+  { to: "/vault", icon: Lock, key: "nav_vault" },
+  { to: "/projects", icon: FolderOpen, key: "nav_projects" },
+  { to: "/activities", icon: Clock, key: "nav_activities" },
+  { to: "/graph", icon: GlobeAlt, key: "nav_graph" },
 ];
+
+// Primary tabs shown in the bottom navigation bar on mobile.
+const mobileTabs = [
+  { to: "/", icon: Squares2x2, key: "nav_dashboard", end: true },
+  { to: "/notes", icon: StickyNote, key: "nav_notes" },
+  { to: "/entities", icon: Tag, key: "nav_entities" },
+  { to: "/insights", icon: BarChart3, key: "nav_insights" },
+];
+
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const isGraphPage = location.pathname.startsWith("/graph");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+
 
   const handleLogout = async () => {
     await logout();
@@ -60,108 +77,36 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const display = user?.username || user?.email?.split("@")[0] || "Guest";
 
   return (
-    <div className="flex min-h-screen bg-black text-white">
+    <div className="flex min-h-screen bg-background text-foreground">
       <CommandPalette />
 
       {/* Mobile top bar */}
-      <div className="fixed left-0 right-0 top-0 z-40 flex items-center justify-between gap-3 border-b border-white/8 bg-black/70 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-md bg-white/5 text-white transition-colors hover:bg-white/10"
-          aria-label="Open navigation"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+      <div className="fixed left-0 right-0 top-0 z-40 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl lg:hidden">
+        <div className="flex items-center gap-2">
+          <img src="/favicon.ico" alt="Continuum" className="h-7 w-7 rounded-lg object-contain" />
+          <span className="text-base font-serif tracking-tight">Continuum</span>
+        </div>
 
         <div className="flex-1" />
 
-        {isGraphPage ? (
+        {isGraphPage && (
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new Event("graph-options-toggle"))}
-            className="grid h-10 w-10 place-items-center rounded-md bg-white/5 text-white transition-colors hover:bg-white/10"
-            aria-label="Open graph options"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
           >
-            <Settings className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
+            {t("common_back") || "Back"}
           </button>
-        ) : (
-          <div className="h-10 w-10" />
         )}
       </div>
 
-      {/* Mobile drawer */}
-      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
-        <div className="flex h-full flex-col bg-black/95 backdrop-blur-xl">
-          <div className="flex h-[54px] items-center justify-between border-b border-white/8 px-4">
-            <div className="flex items-center gap-2">
-              <img src="/favicon.ico" alt="Continuum" className="h-6 w-6 rounded object-contain" />
-              <span className="text-sm font-semibold">Continuum</span>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="grid h-8 w-8 place-items-center rounded-md text-zinc-400 hover:bg-white/5 hover:text-white"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <nav className="flex-1 overflow-y-auto p-2">
-            {mobileItems.map((it) => (
-              <NavLink
-                key={it.to}
-                to={it.to}
-                end={it.end}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-zinc-400 transition-colors hover:bg-white/5 hover:text-white",
-                    isActive && "bg-white/10 text-white",
-                  )
-                }
-              >
-                <it.icon className="h-4 w-4" />
-                <span>{it.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-          <div className="border-t border-white/8 p-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-white/5">
-                  <div className="grid h-7 w-7 place-items-center rounded-full bg-white text-[11px] font-bold text-black">
-                    {initial}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">{display}</p>
-                    <p className="truncate text-[11px] text-zinc-500">{user?.plan || "FREE"}</p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="start" className="w-56">
-                <DropdownMenuLabel className="text-xs text-zinc-500">{user?.email}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { navigate("/profile"); setSidebarOpen(false); }}>
-                  <UserIcon className="mr-2 h-4 w-4" /> Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { navigate("/subscription"); setSidebarOpen(false); }}>
-                  <Settings className="mr-2 h-4 w-4" /> Subscription
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogoutRequest}>
-                  <LogOut className="mr-2 h-4 w-4" /> Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </MobileSidebar>
       <ConfirmDialog
         open={confirmLogoutOpen}
         onOpenChange={setConfirmLogoutOpen}
-        title="Sign out?"
-        description="You will be signed out of your account continue?"
-        confirmText="Logout"
+        title={t("auth_signOut")}
+        description={t("auth_signOutDesc")}
+        confirmText={t("nav_logout")}
         destructive
         onConfirm={async () => {
           setConfirmLogoutOpen(false);
@@ -172,10 +117,84 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Desktop hover-expand sidebar */}
       <SessionNavBar />
 
-      <main className="min-w-0 flex-1 overflow-auto bg-black lg:ml-[3.25rem]">
+      <main className="min-w-0 flex-1 overflow-auto bg-background lg:ml-[3.25rem]">
         <div className="h-14 lg:hidden" />
         {children}
+        {/* Spacer so content isn't hidden behind the mobile bottom nav */}
+        <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" />
       </main>
+
+      {/* Mobile bottom tab bar */}
+      {!isGraphPage && (
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/85 backdrop-blur-xl lg:hidden">
+          <div className="flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)] pt-1">
+            {mobileTabs.map((it) => (
+              <NavLink
+                key={it.to}
+                to={it.to}
+                end={it.end}
+                className={({ isActive }) =>
+                  cn(
+                    "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors active:scale-95",
+                    isActive && "text-primary",
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={cn(
+                        "grid h-8 w-12 place-items-center rounded-lg transition-colors",
+                        isActive && "bg-primary/10",
+                      )}
+                    >
+                      <it.icon className="h-5 w-5" />
+                    </span>
+                    <span className="leading-none">{t(it.key)}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors active:scale-95 data-[state=open]:text-primary"
+                >
+                  <span className="grid h-8 w-12 place-items-center rounded-lg">
+                    <Menu className="h-5 w-5" />
+                  </span>
+                  <span className="leading-none">{t("nav_more")}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="end" className="mb-2 w-56">
+                <DropdownMenuItem onClick={() => navigate("/projects")}>
+                  <FolderOpen className="mr-2 h-4 w-4" /> {t("nav_projects")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/activities")}>
+                  <Clock className="mr-2 h-4 w-4" /> {t("nav_activities")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/graph")}>
+                  <GlobeAlt className="mr-2 h-4 w-4" /> {t("nav_graph")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/vault")}>
+                  <Lock className="mr-2 h-4 w-4" /> {t("nav_vault")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-zinc-500">{user?.email}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <UserIcon className="mr-2 h-4 w-4" /> {t("nav_profile")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogoutRequest}>
+                  <LogOut className="mr-2 h-4 w-4" /> {t("nav_logout")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </nav>
+      )}
+
+
     </div>
   );
 }

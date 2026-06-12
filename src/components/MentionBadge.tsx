@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X } from "@/lib/heroicons";
 import type { EntityType } from '@/types';
 
 const ENTITY_TYPE_CONFIG: Record<EntityType, { color: string; bgColor: string; textColor: string; borderColor: string }> = {

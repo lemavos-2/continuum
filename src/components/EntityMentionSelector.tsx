@@ -2,7 +2,7 @@ import { memo, useMemo, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search } from "@/lib/heroicons";
 import type { Entity, EntityType } from '@/types';
 import { useEntityStore } from '@/contexts/EntityContext';
 

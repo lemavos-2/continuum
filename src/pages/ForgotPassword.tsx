@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/lib/heroicons";
 import { useToast } from "@/hooks/use-toast";
 import AuthShell from "@/components/auth/AuthShell";
 

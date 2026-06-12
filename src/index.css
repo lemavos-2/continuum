@@ -62,21 +62,78 @@
     --bento-border: 0 0% 100% / 0.06;
     --bento-hover-shadow: 0 0% 100% / 0.04;
     --bento-gradient-via: 0 0% 100% / 0.02;
+
+    --popup-background: 0 0% 1%;
+    --popup-foreground: 0 0% 98%;
+    --popup-muted: 0 0% 64%;
+    --popup-border: 0 0% 100% / 0.10;
   }
 
-  /* Force dark always — keep .dark for compat */
+  /* Light theme — soft paper aesthetic, hairline borders @ 8% black. */
+  .light {
+    color-scheme: light;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+
+    --card: 0 0% 99%;
+    --card-foreground: 0 0% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 0% 7%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 0% / 0.08;
+    --input: 0 0% 0% / 0.08;
+    --ring: 0 0% 0% / 0.20;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 30%;
+    --sidebar-primary: 0 0% 7%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 0% / 0.06;
+    --sidebar-ring: 0 0% 0% / 0.18;
+
+    --bento-dot: 0 0% 0% / 0.025;
+    --bento-border: 0 0% 0% / 0.08;
+    --bento-hover-shadow: 0 0% 0% / 0.05;
+    --bento-gradient-via: 0 0% 0% / 0.03;
+
+    --popup-background: 0 0% 1%;
+    --popup-foreground: 0 0% 98%;
+    --popup-muted: 0 0% 64%;
+    --popup-border: 0 0% 100% / 0.10;
+  }
+
   .dark { color-scheme: dark; }
 }
 
 @layer base {
   * { @apply border-border; }
-  html, body { background: #000; color: #fff; }
+  html, body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
   body {
     @apply antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-feature-settings: "ss01", "cv11";
   }
-  html { color-scheme: dark; }
 }
 
 @layer components {
@@ -193,6 +250,12 @@
   .ProseMirror code { @apply rounded bg-accent px-1.5 py-0.5 text-xs font-mono; }
   .ProseMirror hr { @apply border-border my-6; }
   .ProseMirror a { @apply text-white underline underline-offset-4 cursor-pointer; }
+
+  .continuum-popup-black {
+    background: hsl(var(--popup-background));
+    color: hsl(var(--popup-foreground));
+    border-color: hsl(var(--popup-border));
+  }
 }
 
 @layer utilities {
@@ -200,6 +263,29 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: hsl(0 0% 100% / 0.10); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: hsl(0 0% 100% / 0.22); }
+
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="bg-black"],
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="bg-neutral-900"],
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="bg-zinc-900"],
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="bg-slate-900"] {
+    background-color: hsl(var(--background) / 0.92) !important;
+  }
+
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="bg-white/"] {
+    background-color: hsl(var(--foreground) / 0.05) !important;
+  }
+
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="text-white/"] {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class~="text-white"] {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .light :where(:not(.continuum-popup-black):not(.continuum-popup-black *))[class*="border-white/"] {
+    border-color: hsl(var(--border)) !important;
+  }
 }
 
 /* Continuum editor */
@@ -210,7 +296,9 @@
   .continuum-editor h2 { @apply text-2xl font-serif mt-7 mb-2 tracking-tight; }
   .continuum-editor h3 { @apply text-xl font-serif mt-5 mb-2; }
   .continuum-editor blockquote { @apply border-l-2 border-white/40 pl-4 italic text-muted-foreground my-3; }
-  .continuum-editor ul, .continuum-editor ol { @apply pl-6 my-2; }
+  .continuum-editor ul { @apply list-disc pl-6 my-2; list-style-position: outside; }
+  .continuum-editor ol { @apply list-decimal pl-6 my-2; list-style-position: outside; }
+  .continuum-editor li::marker { color: rgba(255, 255, 255, 0.85); }
   .continuum-editor li > p { @apply my-0.5; }
   .continuum-editor ul[data-type="taskList"] { @apply list-none pl-1; }
   .continuum-editor ul[data-type="taskList"] li { @apply flex items-start gap-2 my-1; }
@@ -226,6 +314,10 @@
   .continuum-editor th, .continuum-editor td { @apply border border-border px-3 py-2 align-top; }
   .continuum-editor th { @apply bg-muted/50 font-medium text-left; }
   .continuum-editor .ProseMirror-selectednode { @apply ring-1 ring-white/40 rounded; }
+  .continuum-editor mark { background: hsl(50 95% 60% / 0.35); color: inherit; padding: 0 2px; border-radius: 2px; }
+  .continuum-editor sub, .continuum-editor sup { font-size: 0.75em; line-height: 0; }
+  .continuum-editor .search-hit { background: hsl(45 95% 55% / 0.35); border-radius: 2px; }
+  .continuum-editor .search-hit-current { background: hsl(25 95% 60% / 0.6); outline: 1px solid hsl(25 95% 60%); }
 
   .continuum-editor p.is-editor-empty:first-child::before,
   .continuum-editor h1.is-empty::before,
@@ -236,18 +328,16 @@
   }
 
   .continuum-entity-mention {
-    @apply inline-flex items-center px-1.5 py-0.5 rounded-md font-medium text-[0.9em] cursor-pointer transition-colors;
-    background: hsl(0 0% 100% / 0.06); color: #fff; border: 1px solid transparent;
+    @apply inline-flex items-center px-1.5 py-0.5 mx-[1px] rounded-md font-medium text-[0.9em] cursor-pointer transition-colors no-underline;
+    background: hsl(190 80% 55% / 0.12); color: hsl(190 90% 75%); border: 1px solid hsl(190 80% 55% / 0.25);
   }
-  .continuum-entity-mention:hover { background: hsl(0 0% 100% / 0.12); }
-  /* prefix already in mention label text — no ::before */
+  .continuum-entity-mention:hover { background: hsl(190 80% 55% / 0.22); border-color: hsl(190 80% 55% / 0.45); }
 
   .continuum-note-mention {
-    @apply inline-flex items-center px-1.5 py-0.5 rounded-md text-[0.9em] font-medium cursor-pointer transition-colors;
-    background: hsl(0 0% 100% / 0.06); color: #fff; border: 1px solid transparent;
+    @apply inline-flex items-center px-1.5 py-0.5 mx-[1px] rounded-md text-[0.9em] font-medium cursor-pointer transition-colors no-underline;
+    background: hsl(280 70% 65% / 0.12); color: hsl(280 80% 80%); border: 1px solid hsl(280 70% 65% / 0.25);
   }
-  .continuum-note-mention:hover { background: hsl(0 0% 100% / 0.12); }
-  /* prefix already in mention label text — no ::before */
+  .continuum-note-mention:hover { background: hsl(280 70% 65% / 0.22); border-color: hsl(280 70% 65% / 0.45); }
 
   .hljs-comment, .hljs-quote { @apply text-muted-foreground italic; }
   .hljs-keyword, .hljs-selector-tag { color: hsl(0 0% 90%); font-weight: 600; }

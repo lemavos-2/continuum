@@ -6,7 +6,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import {
   Heading1, Heading2, Heading3, List, ListOrdered, ListTodo, Quote,
   Code, Code2, Minus, Table as TableIcon, Image as ImageIcon, Type,
-} from "lucide-react";
+} from "@/lib/heroicons";
 import type { Editor, Range } from "@tiptap/core";
 
 export interface SlashItem {

@@ -6,7 +6,7 @@ import {
   eachDayOfInterval,
   isSameDay,
 } from 'date-fns';
-import { Check } from 'lucide-react';
+import { Check } from "@/lib/heroicons";
 import { Button } from '@/components/ui/button';
 import { entitiesApi } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';

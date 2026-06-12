@@ -12,7 +12,7 @@ import {
   Eye,
   EyeOff,
   X,
-} from "lucide-react";
+} from "@/lib/heroicons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SideInspector } from "@/components/SideInspector";
@@ -239,10 +239,10 @@ export default function KnowledgeGraph() {
     if (nodes.length === 0 || alphaRef.current < 0.005) return;
 
     // Constantes aprimoradas
-    const repulsion = 450; 
-    const attraction = 0.015; 
-    const damping = 0.90; // Deslizamento suave
-    const centerForce = 0.015; 
+    const repulsion = nodes.length > 180 ? 280 : 450;
+    const attraction = nodes.length > 180 ? 0.028 : 0.015;
+    const damping = nodes.length > 120 ? 0.78 : 0.90; // Mais amortecimento em grafos maiores
+    const centerForce = 0.02; 
     const periodPull = clusterRef.current ? 0.03 : 0;
     const alpha = alphaRef.current;
 
@@ -319,12 +319,17 @@ export default function KnowledgeGraph() {
       if (n === drag) continue;
       n.vx *= damping;
       n.vy *= damping;
+
+      const maxVel = 12;
+      n.vx = Math.max(-maxVel, Math.min(maxVel, n.vx));
+      n.vy = Math.max(-maxVel, Math.min(maxVel, n.vy));
+
       n.x += n.vx * alpha;
       n.y += n.vy * alpha;
     }
 
     // Resfriamento logarítmico para parada suave
-    alphaRef.current = Math.max(0.0, alphaRef.current * 0.985);
+    alphaRef.current = Math.max(0.0, alphaRef.current * 0.93);
   }, []);
 
   // ── Renderização Avançada ────────────────────────────────────────────
@@ -557,9 +562,9 @@ export default function KnowledgeGraph() {
           id: n.id,
           label: n.label,
           type: String(n.type),
-          // Dispersão inicial circular e orgânica
-          x: (Math.random() - 0.5) * 500,
-          y: (Math.random() - 0.5) * 500,
+          // Dispersão inicial mais restrita para evitar explosões na abertura
+          x: (Math.random() - 0.5) * 220,
+          y: (Math.random() - 0.5) * 220,
           vx: 0,
           vy: 0,
           degree: deg,
@@ -575,7 +580,7 @@ export default function KnowledgeGraph() {
       nodesRef.current = nextNodes;
       edgesRef.current = prunedEdges;
       setGraphStats({ nodes: nextNodes.length, edges: prunedEdges.length });
-      alphaRef.current = 1; // Dispara a simulação
+      alphaRef.current = 0.6; // Simulação inicial menos agressiva
 
       requestAnimationFrame(() => {
         resizeCanvas();
@@ -613,20 +618,41 @@ export default function KnowledgeGraph() {
   const focusNode = useCallback((node: GraphNode) => {
     setSelectedNode(node);
     const entity = allEntities.find(e => e.id === node.id);
+    
+    // Calcular score baseado em degree e recência
+    const baseScore = Math.min(100, node.degree * 5 + 20);
+    const recencyBonus = node.recent ? 15 : 0;
+    const score = Math.round(baseScore + recencyBonus);
+    
+    // Se encontrar a entidade, abre o inspector com os dados completos + score
     if (entity) {
-      openInspector(entity);
+      openInspector({
+        ...entity,
+        graphScore: score,
+        graphDegree: node.degree,
+      } as any);
     } else {
+      // Criar uma entidade com informações adicionais do grafo
       openInspector({
         id: node.id,
         title: node.label,
         type: (node.type as EntityType) || "TOPIC",
         createdAt: node.createdAt || new Date().toISOString(),
         ownerId: "",
-      });
+        description: `Graph node • ${node.degree} connection${node.degree === 1 ? '' : 's'} • Type: ${TYPE_LABELS[node.type] || node.type}`,
+        graphScore: score,
+        graphDegree: node.degree,
+      } as any);
     }
-    const { w, h } = sizeRef.current;
-    const z = zoomRef.current;
-    panRef.current = { x: w / 2 - node.x * z, y: h / 2 - node.y * z };
+    
+    // Aguarda o render do DOM e depois centraliza o node
+    requestAnimationFrame(() => {
+      const { w, h } = sizeRef.current;
+      if (w > 0 && h > 0) {
+        const z = zoomRef.current;
+        panRef.current = { x: w / 2 - node.x * z, y: h / 2 - node.y * z };
+      }
+    });
   }, [allEntities, openInspector]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -846,52 +872,56 @@ export default function KnowledgeGraph() {
     <AppLayout>
       <div className="flex flex-col" style={{ height: "calc(100vh - 3.5rem)" }}>
         <div className="relative flex flex-col flex-1">
-          <button
-            type="button"
-            onClick={() => setOptionsOpen(true)}
-            className="absolute right-4 top-4 z-30 hidden h-10 w-10 items-center justify-center rounded-md bg-white/5 text-white shadow-lg shadow-black/20 transition hover:bg-white/10 sm:grid"
-            aria-label="Open graph options"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
-
-          <div className="absolute right-4 top-16 z-30 flex flex-col items-end gap-2">
-            <div className="flex flex-col items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => handleZoom(1)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10"
-                aria-label="Zoom in"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleZoom(-1)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10"
-                aria-label="Zoom out"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFocusMode(f => !f)}
-                className={`grid h-10 w-10 place-items-center rounded-full border bg-black/80 text-white transition ${focusMode ? "border-white/60 bg-white/15" : "border-white/10 hover:bg-white/10"}`}
-                aria-label="Toggle focus mode"
-                title="Focus mode"
-              >
-                {focusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+          {!empty && (
+            <>
               <button
                 type="button"
                 onClick={() => setOptionsOpen(true)}
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10 sm:hidden"
+                className="absolute right-4 top-4 z-30 hidden h-10 w-10 items-center justify-center rounded-md bg-white/5 text-white shadow-lg shadow-black/20 transition hover:bg-white/10 sm:grid"
                 aria-label="Open graph options"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-5 w-5" />
               </button>
-            </div>
-          </div>
+
+              <div className="absolute right-4 top-16 z-30 flex flex-col items-end gap-2">
+                <div className="flex flex-col items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleZoom(1)}
+                    className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10"
+                    aria-label="Zoom in"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleZoom(-1)}
+                    className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10"
+                    aria-label="Zoom out"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFocusMode(f => !f)}
+                    className={`grid h-10 w-10 place-items-center rounded-full border bg-black/80 text-white transition ${focusMode ? "border-white/60 bg-white/15" : "border-white/10 hover:bg-white/10"}`}
+                    aria-label="Toggle focus mode"
+                    title="Focus mode"
+                  >
+                    {focusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOptionsOpen(true)}
+                    className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/80 text-white transition hover:bg-white/10 sm:hidden"
+                    aria-label="Open graph options"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {optionsOpen && (
             <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/50 px-4 py-6 sm:p-6">
@@ -1030,9 +1060,6 @@ export default function KnowledgeGraph() {
             {empty && !loading && (
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <div className="text-center space-y-4 max-w-xs px-6">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                    <Brain className="w-8 h-8 text-primary" />
-                  </div>
                   <div className="space-y-2">
                     <h2 className="font-display text-lg font-semibold text-foreground">
                       No connections detected yet

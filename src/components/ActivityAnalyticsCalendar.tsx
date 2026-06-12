@@ -9,7 +9,7 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Check } from "@/lib/heroicons";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

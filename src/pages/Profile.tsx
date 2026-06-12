@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "next-themes";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api";
@@ -10,10 +9,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { BadgeCheck, Loader2, Moon, Sun, Mail, User, Calendar, Lock } from "lucide-react";
+import {
+  UserIcon,
+  EnvelopeIcon,
+  ShieldCheckIcon,
+  CalendarIcon,
+  LockClosedIcon,
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  SunIcon,
+  MoonIcon,
+} from "@heroicons/react/24/outline";
+import { useTheme } from "@/contexts/ThemeContext";
+import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
 
 const formatLimitValue = (value: number, suffix = "") => (value === -1 ? "Unlimited" : `${value}${suffix}`);
 
@@ -29,7 +40,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const handleExportData = async () => {
     if (exporting) return;
@@ -46,17 +57,13 @@ export default function Profile() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast({ title: "Backup downloaded" });
+      toast({ title: "Backup downloaded successfully" });
     } catch (e: any) {
-      toast({ title: "Export failed", description: e?.message ?? "Try again", variant: "destructive" });
+      toast({ title: "Export failed", description: e?.message ?? "Please try again", variant: "destructive" });
     } finally {
       setExporting(false);
     }
   };
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     setUsername(user?.username ?? "");
@@ -70,16 +77,16 @@ export default function Profile() {
     () => [
       { label: "Notes", current: usage?.notesCount ?? 0, max: limits.maxNotes, suffix: "" },
       { label: "Entities", current: usage?.entitiesCount ?? 0, max: limits.maxEntities, suffix: "" },
-      { label: "Vault storage", current: usage?.vaultSizeMB ?? 0, max: limits.maxVaultSizeMB, suffix: " MB" },
+      { label: "Vault Storage", current: usage?.vaultSizeMB ?? 0, max: limits.maxVaultSizeMB, suffix: " MB" },
     ],
     [usage, limits],
   );
 
   const planDetails = useMemo(
     () => [
-      { label: "Vault limit", value: limits.maxVaultSizeMB === -1 ? "Unlimited" : `${limits.maxVaultSizeMB} MB` },
-      { label: "Upload metadata limit", value: limits.maxMetadataSizeKb === -1 ? "Unlimited" : `${limits.maxMetadataSizeKb} KB` },
-      { label: "History retention", value: limits.historyDays === -1 ? "Unlimited" : `${limits.historyDays} days` },
+      { label: "Vault Limit", value: limits.maxVaultSizeMB === -1 ? "Unlimited" : `${limits.maxVaultSizeMB} MB` },
+      { label: "Upload Metadata", value: limits.maxMetadataSizeKb === -1 ? "Unlimited" : `${limits.maxMetadataSizeKb} KB` },
+      { label: "Version History", value: limits.historyDays === -1 ? "Unlimited" : `${limits.historyDays} days` },
     ],
     [limits],
   );
@@ -87,16 +94,13 @@ export default function Profile() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await authApi.updateMe({
-        username,
-        name: username,
-      });
+      await authApi.updateMe({ username, name: username });
       await refreshUser();
       toast({ title: "Profile updated" });
     } catch (err: any) {
       toast({
         title: "Error saving profile",
-        description: err.response?.data?.message || "Try again",
+        description: err.response?.data?.message || "Please try again",
         variant: "destructive",
       });
     } finally {
@@ -106,85 +110,82 @@ export default function Profile() {
 
   return (
     <AppLayout>
-      <div className="px-6 lg:px-12 py-10 max-w-5xl mx-auto space-y-8">
-        
+      <div className="mx-auto max-w-5xl px-6 py-10 lg:px-12 lg:py-16 space-y-12">
+
         {/* HEADER */}
-        <header className="border-b border-white/5 pb-6">
-          <p className="text-[10px] tracking-wider uppercase text-neutral-500 font-semibold mb-1">Settings</p>
-          <h1 className="font-serif text-4xl tracking-tight text-neutral-100">Profile</h1>
-          <p className="text-xs text-neutral-500 mt-1">Manage your account information and system preferences.</p>
+        <header>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">Settings</p>
+          <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">Profile</h1>
+          <p className="mt-2 text-sm text-white/50">Manage your account credentials and application preferences.</p>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+
           {/* ACCOUNT SECTION */}
-          <section className="space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-sm font-semibold text-neutral-200">Account details</h2>
-              <p className="text-xs text-neutral-500">Your personal identity inside the network.</p>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-sm font-semibold text-white/80">Account Details</h2>
             </div>
 
-            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-5 sm:p-6 space-y-4 shadow-inner">
+            <div className="space-y-5 border border-white/5 bg-white/[0.01] p-6 rounded-sm">
               <div className="space-y-2">
-                <Label htmlFor="profile-username" className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Username</Label>
+                <Label htmlFor="profile-username" className="text-xs text-white/40">Username</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                  <UserIcon className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                   <Input
                     id="profile-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Your username"
-                    className="pl-10 bg-neutral-900/40 border-white/5 text-neutral-200 placeholder:text-neutral-600 focus:border-white/10 focus:bg-neutral-900/60 transition-all rounded-xl h-10"
+                    className="w-full border-0 border-b border-white/10 bg-transparent pl-6 rounded-none text-sm text-white placeholder:text-white/20 focus:border-white/40 focus:outline-none focus:ring-0 focus-visible:ring-0"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profile-email" className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Email address</Label>
+                <Label htmlFor="profile-email" className="text-xs text-white/40">Email Address</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                  <EnvelopeIcon className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
                   <Input
                     id="profile-email"
                     type="email"
                     value={email}
                     readOnly
-                    className="pl-10 pr-16 bg-neutral-900/20 border-white/5 text-neutral-500 cursor-not-allowed rounded-xl h-10"
+                    className="w-full border-0 border-b border-white/5 bg-transparent pl-6 pr-16 rounded-none text-sm text-white/45 cursor-not-allowed focus:outline-none focus:ring-0"
                   />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 bg-white/5 border border-white/5 px-2 py-0.5 rounded-md">
+                  <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] text-white/40 bg-white/[0.04] border border-white/5 px-1.5 py-0.5 rounded-sm">
                     Google
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-500">Connected via secure Google Sign-In</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-white/5 bg-neutral-900/30 p-3 flex flex-col gap-0.5">
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Plan tier</p>
-                  <p className="text-sm font-semibold text-neutral-300">{currentPlan}</p>
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/[0.04]">
+                <div className="hidden">
+                  <p className="text-xs text-white/30">Current Plan</p>
+                  <p className="mt-1 text-sm font-medium text-white/70">{currentPlan}</p>
                 </div>
-                <div className="rounded-xl border border-white/5 bg-neutral-900/30 p-3 flex flex-col gap-0.5">
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Member since</p>
-                  <p className="text-sm font-semibold text-neutral-300">
+                <div>
+                  <p className="text-xs text-white/30">Member Since</p>
+                  <p className="mt-1 text-sm font-medium text-white/70">
                     {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                   </p>
                 </div>
               </div>
 
-              {/* BOTÃO SALVAR REESTILIZADO PARA ESCURO TRASLÚCIDO OUTLINE */}
-              <Button
+              <button
                 onClick={() => setSaveConfirmOpen(true)}
                 disabled={saving || !username.trim()}
-                variant="outline"
-                className="w-full border-white/5 bg-neutral-900/40 text-neutral-200 hover:bg-neutral-900/80 hover:text-white rounded-xl font-medium transition-all shadow-md h-10 mt-2"
+                className="flex items-center justify-center gap-2 w-full h-9 border border-white/15 bg-transparent hover:border-white/40 text-white/80 hover:text-white rounded-sm text-sm font-medium transition-colors disabled:opacity-40 mt-4"
               >
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {saving && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
                 Save changes
-              </Button>
+              </button>
+
               <ConfirmDialog
                 open={saveConfirmOpen}
                 onOpenChange={setSaveConfirmOpen}
                 title="Save profile changes?"
-                description="Your username change will be updated across your account network."
+                description="Your username will be updated across your account network."
                 confirmText="Save"
                 onConfirm={async () => {
                   setSaveConfirmOpen(false);
@@ -193,129 +194,123 @@ export default function Profile() {
               />
             </div>
 
-            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-inner">
-              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                <BadgeCheck className="w-4 h-4 text-neutral-400" />
-              </div>
+            <div className="flex items-center gap-3 border border-white/5 bg-white/[0.01] p-4 rounded-sm">
+              <ShieldCheckIcon className="h-4 w-4 text-white/40 shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-neutral-200">Account status</p>
-                <p className="text-[11px] text-neutral-500 truncate">Email {user?.emailVerified ? "verified and synchronized" : "pending verification"}</p>
+                <p className="text-xs font-medium text-white/70">Secure Authentication</p>
+                <p className="text-xs text-white/30 truncate">Verified and connected via Google Sign-In.</p>
               </div>
             </div>
-          </section>
+
+            <div className="border border-white/5 bg-white/[0.01] p-5 rounded-sm space-y-3">
+              <div className="flex items-start gap-3">
+                <ArrowUpTrayIcon className="h-4 w-4 text-white/40 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-white/70">Import Markdown</p>
+                  <p className="text-xs text-white/30 mt-0.5">
+                    Bring notes from Obsidian, Logseq, or any folder of .md files. Entities are detected automatically — you confirm.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setImportOpen(true)}
+                className="w-full h-9 border border-white/15 bg-transparent hover:border-white/40 text-white/80 hover:text-white rounded-sm text-sm font-medium transition-colors"
+              >
+                Import Markdown Files
+              </button>
+            </div>
+          </div>
 
           {/* PREFERENCES SECTION */}
-          <section className="space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-sm font-semibold text-neutral-200">Preferences</h2>
-              <p className="text-xs text-neutral-500">Tailor your interface and system runtime.</p>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-sm font-semibold text-white/80">Preferences & Appearance</h2>
             </div>
 
-            {/* Theme Toggle */}
-            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-5 sm:p-6 shadow-inner">
-              <div className="flex items-center justify-between gap-4">
+            <div className="border-t border-b border-white/5 divide-y divide-white/[0.04] dark:border-white/5 light:border-black/5">
+              <div className="flex items-center gap-4 py-4">
+                <CalendarIcon className="h-4 w-4 text-foreground/30 shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-neutral-200">Dark Mode theme</p>
-                  <p className="text-[11px] text-neutral-500">Switch application skin preference</p>
+                  <p className="text-xs font-medium text-foreground/70">History Retention</p>
+                  <p className="text-xs text-foreground/30">{formatLimitValue(limits.historyDays, " days")}</p>
                 </div>
-                <div className="flex items-center gap-2.5 bg-neutral-900/40 border border-white/5 rounded-xl p-1.5 shrink-0">
-                  <Sun className="w-3.5 h-3.5 text-neutral-500" />
-                  <Switch
-                    checked={mounted ? theme !== "light" : true}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                    disabled={!mounted}
-                  />
-                  <Moon className="w-3.5 h-3.5 text-neutral-500" />
+              </div>
+
+              <div className="flex items-center gap-4 py-4">
+                <LockClosedIcon className="h-4 w-4 text-foreground/30 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-foreground/70">Security Layer</p>
+                  <p className="text-xs text-foreground/30">Active session tokens are isolated and protected.</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* History Info */}
-            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-inner">
-              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                <Calendar className="w-4 h-4 text-neutral-400" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-neutral-200">History retention</p>
-                <p className="text-[11px] text-neutral-500">{formatLimitValue(limits.historyDays, " days")}</p>
-              </div>
+          {/* LIMITS SECTION */}
+          <section className="hidden space-y-6 pt-4 border-t border-white/5 lg:col-span-2">
+            <div>
+              <h2 className="text-sm font-semibold text-white/80">Plan Usage & Limits</h2>
             </div>
 
-            {/* Security Info */}
-            <div className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-4 flex items-center gap-4 shadow-inner">
-              <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                <Lock className="w-4 h-4 text-neutral-400" />
+            {usageLoading && !usage ? (
+              <div className="flex justify-center py-12">
+                <ArrowPathIcon className="w-5 h-5 animate-spin text-white/20" />
               </div>
-              <div>
-                <p className="text-xs font-semibold text-neutral-200">Security layer</p>
-                <p className="text-[11px] text-neutral-500">Tokens managed by federated Google auth</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {usageResources.map((resource) => {
+                  const unlimited = resource.max === -1;
+                  const percent = unlimited ? 100 : Math.min((resource.current / resource.max) * 100, 100);
+
+                  return (
+                    <div key={resource.label} className="border border-white/5 bg-white/[0.01] p-5 rounded-sm space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-white/80">{resource.label}</span>
+                        <span className="text-xs text-white/40 tabular-nums">
+                          {unlimited ? "∞" : `${resource.current.toFixed(resource.suffix ? 1 : 0)} / ${resource.max}${resource.suffix}`}
+                        </span>
+                      </div>
+                      <Progress value={unlimited ? 0 : percent} className="h-[2px] bg-white/5 rounded-none" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* PLAN DETAILS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {planDetails.map((detail) => (
+                <div key={detail.label} className="border border-white/5 bg-white/[0.01] p-4 flex items-center justify-between gap-3 text-xs rounded-sm">
+                  <span className="text-white/40 text-xs">{detail.label}</span>
+                  <span className="text-xs text-white/70 tabular-nums">{detail.value}</span>
+                </div>
+              ))}
+
+              <div className="border border-white/5 bg-white/[0.01] p-4 flex items-center justify-between gap-3 text-xs rounded-sm">
+                <span className="text-white/40 text-xs">Export Data</span>
+                {user?.dataExport ? (
+                  <button
+                    type="button"
+                    onClick={handleExportData}
+                    disabled={exporting}
+                    className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white underline underline-offset-4 disabled:opacity-40 transition-colors"
+                  >
+                    <ArrowDownTrayIcon className="w-3 h-3" />
+                    {exporting ? "Exporting…" : "Download Backup"}
+                  </button>
+                ) : (
+                  <span className="text-white/20 text-xs">Locked</span>
+                )}
               </div>
             </div>
           </section>
         </div>
-
-        {/* PLAN LIMITS SECTION */}
-        <section className="space-y-4 pt-2">
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-neutral-200">Plan quotas & limits</h2>
-            <p className="text-xs text-neutral-500">Live operational sync from your subscription tier.</p>
-          </div>
-
-          {usageLoading && !usage ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-5 h-5 animate-spin text-neutral-600" />
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-3">
-              {usageResources.map((resource) => {
-                const unlimited = resource.max === -1;
-                const percent = unlimited ? 100 : Math.min((resource.current / resource.max) * 100, 100);
-
-                return (
-                  <div
-                    key={resource.label}
-                    className="border border-white/5 bg-neutral-900/20 backdrop-blur-md rounded-2xl p-5 shadow-inner space-y-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-neutral-300">{resource.label}</span>
-                      <span className="text-[11px] font-mono font-medium text-neutral-500 tabular-nums">
-                        {unlimited ? "∞" : `${resource.current.toFixed(resource.suffix ? 1 : 0)}/${resource.max}${resource.suffix ?? ""}`}
-                      </span>
-                    </div>
-                    <Progress value={unlimited ? 0 : percent} className="h-1 bg-white/5" />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* METADATA, RETENTION & BACKUP GRID */}
-          <div className="grid gap-4 md:grid-cols-3">
-            {planDetails.map((detail) => (
-              <div key={detail.label} className="border border-white/5 bg-neutral-900/20 rounded-xl p-4 flex items-center justify-between gap-3 text-xs">
-                <span className="text-neutral-500">{detail.label}</span>
-                <span className="font-medium text-neutral-300 tabular-nums">{detail.value}</span>
-              </div>
-            ))}
-            
-            <div className="border border-white/5 bg-neutral-900/20 rounded-xl p-4 flex items-center justify-between gap-3 text-xs">
-              <span className="text-neutral-500">Data export</span>
-              {user?.dataExport ? (
-                <button
-                  type="button"
-                  onClick={handleExportData}
-                  disabled={exporting}
-                  className="font-medium text-neutral-300 underline underline-offset-4 hover:text-white disabled:opacity-50 transition-colors"
-                >
-                  {exporting ? "Exporting…" : "Download backup"}
-                </button>
-              ) : (
-                <span className="text-neutral-600 font-medium">Upgrade to enable</span>
-              )}
-            </div>
-          </div>
-        </section>
       </div>
+      <MarkdownImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => { refreshUser(); }}
+      />
     </AppLayout>
   );
-                    }
+}
