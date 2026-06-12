@@ -372,11 +372,15 @@ export const useTimeTracking = () => {
 
     activeTimers,
     isTimerActive: (entityId: string) => snapshot.has(entityId),
+    isTimerPaused: (entityId: string) => timerManager?.isPaused(entityId) ?? false,
+    pauseTimer: (entityId: string) => timerManager?.pauseTimer(entityId),
+    resumeTimer: (entityId: string) => timerManager?.resumeTimer(entityId),
     getElapsedSeconds: (entityId: string) => timerManager?.getElapsedSeconds(entityId) ?? 0,
     isStarting: startTimerMutation.isPending,
     isStopping: stopTimerMutation.isPending,
     isAdding: addTimeMutation.isPending,
     isDeleting: deleteEntryMutation.isPending,
+
 
     formatSeconds,
   };
