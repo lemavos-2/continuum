@@ -41,7 +41,9 @@ interface PersistedTimer {
   entityId: string;
   startTime: number;        // ms epoch when this run started
   initialElapsed: number;   // seconds accumulated before startTime
+  pausedAt?: number;        // ms epoch — if set, timer is paused and frozen at this instant
 }
+
 
 const STORAGE_KEY = 'continuum.activeTimers.v2';
 const LEGACY_KEYS = ['activeTimerId', 'activeEntityId', 'timerStartTime', 'timerInitialElapsed'];
