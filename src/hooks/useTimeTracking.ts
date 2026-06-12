@@ -200,7 +200,35 @@ class TimerManager {
   getElapsedSeconds(entityId: string): number {
     const t = this.timers.get(entityId);
     if (!t) return 0;
-    return Math.floor((Date.now() - t.startTime) / 1000) + (t.initialElapsed || 0);
+    const reference = t.pausedAt ?? Date.now();
+    return Math.floor((reference - t.startTime) / 1000) + (t.initialElapsed || 0);
+  }
+
+  pauseTimer(entityId: string) {
+    const t = this.timers.get(entityId);
+    if (!t || t.pausedAt) return;
+    t.pausedAt = Date.now();
+    this.timers.set(entityId, t);
+    this.persist();
+    this.swSend('PAUSE_TIMER', { entityId });
+    this.notify();
+  }
+
+  resumeTimer(entityId: string) {
+    const t = this.timers.get(entityId);
+    if (!t || !t.pausedAt) return;
+    // Shift startTime forward by the paused duration so elapsed stays continuous.
+    const pausedFor = Date.now() - t.pausedAt;
+    t.startTime += pausedFor;
+    t.pausedAt = undefined;
+    this.timers.set(entityId, t);
+    this.persist();
+    this.swSend('RESUME_TIMER', t);
+    this.notify();
+  }
+
+  isPaused(entityId: string): boolean {
+    return !!this.timers.get(entityId)?.pausedAt;
   }
 
   isActive(entityId: string): boolean {
@@ -215,6 +243,7 @@ class TimerManager {
     return Array.from(this.timers.keys());
   }
 }
+
 
 export const timerManager =
   typeof window !== 'undefined' ? TimerManager.getInstance() : (null as unknown as TimerManager);
