@@ -100,13 +100,20 @@ export function TimerWidget({
     isStopping,
     getActiveTimer,
     formatSeconds,
+    isTimerPaused,
+    pauseTimer,
+    resumeTimer,
   } = useTimeTracking();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(false);
   const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
+  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: activeTimer, isLoading: timerLoading } = getActiveTimer(entityId);
   const isRunning = isTimerActive(entityId);
+  const isPaused = isTimerPaused(entityId);
+
 
   const currentElapsed = isRunning
     ? getElapsedSeconds(entityId)
