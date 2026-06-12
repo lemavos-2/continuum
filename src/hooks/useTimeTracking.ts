@@ -41,7 +41,9 @@ interface PersistedTimer {
   entityId: string;
   startTime: number;        // ms epoch when this run started
   initialElapsed: number;   // seconds accumulated before startTime
+  pausedAt?: number;        // ms epoch — if set, timer is paused and frozen at this instant
 }
+
 
 const STORAGE_KEY = 'continuum.activeTimers.v2';
 const LEGACY_KEYS = ['activeTimerId', 'activeEntityId', 'timerStartTime', 'timerInitialElapsed'];
@@ -198,7 +200,35 @@ class TimerManager {
   getElapsedSeconds(entityId: string): number {
     const t = this.timers.get(entityId);
     if (!t) return 0;
-    return Math.floor((Date.now() - t.startTime) / 1000) + (t.initialElapsed || 0);
+    const reference = t.pausedAt ?? Date.now();
+    return Math.floor((reference - t.startTime) / 1000) + (t.initialElapsed || 0);
+  }
+
+  pauseTimer(entityId: string) {
+    const t = this.timers.get(entityId);
+    if (!t || t.pausedAt) return;
+    t.pausedAt = Date.now();
+    this.timers.set(entityId, t);
+    this.persist();
+    this.swSend('PAUSE_TIMER', { entityId });
+    this.notify();
+  }
+
+  resumeTimer(entityId: string) {
+    const t = this.timers.get(entityId);
+    if (!t || !t.pausedAt) return;
+    // Shift startTime forward by the paused duration so elapsed stays continuous.
+    const pausedFor = Date.now() - t.pausedAt;
+    t.startTime += pausedFor;
+    t.pausedAt = undefined;
+    this.timers.set(entityId, t);
+    this.persist();
+    this.swSend('RESUME_TIMER', t);
+    this.notify();
+  }
+
+  isPaused(entityId: string): boolean {
+    return !!this.timers.get(entityId)?.pausedAt;
   }
 
   isActive(entityId: string): boolean {
@@ -213,6 +243,7 @@ class TimerManager {
     return Array.from(this.timers.keys());
   }
 }
+
 
 export const timerManager =
   typeof window !== 'undefined' ? TimerManager.getInstance() : (null as unknown as TimerManager);
@@ -341,11 +372,15 @@ export const useTimeTracking = () => {
 
     activeTimers,
     isTimerActive: (entityId: string) => snapshot.has(entityId),
+    isTimerPaused: (entityId: string) => timerManager?.isPaused(entityId) ?? false,
+    pauseTimer: (entityId: string) => timerManager?.pauseTimer(entityId),
+    resumeTimer: (entityId: string) => timerManager?.resumeTimer(entityId),
     getElapsedSeconds: (entityId: string) => timerManager?.getElapsedSeconds(entityId) ?? 0,
     isStarting: startTimerMutation.isPending,
     isStopping: stopTimerMutation.isPending,
     isAdding: addTimeMutation.isPending,
     isDeleting: deleteEntryMutation.isPending,
+
 
     formatSeconds,
   };

@@ -33,10 +33,11 @@ export default function VaultDownload() {
 
       try {
         const response = await vaultApi.download(fileId);
-        const contentType = response.headers["content-type"] || "application/octet-stream";
+        const contentType = String(response.headers["content-type"] ?? "application/octet-stream");
         const disposition = response.headers["content-disposition"];
-        const fileName = extractFilename(disposition) || fileId;
+        const fileName = extractFilename(typeof disposition === "string" ? disposition : undefined) || fileId;
         const blob = new Blob([response.data], { type: contentType });
+
         const objectUrl = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = objectUrl;
