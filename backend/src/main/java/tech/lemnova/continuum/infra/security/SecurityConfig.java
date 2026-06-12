@@ -72,6 +72,7 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/", "/health", "/error", "/actuator/**").permitAll()
                 // Public authentication endpoints
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
