@@ -20,7 +20,7 @@ function FlipDigit({ value }: { value: string }) {
   }, [value, prevValue]);
 
   return (
-    <div className="relative w-14 h-20 sm:w-20 sm:h-28 lg:w-24 lg:h-36 font-mono font-bold text-white select-none [perspective:1000px]">
+    <div className="relative w-20 h-28 sm:w-28 sm:h-40 lg:w-32 lg:h-48 font-mono font-bold text-white select-none [perspective:1000px]">
       
       <style>{`
         .backface-hidden {
@@ -35,28 +35,28 @@ function FlipDigit({ value }: { value: string }) {
 
       {/* 1. TOPO BASE */}
       <div className="absolute top-0 left-0 w-full h-1/2 overflow-hidden rounded-t-xl bg-gradient-to-b from-[#1a1a1c] to-[#111112] border-b border-black/50">
-        <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+        <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
           {value}
         </div>
       </div>
 
       {/* 2. BASE DE BAIXO */}
       <div className="absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-[#111112] to-[#09090a]">
-        <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+        <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
           {prevValue}
         </div>
       </div>
 
       {/* 3. CARTA QUE CAI DE CIMA */}
       <div className={`absolute top-0 left-0 w-full h-1/2 overflow-hidden rounded-t-xl bg-gradient-to-b from-[#1a1a1c] to-[#111112] border-b border-black/50 [transform-origin:bottom] backface-hidden ${isFlipping ? 'anim-top' : ''}`}>
-        <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+        <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
           {prevValue}
         </div>
       </div>
 
       {/* 4. CARTA QUE APARECE EM BAIXO */}
       <div className={`absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-[#111112] to-[#09090a] [transform-origin:top] backface-hidden [transform:rotateX(90deg)] ${isFlipping ? 'anim-bottom' : ''}`}>
-        <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-4xl sm:text-6xl lg:text-8xl leading-none">
+        <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
           {value}
         </div>
       </div>
@@ -66,6 +66,7 @@ function FlipDigit({ value }: { value: string }) {
     </div>
   );
 }
+
 
 // ============================================================
 // INTERFACES
