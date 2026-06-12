@@ -175,6 +175,32 @@ export function TimerWidget({
     }
   };
 
+  const handlePauseToggle = () => {
+    if (!isRunning) return;
+    if (isPaused) resumeTimer(entityId);
+    else pauseTimer(entityId);
+  };
+
+  const handleRestart = async () => {
+    try {
+      const activeTimerData = activeTimers.get(entityId);
+      if (activeTimerData) {
+        await stopTimer({ sessionId: activeTimerData.timerId });
+      }
+      await startTimer(entityId);
+    } catch (error) {
+      console.error('Failed to restart timer:', error);
+    }
+  };
+
+  // Reveal hover controls; auto-hide on touch after a brief delay.
+  const revealControls = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2500);
+  };
+
+
   // Modo compacto (igual ao antigo)
   if (compact) {
     return (
