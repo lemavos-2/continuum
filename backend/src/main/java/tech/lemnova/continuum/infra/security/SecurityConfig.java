@@ -19,6 +19,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -33,6 +36,9 @@ public class SecurityConfig {
 
     @Value("${cors.allowed.origins:*}")
     private String corsAllowedOrigins;
+
+    @Value("${app.dev-mode:false}")
+    private boolean appDevMode;
 
     @Value("${frontend.url:${app.url:http://localhost:5173}}")
     private String frontendUrl;
@@ -91,12 +97,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        
-        // Allow multiple origins including Lovable domains
-        config.setAllowedOriginPatterns(Arrays.asList(
-            "https://appcontinuum.vercel.app",
-            "https://backend-continuum.onrender.com"
-        ));
+
+        List<String> allowedOrigins = parseAllowedOrigins(corsAllowedOrigins);
+        if (allowedOrigins.isEmpty()) {
+            allowedOrigins = Arrays.asList(
+                "https://appcontinuum.vercel.app",
+                "https://continuumnodes.lovable.app",
+                "https://backend-continuum.onrender.com"
+            );
+        }
+
+        if (appDevMode) {
+            config.setAllowedOriginPatterns(Collections.singletonList("*"));
+        } else {
+            config.setAllowedOriginPatterns(allowedOrigins);
+        }
+
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("*"));
@@ -106,6 +122,16 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private List<String> parseAllowedOrigins(String origins) {
+        if (origins == null || origins.isBlank()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(origins.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
     }
 
     @Bean
