@@ -101,22 +101,31 @@ public class SecurityConfig {
 
         List<String> allowedOrigins = parseAllowedOrigins(corsAllowedOrigins);
         if (allowedOrigins.isEmpty()) {
+            // Safe defaults — production domains + Lovable preview wildcards.
+            // Override via CORS_ALLOWED_ORIGINS env var (comma separated).
             allowedOrigins = Arrays.asList(
                 "https://appcontinuum.vercel.app",
                 "https://continuumnodes.lovable.app",
-                "https://backend-continuum.onrender.com"
+                "https://backend-continuum.onrender.com",
+                "https://*.lovable.app",
+                "https://*.lovableproject.com",
+                "https://*.vercel.app",
+                "http://localhost:5173",
+                "http://localhost:8080"
             );
         }
 
         if (appDevMode) {
+            // Dev: allow any origin pattern (still credential-safe via patterns API).
             config.setAllowedOriginPatterns(Collections.singletonList("*"));
         } else {
+            // Use patterns (not origins) so wildcards like *.lovable.app work with credentials.
             config.setAllowedOriginPatterns(allowedOrigins);
         }
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
-        config.setExposedHeaders(Arrays.asList("*"));
+        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
