@@ -8,6 +8,8 @@ import { Loader2 } from "@/lib/heroicons";
 
 type AuthTab = "login" | "register" | "forgot";
 
+const DEV_MODE = String(import.meta.env.VITE_DEV_MODE ?? "false").toLowerCase() === "true";
+
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
