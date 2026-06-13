@@ -8,6 +8,8 @@ import { Loader2 } from "@/lib/heroicons";
 
 type AuthTab = "login" | "register" | "forgot";
 
+const DEV_MODE = String(import.meta.env.VITE_DEV_MODE ?? "false").toLowerCase() === "true";
+
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,15 +36,17 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
             {/* Header */}
             <DialogHeader className="space-y-2 text-left">
               <DialogTitle className="text-2xl sm:text-3xl font-serif tracking-tight">
-                Welcome back
+                {activeTab === "register" ? "Create your account" : activeTab === "forgot" ? "Reset your password" : "Welcome back"}
               </DialogTitle>
               <DialogDescription className="text-sm text-[hsl(var(--popup-muted))]">
-                Sign in with your Google account to continue.
+                {DEV_MODE
+                  ? "Dev mode — sign in with email or Google."
+                  : "Sign in with your Google account to continue."}
               </DialogDescription>
             </DialogHeader>
 
-            {/* Tabs - Hidden for Google-only auth */}
-            {false && activeTab !== "forgot" && (
+            {/* Tabs - only in DEV_MODE */}
+            {DEV_MODE && activeTab !== "forgot" && (
               <div className="grid grid-cols-2 rounded-xl border border-[hsl(var(--popup-border))] bg-white/[0.03] p-1">
                 {(["login", "register"] as AuthTab[]).map((tab) => (
                   <button
@@ -62,13 +66,21 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
               </div>
             )}
 
-            {/* Email/Password forms - Hidden for Google-only auth */}
-            {false && activeTab === "login" && <LoginForm onSuccess={() => onOpenChange(false)} onForgot={() => setActiveTab("forgot")} />}
-            {false && activeTab === "register" && <RegisterForm onSwitchToLogin={() => setActiveTab("login")} />}
-            {false && activeTab === "forgot" && <ForgotForm onSwitchToLogin={() => setActiveTab("login")} />}
+            {/* Email/Password forms - only in DEV_MODE */}
+            {DEV_MODE && activeTab === "login" && <LoginForm onSuccess={() => onOpenChange(false)} onForgot={() => setActiveTab("forgot")} />}
+            {DEV_MODE && activeTab === "register" && <RegisterForm onSwitchToLogin={() => setActiveTab("login")} />}
+            {DEV_MODE && activeTab === "forgot" && <ForgotForm onSwitchToLogin={() => setActiveTab("login")} />}
+
+            {DEV_MODE && activeTab !== "forgot" && (
+              <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[hsl(var(--popup-muted))]">
+                <span className="flex-1 h-px bg-white/10" />
+                or
+                <span className="flex-1 h-px bg-white/10" />
+              </div>
+            )}
 
             {/* Google Login - Always visible */}
-            <GoogleOnlyForm onSuccess={() => onOpenChange(false)} />
+            {(!DEV_MODE || activeTab !== "forgot") && <GoogleOnlyForm onSuccess={() => onOpenChange(false)} />}
 
             {/* Footer */}
             <p className="text-[10px] text-center text-[hsl(var(--popup-muted))] opacity-70 pt-1">
