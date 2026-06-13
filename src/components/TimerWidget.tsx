@@ -197,8 +197,19 @@ export function TimerWidget({
   const revealControls = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2500);
+    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
   };
+
+  // On entering fullscreen: briefly reveal controls, then auto-hide after 2s.
+  useEffect(() => {
+    if (!isFullscreen) return;
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [isFullscreen]);
 
 
   // Modo compacto (igual ao antigo)
