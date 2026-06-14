@@ -303,6 +303,25 @@ export function TimerWidget({
         Go to Flip Clock
       </button>
 
+      {/* TODAY SECTION */}
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500">Today</p>
+          <p className="mt-1 font-mono text-sm text-zinc-100">
+            {formatSeconds(today.todaySeconds + (isRunning ? currentElapsed : 0))}
+          </p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500">Sessions</p>
+          <p className="mt-1 font-mono text-sm text-zinc-100">{today.todayEntriesCount}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500">Avg</p>
+          <p className="mt-1 font-mono text-sm text-zinc-100">{formatSeconds(today.avgEntrySeconds)}</p>
+        </div>
+      </div>
+
+
       {/* FULLSCREEN COM FLIPDIGIT ANIMADO */}
       {isFullscreen && (
         <div
