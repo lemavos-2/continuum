@@ -373,8 +373,16 @@ export const useTimeTracking = () => {
     activeTimers,
     isTimerActive: (entityId: string) => snapshot.has(entityId),
     isTimerPaused: (entityId: string) => timerManager?.isPaused(entityId) ?? false,
-    pauseTimer: (entityId: string) => timerManager?.pauseTimer(entityId),
-    resumeTimer: (entityId: string) => timerManager?.resumeTimer(entityId),
+    pauseTimer: (entityId: string) => {
+      timerManager?.pauseTimer(entityId);
+      const sessionId = timerManager?.getTimerId(entityId);
+      if (sessionId) timeTrackingApi.pauseTimer(sessionId).catch(() => {});
+    },
+    resumeTimer: (entityId: string) => {
+      timerManager?.resumeTimer(entityId);
+      const sessionId = timerManager?.getTimerId(entityId);
+      if (sessionId) timeTrackingApi.resumeTimer(sessionId).catch(() => {});
+    },
     getElapsedSeconds: (entityId: string) => timerManager?.getElapsedSeconds(entityId) ?? 0,
     isStarting: startTimerMutation.isPending,
     isStopping: stopTimerMutation.isPending,
@@ -385,3 +393,4 @@ export const useTimeTracking = () => {
     formatSeconds,
   };
 };
+
