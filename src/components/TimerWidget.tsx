@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
+import { useTodayTimeStats } from '@/hooks/useTodayTimeStats';
+
 
 // ============================================================
 // SUBCOMPONENTE: FlipDigit (Alinhamento Robusto e Sem Falhas)
