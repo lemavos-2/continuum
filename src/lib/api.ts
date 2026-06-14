@@ -489,18 +489,24 @@ export const preferencesApi = {
 export const timeTrackingApi = {
   startTimer: (entityId: string) => api.post("/api/time-tracking/start", { entityId }),
   stopTimer: (sessionId: string, note?: string) => api.post("/api/time-tracking/stop", { sessionId, note: note || null }),
-  addTime: (entityId: string, date: string, durationSeconds: number, note?: string) => 
+  pauseTimer: (sessionId: string) => api.post(`/api/time-tracking/${sessionId}/pause`),
+  resumeTimer: (sessionId: string) => api.post(`/api/time-tracking/${sessionId}/resume`),
+  addTime: (entityId: string, date: string, durationSeconds: number, note?: string) =>
     api.post("/api/time-tracking/add", { entityId, date, durationSeconds, note }),
   getTotalTime: (entityId: string) => api.get(`/api/time-tracking/${entityId}/total`),
   getDailyBreakdown: (entityId: string) => api.get(`/api/time-tracking/${entityId}/daily`),
-  getTimeInRange: (entityId: string, from: string, to: string) => 
+  getTimeInRange: (entityId: string, from: string, to: string) =>
     api.get(`/api/time-tracking/${entityId}/range`, { params: { from, to } }),
   getAllSummaries: () => api.get("/api/time-tracking/summary/all"),
   getActiveTimer: (entityId: string) => api.get(`/api/time-tracking/${entityId}/active`),
   getAllActiveTimers: () => api.get("/api/time-tracking/active/all"),
+  getToday: () => api.get("/api/time-tracking/today"),
+  getAllInRange: (from: string, to: string) =>
+    api.get("/api/time-tracking/all/range", { params: { from, to } }),
   deleteEntry: (entryId: string) => api.delete(`/api/time-tracking/${entryId}`),
   recoverSession: (entityId: string) => api.post(`/api/time-tracking/${entityId}/recover`),
 };
+
 
 export const insightsApi = {
   hotNotes: (limit = 10) => api.get("/api/insights/notes/hot", { params: { limit } }),
