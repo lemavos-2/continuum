@@ -305,8 +305,11 @@ export default function EntityDetail() {
               onTimerStart={() => toast({ title: "Timer started" })}
               onTimerStop={(duration) => toast({ title: `Stopped — ${formatSeconds(duration)} recorded` })}
             />
+            <TimeHeatmap entityId={id!} />
+            <EntityTimeHistory entityId={id!} />
           </div>
         )}
+
 
         {entity?.type === "ACTIVITY" && (
           <div className="mb-8">
