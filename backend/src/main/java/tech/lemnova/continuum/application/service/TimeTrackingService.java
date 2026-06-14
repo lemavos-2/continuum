@@ -366,6 +366,34 @@ public class TimeTrackingService {
     }
 
     /**
+     * All entries for the user in a date range (any entity). Used for heatmap/today views.
+     */
+    public List<TimeEntryResponse> getAllInRange(String userId, LocalDate from, LocalDate to) {
+        LocalDate effectiveFrom = from != null ? from : LocalDate.now().minusYears(1);
+        LocalDate effectiveTo = to != null ? to : LocalDate.now();
+        return timeEntryRepository.findByUserIdAndArchivedAtIsNull(userId).stream()
+                .filter(e -> e.getDate() != null
+                        && !e.getDate().isBefore(effectiveFrom)
+                        && !e.getDate().isAfter(effectiveTo))
+                .sorted(Comparator.comparing(TimeEntry::getDate).reversed())
+                .map(TimeEntryResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * All entries today across all entities.
+     */
+    public List<TimeEntryResponse> getToday(String userId) {
+        LocalDate today = LocalDate.now();
+        return timeEntryRepository.findByUserIdAndArchivedAtIsNull(userId).stream()
+                .filter(e -> today.equals(e.getDate()))
+                .sorted(Comparator.comparing(TimeEntry::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(TimeEntryResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Helper: Format seconds to HH:MM:SS
      */
     private String formatSeconds(long seconds) {
@@ -375,3 +403,4 @@ public class TimeTrackingService {
         return String.format("%02d:%02d:%02d", hours, minutes, secs);
     }
 }
+
