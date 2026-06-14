@@ -115,6 +115,8 @@ export function TimerWidget({
   const { data: activeTimer, isLoading: timerLoading } = getActiveTimer(entityId);
   const isRunning = isTimerActive(entityId);
   const isPaused = isTimerPaused(entityId);
+  const today = useTodayTimeStats(entityId);
+
 
 
   const currentElapsed = isRunning
