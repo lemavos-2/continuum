@@ -88,8 +88,8 @@ export default function ProblemSection() {
                 transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
                 className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white mb-8"
               >
-                Your brain is full.{" "}
-                <span className="text-[#888888] italic">Your tools aren't helping.</span>
+                Powerful tools,{" "}
+                <span className="text-[#888888] italic">too much friction.</span>
               </motion.h2>
             )}
 
@@ -109,7 +109,7 @@ export default function ProblemSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
                   <p className="font-body text-sm text-[#888888] italic">
-                    "Without connections, ideas stay isolated."
+                    "You should be thinking, not configuring."
                   </p>
                 </div>
               </motion.div>

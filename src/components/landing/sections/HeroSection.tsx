@@ -52,23 +52,23 @@ export default function HeroSection() {
               {...fadeUp(0.2)}
               className="font-display text-[clamp(2.75rem,6vw,5rem)] font-bold leading-[1.05] tracking-[-0.025em] text-white mb-6"
             >
-              Your thoughts,
+              Your second brain,
               <br />
-              <em className="not-italic text-[#888888] italic">finally connected.</em>
+              <em className="not-italic text-[#888888] italic">without the friction.</em>
             </motion.h1>
 
-            {/* Subheadline */}
+            {/* Subheading Subheadline */}
             <motion.p
               {...fadeUp(0.3)}
               className="font-body text-[1.0625rem] leading-[1.75] text-[#888888] mb-10 max-w-md"
             >
-              Continuum is built for speed, clarity, and real thinking. Organize, connect, and discover your knowledge at the speed of thought.
+              Obsidian and Roam are powerful, but they demand too much from you. Continuum gives you linked thinking, native sync across devices, and intelligent resurfacing — all in a clean, mobile-first experience with zero folders to manage.
             </motion.p>
 
             {/* CTAs */}
             <motion.div {...fadeUp(0.4)} className="flex flex-wrap gap-3">
               <Link to="/register" className="btn-primary animate-pulse-glow">
-                Get started
+                Start for free
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a href="#how-it-works" className="btn-secondary">
