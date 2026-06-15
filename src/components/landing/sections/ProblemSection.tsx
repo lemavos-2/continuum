@@ -11,18 +11,18 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const problems = [
   {
     number: "01",
-    title: "Your notes are scattered.",
-    body: "Your knowledge lives in multiple places. Without a system to connect them, they remain isolated fragments.",
+    title: "Sync is a hassle.",
+    body: "You love linked notes on desktop, but getting them on your phone shouldn't require plugins, paid hosting, or manual workarounds.",
   },
   {
     number: "02",
-    title: "You forget what you write.",
-    body: "You wrote that insight three months ago. You can't find it. You can't build on it. It's gone.",
+    title: "Ideas get buried forever.",
+    body: "You capture constantly, but without a real resurfacing system, the right note never shows up when you actually need it.",
   },
   {
     number: "03",
-    title: "Tools slow you down.",
-    body: "You spend more time organizing than thinking. The system becomes the work. That's backwards.",
+    title: "Folders and plugins drain you.",
+    body: "Complex setups, endless plugins, and rigid folder structures turn your thinking tool into another chore to maintain.",
   },
 ];
 
@@ -88,8 +88,8 @@ export default function ProblemSection() {
                 transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
                 className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white mb-8"
               >
-                Your brain is full.{" "}
-                <span className="text-[#888888] italic">Your tools aren't helping.</span>
+                Powerful tools,{" "}
+                <span className="text-[#888888] italic">too much friction.</span>
               </motion.h2>
             )}
 
@@ -109,7 +109,7 @@ export default function ProblemSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
                   <p className="font-body text-sm text-[#888888] italic">
-                    "Without connections, ideas stay isolated."
+                    "You should be thinking, not configuring."
                   </p>
                 </div>
               </motion.div>

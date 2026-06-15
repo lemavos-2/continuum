@@ -13,20 +13,20 @@ const steps = [
   {
     number: "1",
     icon: PenLine,
-    title: "Write a note",
-    body: "Capture any thought instantly. No templates, no structure required. Just write.",
+    title: "Write freely",
+    body: "Capture any thought instantly. No folders, no templates, no rigid structure. Just write and move on.",
   },
   {
     number: "2",
     icon: Hash,
-    title: "Reference concepts",
-    body: "Use @mentions to link people, ideas, and projects. Continuum builds the map as you type.",
+    title: "Link to entities",
+    body: "Mention people, projects, or ideas with @ and #. Every connection strengthens your living knowledge graph.",
   },
   {
     number: "3",
     icon: Network,
-    title: "Build your knowledge graph",
-    body: "Watch your ideas connect. Navigate by relationship, not by folder. Your thinking becomes searchable by meaning.",
+    title: "Let ideas resurface",
+    body: "Our score system surfaces what matters, when it matters. No more lost insights. No more dead notes.",
   },
 ];
 
@@ -64,8 +64,8 @@ export default function HowItWorksSection() {
               transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
               className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white"
             >
-              Three steps to a{' '}
-              <span className="italic text-[#888888]">smarter mind.</span>
+              Three steps to{' '}
+              <span className="italic text-[#888888]">effortless thinking.</span>
             </motion.h2>
           </div>
         )}

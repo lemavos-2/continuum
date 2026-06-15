@@ -33,13 +33,13 @@ export default function LandingPage() {
     {
       id: "hero",
       badge: "Continuum",
-      title: "Build your",
-      subtitle: "continuum.",
+      title: "Your second brain,",
+      subtitle: "without the friction.",
       description:
-        "Free to start, private by design. Bring your notes, your people, and your work into one connected space.",
+        "Native sync across devices. Zero folder mess. Intelligent resurfacing that brings the right note back when you need it. Built for thinkers coming from Obsidian and Roam.",
       align: "left" as const,
       actions: [
-        { label: "Sign in with Google", variant: "primary" as const, onClick: () => openAuth() },
+        { label: "Start for free", variant: "primary" as const, onClick: () => openAuth() },
       ],
     },
     {
@@ -47,53 +47,53 @@ export default function LandingPage() {
       badge: "Connections",
       title: "Notes that link themselves.",
       description:
-        "Mention people, projects, or topics with @ and # — Continuum stitches everything into your personal knowledge graph automatically.",
+        "Mention people, projects, or topics with @ and #. Every connection strengthens your graph. No folders, no rigid hierarchy — just pure flow.",
       align: "center" as const,
       screenshots: [
-        { src: landingNotes, alt: "Notes list", caption: "Notes — every thought, one tap away." },
+        { src: landingNotes, alt: "Notes list", caption: "Every thought, one tap away." },
         { src: landingEditor, alt: "Editor with mentions", caption: "Mentions become living links." },
       ],
     },
     {
       id: "discover",
       badge: "Discovery",
-      title: "See the patterns",
-      subtitle: "you couldn't before.",
+      title: "Ideas resurface",
+      subtitle: "when you need them.",
       description:
-        "Explore your ideas spatially. Find unexpected connections, resurface forgotten notes, and let your personal network think with you.",
+        "Our score system ranks notes and entities based on your actual usage. Forgotten insights come back automatically. Your knowledge works for you, not against you.",
       align: "left" as const,
       features: [
         {
-          title: "Knowledge Graph",
+          title: "Intelligent Score System",
           description:
-            "An interactive map of every entity, note, and link in your workspace. Watch your knowledge grow and reveal connections you didn’t know existed.",
+            "Notes and entities earn relevance based on how you interact with them. The most important stuff always floats to the top — no manual tagging needed.",
         },
         {
-          title: "Mentions & Backlinks",
+          title: "Native Free Sync",
           description:
-            "Bidirectional relationships keep context one click away. Mention people, projects, or topics naturally — Continuum stitches everything together automatically.",
+            "Your entire knowledge graph stays in sync across every device. No plugins, no paid hosting, no manual configuration. It just works.",
         },
         {
-          title: "Time Tracking",
+          title: "Entity Tracking",
           description:
-            "Track effort against the projects and activities that matter. Understand how you actually spend your time.",
+            "Every entity carries real metrics: mentions, time invested, and connections. Understand what actually matters in your thinking.",
         },
       ],
       screenshots: [
-        { src: landingGraph, alt: "Knowledge graph view", caption: "Graph view — your second brain, visualized." },
-        { src: landingInsights, alt: "Insights dashboard", caption: "Insights — what's hot, what's forgotten." },
+        { src: landingGraph, alt: "Knowledge graph view", caption: "Your second brain, visualized." },
+        { src: landingInsights, alt: "Insights dashboard", caption: "What matters resurfaces automatically." },
       ],
     },
     {
       id: "future",
       badge: "Get started",
-      title: "Build your",
-      subtitle: "continuum.",
+      title: "Your second brain,",
+      subtitle: "without the friction.",
       description:
-        "Free to start, private by design. Bring your notes, your people, and your work into one connected space.",
+        "Native sync across devices. Zero folder mess. Intelligent resurfacing that brings the right note back when you need it. Built for thinkers coming from Obsidian and Roam.",
       align: "center" as const,
       actions: [
-        { label: "Sign in with Google", variant: "primary" as const, onClick: () => openAuth() },
+        { label: "Start for free", variant: "primary" as const, onClick: () => openAuth() },
       ],
     },
   ];

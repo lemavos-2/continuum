@@ -23,8 +23,8 @@ const solutions = [
         <line x1="10" y1="13" x2="17" y2="16" stroke="#ffffff" strokeWidth="1" opacity="0.4" />
       </svg>
     ),
-    title: "Notes connect to entities.",
-    body: "Every note links to concepts, people, and ideas. Your knowledge builds a living graph — not a flat list.",
+    title: "Entities with real tracking.",
+    body: "Every entity — a person, project, or idea — carries live stats: how often you mention it, how much time you spend on it. Context, not just links.",
   },
   {
     icon: (
@@ -35,8 +35,8 @@ const solutions = [
         <circle cx="17" cy="10" r="1.5" fill="#ffffff" opacity="0.5" />
       </svg>
     ),
-    title: "Ideas become a network.",
-    body: "As you write, patterns emerge. Connections you never saw before surface automatically. Your thinking compounds.",
+    title: "Intelligent resurfacing.",
+    body: "Our score system learns from your behavior. The right note, the right entity, and the right context appear exactly when you need them — no setup required.",
   },
   {
     icon: (
@@ -48,8 +48,8 @@ const solutions = [
         <line x1="17" y1="10" x2="19" y2="10" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
-    title: "You don't search — you discover.",
-    body: "Navigate by meaning, not keywords. The right idea surfaces when you need it, not when you remember to look.",
+    title: "Sync everywhere, for free.",
+    body: "Your knowledge graph lives on every device you own. No plugins, no hosting fees, no manual sync. It just works, natively and instantly.",
   },
 ];
 
@@ -137,8 +137,8 @@ export default function SolutionSection() {
                   transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
                   className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white mb-12"
                 >
-                  A mind that{' '}
-                  <span className="italic text-[#888888]">thinks with you.</span>
+                  A tool that{' '}
+                  <span className="italic text-[#888888]">works for you.</span>
                 </motion.h2>
 
                 <div className="flex flex-col gap-10">
