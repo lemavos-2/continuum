@@ -61,9 +61,9 @@ export default function CTASection() {
                 transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
                 className="font-display text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.05] tracking-[-0.025em] text-white mb-6"
               >
-                Transform how you think.
+                Your ideas deserve to resurface.
                 <br />
-                <span className="italic text-[#888888]">Build your knowledge graph today for free.</span>
+                <span className="italic text-[#888888]">Start building for free, sync everywhere.</span>
               </motion.h2>
 
               <motion.p
@@ -72,7 +72,7 @@ export default function CTASection() {
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
                 className="font-body text-[1.0625rem] leading-[1.75] text-[#888888] mb-12 max-w-lg mx-auto"
               >
-                Start organizing, connecting, and discovering your knowledge now.
+                Native sync, intelligent resurfacing, and a mobile-first experience designed for thinkers who are tired of fighting their tools.
               </motion.p>
 
               {/* CTA Button */}
@@ -85,7 +85,7 @@ export default function CTASection() {
                   onClick={() => navigate("/register")}
                   className="btn-primary animate-pulse-glow text-lg"
                 >
-                  Create account
+                  Start for free
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </motion.div>
@@ -99,8 +99,8 @@ export default function CTASection() {
               >
                 {[
                   "No credit card required",
-                  "Instant setup",
-                  "Try risk-free",
+                  "Free native sync",
+                  "Mobile-first",
                 ].map((item) => (
                   <span key={item} className="flex items-center gap-1.5 label-caps text-[#888888]">
                     <div className="w-1.5 h-1.5 rounded-full bg-white" />
