@@ -25,13 +25,13 @@ const features = [
   {
     icon: Layers,
     title: "Entity System",
-    body: "People, projects, ideas, books — each becomes a first-class entity. Your notes orbit around what matters.",
+    body: "People, projects, ideas, books — each becomes a first-class entity with real usage tracking. Your notes orbit around what matters.",
     number: "03",
   },
   {
     icon: Gauge,
-    title: "Blazing Fast",
-    body: "Sub-50ms response time. Keyboard-first. No loading spinners. Thinking at the speed of thought.",
+    title: "Native Sync",
+    body: "Free, instant sync across all your devices. No setup, no plugins, no paid hosting required. Your knowledge stays with you everywhere.",
     number: "04",
   },
 ];
@@ -70,8 +70,8 @@ export default function FeaturesSection() {
               transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
               className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white"
             >
-              Built for how you{' '}
-              <span className="italic text-[#888888]">actually think.</span>
+              The power of Roam,{' '}
+              <span className="italic text-[#888888]">the simplicity you wished for.</span>
             </motion.h2>
           </div>
         )}
