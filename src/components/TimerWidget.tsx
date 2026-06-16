@@ -245,26 +245,26 @@ export function TimerWidget({
   }
 
   return (
-    <div className="p-6 bg-[#0d0d0e] text-white rounded-xl shadow-2xl max-w-sm border border-zinc-800/80">
-      <span className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-500">
+    <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] text-white max-w-sm">
+      <span className="text-xs font-mono font-bold uppercase tracking-widest text-white/50">
         {entityName}
       </span>
 
-      <div className={`text-5xl sm:text-6xl font-mono font-bold text-center my-6 tracking-widest transition-colors ${isPaused ? 'text-zinc-400' : 'text-zinc-100'}`}>
+      <div className={`text-5xl sm:text-6xl font-mono font-bold text-center my-6 tracking-widest transition-colors ${isPaused ? 'text-white/50' : 'text-white'}`}>
         {hrs}:{mins}:{secs}
       </div>
 
       {timerLoading && (
-        <p className="text-xs text-zinc-600 text-center mb-2">Carregando timer...</p>
+        <p className="text-xs text-white/40 text-center mb-2">Carregando timer...</p>
       )}
 
-      {/* BOTÕES — MONOCROMÁTICOS */}
+      {/* BUTTONS */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         {!isRunning ? (
           <button
             onClick={handleStart}
             disabled={isStarting || timerLoading}
-            className="col-span-2 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold rounded-lg transition text-sm disabled:opacity-50"
+            className="col-span-2 py-2.5 bg-white hover:bg-white/90 text-black font-semibold rounded-lg transition text-sm disabled:opacity-50"
           >
             {isStarting ? 'Iniciando...' : 'Start Timer'}
           </button>
@@ -273,14 +273,14 @@ export function TimerWidget({
             <button
               onClick={handlePauseToggle}
               disabled={timerLoading}
-              className="py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold rounded-lg transition text-sm disabled:opacity-50"
+              className="py-2.5 bg-white hover:bg-white/90 text-black font-semibold rounded-lg transition text-sm disabled:opacity-50"
             >
               {isPaused ? 'Resume' : 'Pause'}
             </button>
             <button
               onClick={handleStop}
               disabled={isStopping || timerLoading}
-              className="py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-100 font-semibold rounded-lg transition text-sm border border-zinc-800 disabled:opacity-50"
+              className="py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold rounded-lg transition text-sm border border-white/10 disabled:opacity-50"
             >
               {isStopping ? '...' : 'Stop'}
             </button>
@@ -290,7 +290,7 @@ export function TimerWidget({
           onClick={handleRestart}
           disabled={!isRunning || timerLoading}
           title="Restart timer"
-          className="py-2.5 bg-zinc-900/40 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 font-semibold rounded-lg transition text-sm border border-zinc-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="py-2.5 bg-white/[0.02] hover:bg-white/[0.06] text-white/60 hover:text-white font-semibold rounded-lg transition text-sm border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Restart
         </button>
@@ -298,28 +298,29 @@ export function TimerWidget({
 
       <button
         onClick={() => setIsFullscreen(true)}
-        className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-lg text-xs tracking-wider uppercase transition text-center border border-zinc-800"
+        className="w-full py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white font-semibold rounded-lg text-xs tracking-wider uppercase transition text-center border border-white/10"
       >
         Go to Flip Clock
       </button>
 
       {/* TODAY SECTION */}
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500">Today</p>
-          <p className="mt-1 font-mono text-sm text-zinc-100">
+        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <p className="text-[10px] uppercase tracking-wider text-white/40">Today</p>
+          <p className="mt-1 font-mono text-sm text-white">
             {formatSeconds(today.todaySeconds + (isRunning ? currentElapsed : 0))}
           </p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500">Sessions</p>
-          <p className="mt-1 font-mono text-sm text-zinc-100">{today.todayEntriesCount}</p>
+        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <p className="text-[10px] uppercase tracking-wider text-white/40">Sessions</p>
+          <p className="mt-1 font-mono text-sm text-white">{today.todayEntriesCount}</p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500">Avg</p>
-          <p className="mt-1 font-mono text-sm text-zinc-100">{formatSeconds(today.avgEntrySeconds)}</p>
+        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <p className="text-[10px] uppercase tracking-wider text-white/40">Avg</p>
+          <p className="mt-1 font-mono text-sm text-white">{formatSeconds(today.avgEntrySeconds)}</p>
         </div>
       </div>
+
 
 
       {/* FULLSCREEN COM FLIPDIGIT ANIMADO */}
