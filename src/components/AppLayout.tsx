@@ -135,8 +135,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 end={it.end}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors active:scale-95",
-                    isActive && "text-primary",
+                    "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] transition-all active:scale-95",
+                    isActive ? "text-primary font-semibold" : "text-muted-foreground font-medium",
                   )
                 }
               >
@@ -144,13 +144,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <>
                     <span
                       className={cn(
-                        "grid h-8 w-12 place-items-center rounded-lg transition-colors",
-                        isActive && "bg-primary/10",
+                        "grid place-items-center rounded-lg transition-all",
+                        isActive ? "h-9 w-14 bg-primary/15 scale-105" : "h-8 w-12",
                       )}
                     >
-                      <it.icon className="h-5 w-5" />
+                      <it.icon className={cn("transition-all", isActive ? "h-[22px] w-[22px] stroke-[2.5]" : "h-5 w-5")} />
                     </span>
-                    <span className="leading-none">{t(it.key)}</span>
+                    <span className={cn("leading-none transition-all", isActive && "text-[11px]")}>{t(it.key)}</span>
                   </>
                 )}
               </NavLink>
