@@ -1,14 +1,25 @@
 import { useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { timeTrackingApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntry } from '@/hooks/useTimeTracking';
-import { Plus, X, Loader2 } from '@/lib/heroicons';
+import { X, Loader2 } from '@/lib/heroicons';
 
 interface Props {
   entityId: string;
 }
 
-function formatSeconds(s: number) {
+/** Compact human-friendly duration: 2h 15m, 45m, 30s. */
+function fmtCompact(s: number) {
+  s = Math.max(0, Math.floor(s));
+  if (s < 60) return `${s}s`;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function fmtClock(s: number) {
   s = Math.max(0, Math.floor(s));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
