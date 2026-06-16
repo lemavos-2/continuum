@@ -23,6 +23,12 @@ import {
   ArrowLeft,
 } from "@/lib/heroicons";
 import {
+  Squares2X2Icon as Squares2x2Solid,
+  DocumentTextIcon as StickyNoteSolid,
+  TagIcon as TagSolid,
+  ChartBarIcon as BarChart3Solid,
+} from "@heroicons/react/24/solid";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -47,10 +53,10 @@ const mobileItems = [
 
 // Primary tabs shown in the bottom navigation bar on mobile.
 const mobileTabs = [
-  { to: "/", icon: Squares2x2, key: "nav_dashboard", end: true },
-  { to: "/notes", icon: StickyNote, key: "nav_notes" },
-  { to: "/entities", icon: Tag, key: "nav_entities" },
-  { to: "/insights", icon: BarChart3, key: "nav_insights" },
+  { to: "/", icon: Squares2x2, iconSolid: Squares2x2Solid, key: "nav_dashboard", end: true },
+  { to: "/notes", icon: StickyNote, iconSolid: StickyNoteSolid, key: "nav_notes" },
+  { to: "/entities", icon: Tag, iconSolid: TagSolid, key: "nav_entities" },
+  { to: "/insights", icon: BarChart3, iconSolid: BarChart3Solid, key: "nav_insights" },
 ];
 
 
@@ -140,19 +146,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   )
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        "grid place-items-center rounded-lg transition-all",
-                        isActive ? "h-9 w-14 bg-primary/15 scale-105" : "h-8 w-12",
-                      )}
-                    >
-                      <it.icon className={cn("transition-all", isActive ? "h-[22px] w-[22px] stroke-[2.5]" : "h-5 w-5")} />
-                    </span>
-                    <span className={cn("leading-none transition-all", isActive && "text-[11px]")}>{t(it.key)}</span>
-                  </>
-                )}
+                {({ isActive }) => {
+                  const IconEl = isActive && it.iconSolid ? it.iconSolid : it.icon;
+                  return (
+                    <>
+                      <span
+                        className={cn(
+                          "grid place-items-center rounded-lg transition-all",
+                          isActive ? "h-9 w-14 bg-primary/15 scale-105" : "h-8 w-12",
+                        )}
+                      >
+                        <IconEl className={cn("transition-all", isActive ? "h-[22px] w-[22px]" : "h-5 w-5")} />
+                      </span>
+                      <span className={cn("leading-none transition-all", isActive && "text-[11px]")}>{t(it.key)}</span>
+                    </>
+                  );
+                }}
               </NavLink>
             ))}
             <DropdownMenu>
