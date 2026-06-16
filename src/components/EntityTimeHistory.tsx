@@ -1,14 +1,25 @@
 import { useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { timeTrackingApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntry } from '@/hooks/useTimeTracking';
-import { Plus, X, Loader2 } from '@/lib/heroicons';
+import { X, Loader2 } from '@/lib/heroicons';
 
 interface Props {
   entityId: string;
 }
 
-function formatSeconds(s: number) {
+/** Compact human-friendly duration: 2h 15m, 45m, 30s. */
+function fmtCompact(s: number) {
+  s = Math.max(0, Math.floor(s));
+  if (s < 60) return `${s}s`;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function fmtClock(s: number) {
   s = Math.max(0, Math.floor(s));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -17,15 +28,10 @@ function formatSeconds(s: number) {
 }
 
 /**
- * Per-entity history of time entries with simple stats and manual add.
+ * Per-entity history of time entries with simple stats.
  */
 export function EntityTimeHistory({ entityId }: Props) {
-  const qc = useQueryClient();
-  const { addTimeAsync, deleteEntry, isAdding } = useTimeTracking();
-  const [adding, setAdding] = useState(false);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [minutes, setMinutes] = useState('30');
-  const [note, setNote] = useState('');
+  const { deleteEntry } = useTimeTracking();
   const [page, setPage] = useState(1);
   const PAGE = 8;
 
@@ -59,70 +65,16 @@ export function EntityTimeHistory({ entityId }: Props) {
 
   const pageEntries = entries.slice(0, page * PAGE);
 
-  const handleAdd = async () => {
-    const mins = parseInt(minutes, 10);
-    if (!mins || mins <= 0) return;
-    await addTimeAsync({
-      entityId,
-      date,
-      durationSeconds: mins * 60,
-      note: note || undefined,
-    });
-    setAdding(false);
-    setNote('');
-    setMinutes('30');
-    qc.invalidateQueries({ queryKey: ['timeTracking'] });
-  };
-
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs uppercase tracking-widest text-white/50 font-mono">Time History</h3>
-        <button
-          onClick={() => setAdding((v) => !v)}
-          className="text-xs inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition"
-        >
-          {adding ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-          {adding ? 'Cancel' : 'Add entry'}
-        </button>
       </div>
 
-      {adding && (
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-[auto_auto_1fr_auto] gap-2 items-center">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-black/30 border border-white/10 rounded-md px-2 py-1.5 text-sm text-white/90"
-          />
-          <input
-            type="number"
-            min={1}
-            value={minutes}
-            onChange={(e) => setMinutes(e.target.value)}
-            className="bg-black/30 border border-white/10 rounded-md px-2 py-1.5 text-sm text-white/90 w-24"
-            placeholder="min"
-          />
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Note (optional)"
-            className="bg-black/30 border border-white/10 rounded-md px-2 py-1.5 text-sm text-white/90"
-          />
-          <button
-            onClick={handleAdd}
-            disabled={isAdding}
-            className="px-3 py-1.5 bg-white text-black text-sm rounded-md font-medium hover:bg-white/90 disabled:opacity-50"
-          >
-            {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-4 gap-2 mb-4 text-center">
-        <Stat label="Total" value={formatSeconds(stats.total)} />
-        <Stat label="Avg" value={formatSeconds(stats.avg)} />
-        <Stat label="Longest" value={formatSeconds(stats.longest)} />
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        <Stat label="Total" value={fmtCompact(stats.total)} />
+        <Stat label="Avg" value={fmtCompact(stats.avg)} />
+        <Stat label="Longest" value={fmtCompact(stats.longest)} />
         <Stat label="Entries" value={String(stats.count)} />
       </div>
 
@@ -138,7 +90,7 @@ export function EntityTimeHistory({ entityId }: Props) {
             <li key={e.id} className="flex items-center gap-3 py-2">
               <span className="text-xs text-white/40 font-mono w-24 shrink-0">{e.date}</span>
               <span className="text-sm font-mono text-white/90 w-24 shrink-0">
-                {formatSeconds(e.durationSeconds || 0)}
+                {fmtClock(e.durationSeconds || 0)}
               </span>
               <span className="text-xs text-white/50 truncate flex-1">{e.note || '—'}</span>
               <span className="text-[10px] uppercase tracking-wider text-white/30">{e.source}</span>
@@ -168,9 +120,9 @@ export function EntityTimeHistory({ entityId }: Props) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-      <p className="text-[10px] uppercase tracking-wider text-white/40">{label}</p>
-      <p className="mt-1 font-mono text-sm text-white/90">{value}</p>
+    <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-2.5 text-center min-w-0">
+      <p className="text-[9px] uppercase tracking-wider text-white/40">{label}</p>
+      <p className="mt-1 font-mono text-[13px] sm:text-sm text-white/90 truncate" title={value}>{value}</p>
     </div>
   );
 }
