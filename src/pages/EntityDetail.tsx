@@ -17,7 +17,6 @@ import { InsightSignalBadge } from "@/components/InsightSignal";
 import { useToast } from "@/hooks/use-toast";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
 import { TimerWidget } from "@/components/TimerWidget";
-import { EntityTimeHistory } from "@/components/EntityTimeHistory";
 import { TimeHeatmap } from "@/components/TimeHeatmap";
 import type { HeatmapData, EntityStats } from "@/types";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
@@ -306,7 +305,6 @@ export default function EntityDetail() {
               onTimerStop={(duration) => toast({ title: `Stopped — ${formatSeconds(duration)} recorded` })}
             />
             <TimeHeatmap entityId={id!} />
-            <EntityTimeHistory entityId={id!} />
           </div>
         )}
 

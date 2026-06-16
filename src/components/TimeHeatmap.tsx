@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { timeTrackingApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntry } from '@/hooks/useTimeTracking';
@@ -14,13 +14,15 @@ function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function intensity(seconds: number, max: number): number {
-  if (!seconds || max <= 0) return 0;
-  const ratio = seconds / max;
-  if (ratio > 0.75) return 4;
-  if (ratio > 0.5) return 3;
-  if (ratio > 0.25) return 2;
-  return 1;
+/** Intensity is the % of the daily goal achieved. */
+function intensity(seconds: number, goalSeconds: number): number {
+  if (!seconds || goalSeconds <= 0) return 0;
+  const ratio = seconds / goalSeconds;
+  if (ratio >= 1) return 4;
+  if (ratio >= 0.66) return 3;
+  if (ratio >= 0.33) return 2;
+  if (ratio > 0) return 1;
+  return 0;
 }
 
 function fmtHM(s: number) {
@@ -35,9 +37,9 @@ function fmtHM(s: number) {
 const LEVEL_BG = [
   'bg-white/[0.04]',
   'bg-white/15',
-  'bg-white/30',
-  'bg-white/55',
-  'bg-white/85',
+  'bg-white/35',
+  'bg-white/60',
+  'bg-white/90',
 ];
 
 interface HoverCell {
@@ -48,8 +50,30 @@ interface HoverCell {
   y: number;
 }
 
+const GOAL_KEY_PREFIX = 'timeHeatmap.dailyGoalMin.';
+const DEFAULT_GOAL_MIN = 60;
+
+function loadGoal(entityId?: string): number {
+  try {
+    const raw = localStorage.getItem(GOAL_KEY_PREFIX + (entityId || '__all__'));
+    const n = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_GOAL_MIN;
+  } catch {
+    return DEFAULT_GOAL_MIN;
+  }
+}
+
+function saveGoal(entityId: string | undefined, minutes: number) {
+  try {
+    localStorage.setItem(GOAL_KEY_PREFIX + (entityId || '__all__'), String(minutes));
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * GitHub-style heatmap of daily time tracked.
+ * Cell intensity = % of the user-defined daily goal.
  * Optimistic: includes today's running timer elapsed time live.
  */
 export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
@@ -62,6 +86,15 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const { activeTimers } = useTimeTracking();
   const [hover, setHover] = useState<HoverCell | null>(null);
+  const [goalMin, setGoalMin] = useState<number>(() => loadGoal(entityId));
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalDraft, setGoalDraft] = useState<string>(String(goalMin));
+
+  useEffect(() => {
+    setGoalMin(loadGoal(entityId));
+  }, [entityId]);
+
+  const goalSeconds = goalMin * 60;
 
   const { data, isLoading } = useQuery({
     queryKey: ['timeTracking', 'heatmap', dateKey(from), dateKey(to)],
@@ -75,7 +108,6 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const todayKey = dateKey(to);
 
-  // Live elapsed for active timers — adds optimistic seconds to today's cell.
   const liveTodaySeconds = useMemo(() => {
     if (!activeTimers || activeTimers.size === 0) return 0;
     if (entityId) {
@@ -99,14 +131,6 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
     }
     return { byDay: sec, countByDay: cnt };
   }, [data, entityId, liveTodaySeconds, todayKey]);
-
-  const max = useMemo(() => {
-    let m = 0;
-    byDay.forEach((v) => {
-      if (v > m) m = v;
-    });
-    return m;
-  }, [byDay]);
 
   const grid = useMemo(() => {
     const start = new Date(from);
@@ -138,15 +162,58 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const activeDays = byDay.size;
 
+  const commitGoal = () => {
+    const n = parseInt(goalDraft, 10);
+    if (Number.isFinite(n) && n > 0) {
+      setGoalMin(n);
+      saveGoal(entityId, n);
+    }
+    setEditingGoal(false);
+  };
+
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 relative">
-      <div className="flex items-baseline justify-between mb-4">
+      <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
         <h3 className="text-xs uppercase tracking-widest text-white/50 font-mono">
           Activity Heatmap
         </h3>
-        <span className="text-[10px] text-white/40 font-mono">
-          {activeDays} active days · {fmtHM(totalSeconds)}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-white/40 font-mono">
+            {activeDays} active days · {fmtHM(totalSeconds)}
+          </span>
+          {editingGoal ? (
+            <span className="inline-flex items-center gap-1.5">
+              <input
+                type="number"
+                min={1}
+                value={goalDraft}
+                onChange={(e) => setGoalDraft(e.target.value)}
+                onBlur={commitGoal}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitGoal();
+                  if (e.key === 'Escape') {
+                    setGoalDraft(String(goalMin));
+                    setEditingGoal(false);
+                  }
+                }}
+                autoFocus
+                className="w-14 px-1.5 py-0.5 text-[10px] font-mono bg-white/[0.04] border border-white/15 rounded text-white text-right focus:outline-none focus:border-white/30"
+              />
+              <span className="text-[10px] text-white/40 font-mono">min/day</span>
+            </span>
+          ) : (
+            <button
+              onClick={() => {
+                setGoalDraft(String(goalMin));
+                setEditingGoal(true);
+              }}
+              className="text-[10px] font-mono text-white/50 hover:text-white border border-white/10 hover:border-white/25 rounded px-1.5 py-0.5 transition"
+              title="Set daily goal"
+            >
+              goal · {fmtHM(goalSeconds)}
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -158,7 +225,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
               <div key={i} className="flex flex-col gap-[3px]">
                 {col.map((cell) => {
                   const isFuture = cell.date > to;
-                  const lvl = intensity(cell.seconds, max);
+                  const lvl = intensity(cell.seconds, goalSeconds);
                   const isToday = cell.key === todayKey;
                   return (
                     <div
@@ -200,6 +267,11 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
               <p className="text-xs font-mono text-white mt-0.5">
                 {fmtHM(hover.seconds)} · {hover.count} {hover.count === 1 ? 'entry' : 'entries'}
               </p>
+              {goalSeconds > 0 && (
+                <p className="text-[10px] font-mono text-white/40 mt-0.5">
+                  {Math.min(999, Math.round((hover.seconds / goalSeconds) * 100))}% of goal
+                </p>
+              )}
             </div>
           )}
 
