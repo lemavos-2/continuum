@@ -69,7 +69,6 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const [adding, setAdding] = useState(false);
   const [entryMin, setEntryMin] = useState<string>('30');
-  const [entryDate, setEntryDate] = useState<string>(dateKey(new Date()));
 
   const goalSeconds = goalMinutes * 60;
 
@@ -152,7 +151,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
     try {
       await addTimeAsync({
         entityId,
-        date: entryDate,
+        date: dateKey(new Date()),
         durationSeconds: minutes * 60,
       });
       // Force refresh so it appears instantly on the heatmap.
@@ -220,13 +219,9 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
       {adding && entityId && (
         <div className="mb-4 flex items-center gap-2 flex-wrap rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
-          <input
-            type="date"
-            value={entryDate}
-            max={dateKey(new Date())}
-            onChange={(e) => setEntryDate(e.target.value)}
-            className="px-2 py-1 text-[11px] font-mono bg-white/[0.04] border border-white/15 rounded text-white focus:outline-none focus:border-white/30"
-          />
+          <span className="px-2 py-1 text-[11px] font-mono text-white/60 border border-white/10 rounded">
+            today · {dateKey(new Date())}
+          </span>
           <input
             type="number"
             min={1}
@@ -263,13 +258,12 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
                       onMouseEnter={(e) => {
                         if (isFuture) return;
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const parent = (e.currentTarget.closest('.relative') as HTMLElement)?.getBoundingClientRect();
                         setHover({
                           key: cell.key,
                           seconds: cell.seconds,
                           count: cell.count,
-                          x: rect.left - (parent?.left || 0) + rect.width / 2,
-                          y: rect.top - (parent?.top || 0),
+                          x: rect.left + rect.width / 2,
+                          y: rect.top,
                         });
                       }}
                       onMouseLeave={() => setHover(null)}
@@ -285,25 +279,31 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
             ))}
           </div>
 
-          {hover && (
-            <div
-              className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full mt-[-6px] rounded-md border border-white/15 bg-black/95 px-2.5 py-1.5 shadow-xl backdrop-blur"
-              style={{ left: hover.x, top: hover.y }}
-            >
-              <p className="text-[10px] font-mono uppercase tracking-wider text-white/50">
-                {hover.key}
-                {hover.key === todayKey && ' · today'}
-              </p>
-              <p className="text-xs font-mono text-white mt-0.5">
-                {fmtHM(hover.seconds)} · {hover.count} {hover.count === 1 ? 'entry' : 'entries'}
-              </p>
-              {goalSeconds > 0 && (
-                <p className="text-[10px] font-mono text-white/40 mt-0.5">
-                  {Math.min(999, Math.round((hover.seconds / goalSeconds) * 100))}% of goal
+          {hover && (() => {
+            const W = 180;
+            const margin = 8;
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+            const left = Math.max(margin + W / 2, Math.min(vw - margin - W / 2, hover.x));
+            return (
+              <div
+                className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-md border border-white/15 bg-black/95 px-2.5 py-1.5 shadow-xl backdrop-blur"
+                style={{ left, top: hover.y - 6, width: W }}
+              >
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/50">
+                  {hover.key}
+                  {hover.key === todayKey && ' · today'}
                 </p>
-              )}
-            </div>
-          )}
+                <p className="text-xs font-mono text-white mt-0.5">
+                  {fmtHM(hover.seconds)} · {hover.count} {hover.count === 1 ? 'entry' : 'entries'}
+                </p>
+                {goalSeconds > 0 && (
+                  <p className="text-[10px] font-mono text-white/40 mt-0.5">
+                    {Math.min(999, Math.round((hover.seconds / goalSeconds) * 100))}% of goal
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="mt-3 flex items-center gap-1.5 text-[10px] text-white/40 font-mono">
             <span>less</span>

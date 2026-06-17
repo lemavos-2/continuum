@@ -126,14 +126,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <main className="min-w-0 flex-1 overflow-auto bg-background lg:ml-[3.25rem]">
         <div className="h-14 lg:hidden" />
         {children}
-        {/* Spacer so content isn't hidden behind the mobile bottom nav */}
-        <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" />
+        {/* Spacer so content isn't hidden behind the floating mobile bottom nav */}
+        <div className="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" />
       </main>
 
-      {/* Mobile bottom tab bar */}
+      {/* Mobile bottom tab bar — floating, rounded */}
       {!isGraphPage && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/85 backdrop-blur-xl lg:hidden">
-          <div className="flex items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)] pt-1">
+        <nav
+          className="fixed inset-x-3 z-40 lg:hidden"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+        >
+          <div className="flex items-stretch justify-around gap-1 rounded-2xl border border-white/10 bg-background/85 px-2 py-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-xl">
             {mobileTabs.map((it) => (
               <NavLink
                 key={it.to}
@@ -141,7 +144,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 end={it.end}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium transition-colors active:scale-95",
+                    "flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors active:scale-95",
                     isActive ? "text-primary" : "text-muted-foreground",
                   )
                 }
@@ -150,7 +153,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   const IconEl = isActive && it.iconSolid ? it.iconSolid : it.icon;
                   return (
                     <>
-                      <span className="grid h-8 w-12 place-items-center rounded-lg">
+                      <span className="grid h-7 w-10 place-items-center rounded-lg">
                         <IconEl className="h-5 w-5" />
                       </span>
                       <span className="leading-none">{t(it.key)}</span>
@@ -163,9 +166,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors active:scale-95 data-[state=open]:text-primary"
+                  className="flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors active:scale-95 data-[state=open]:text-primary"
                 >
-                  <span className="grid h-8 w-12 place-items-center rounded-lg">
+                  <span className="grid h-7 w-10 place-items-center rounded-lg">
                     <Menu className="h-5 w-5" />
                   </span>
                   <span className="leading-none">{t("nav_more")}</span>
