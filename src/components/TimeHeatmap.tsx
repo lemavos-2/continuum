@@ -69,7 +69,6 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const [adding, setAdding] = useState(false);
   const [entryMin, setEntryMin] = useState<string>('30');
-  const [entryDate, setEntryDate] = useState<string>(dateKey(new Date()));
 
   const goalSeconds = goalMinutes * 60;
 
