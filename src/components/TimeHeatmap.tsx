@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { timeTrackingApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntry } from '@/hooks/useTimeTracking';
+import { useTimerGoal } from '@/hooks/useTimerGoal';
 
 interface Props {
   /** Optional entityId filter; when omitted, aggregates across user. */
@@ -50,33 +51,8 @@ interface HoverCell {
   y: number;
 }
 
-const GOAL_KEY_PREFIX = 'timeHeatmap.dailyGoalMin.';
-const DEFAULT_GOAL_MIN = 60;
-
-function loadGoal(entityId?: string): number {
-  try {
-    const raw = localStorage.getItem(GOAL_KEY_PREFIX + (entityId || '__all__'));
-    const n = raw ? parseInt(raw, 10) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : DEFAULT_GOAL_MIN;
-  } catch {
-    return DEFAULT_GOAL_MIN;
-  }
-}
-
-function saveGoal(entityId: string | undefined, minutes: number) {
-  try {
-    localStorage.setItem(GOAL_KEY_PREFIX + (entityId || '__all__'), String(minutes));
-  } catch {
-    /* ignore */
-  }
-}
-
-/**
- * GitHub-style heatmap of daily time tracked.
- * Cell intensity = % of the user-defined daily goal.
- * Optimistic: includes today's running timer elapsed time live.
- */
 export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
+  const qc = useQueryClient();
   const to = useMemo(() => new Date(), []);
   const from = useMemo(() => {
     const d = new Date(to);
@@ -84,17 +60,18 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
     return d;
   }, [to, weeks]);
 
-  const { activeTimers } = useTimeTracking();
+  const { activeTimers, addTimeAsync, isAdding } = useTimeTracking();
   const [hover, setHover] = useState<HoverCell | null>(null);
-  const [goalMin, setGoalMin] = useState<number>(() => loadGoal(entityId));
+
+  const { goalMinutes, setGoal } = useTimerGoal(entityId);
   const [editingGoal, setEditingGoal] = useState(false);
-  const [goalDraft, setGoalDraft] = useState<string>(String(goalMin));
+  const [goalDraft, setGoalDraft] = useState<string>(String(goalMinutes));
 
-  useEffect(() => {
-    setGoalMin(loadGoal(entityId));
-  }, [entityId]);
+  const [adding, setAdding] = useState(false);
+  const [entryMin, setEntryMin] = useState<string>('30');
+  const [entryDate, setEntryDate] = useState<string>(dateKey(new Date()));
 
-  const goalSeconds = goalMin * 60;
+  const goalSeconds = goalMinutes * 60;
 
   const { data, isLoading } = useQuery({
     queryKey: ['timeTracking', 'heatmap', dateKey(from), dateKey(to)],
@@ -164,11 +141,27 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const commitGoal = () => {
     const n = parseInt(goalDraft, 10);
-    if (Number.isFinite(n) && n > 0) {
-      setGoalMin(n);
-      saveGoal(entityId, n);
-    }
+    if (Number.isFinite(n) && n > 0) setGoal(n);
     setEditingGoal(false);
+  };
+
+  const submitEntry = async () => {
+    if (!entityId) return;
+    const minutes = parseInt(entryMin, 10);
+    if (!Number.isFinite(minutes) || minutes <= 0) return;
+    try {
+      await addTimeAsync({
+        entityId,
+        date: entryDate,
+        durationSeconds: minutes * 60,
+      });
+      // Force refresh so it appears instantly on the heatmap.
+      await qc.invalidateQueries({ queryKey: ['timeTracking'] });
+      setAdding(false);
+      setEntryMin('30');
+    } catch (err) {
+      console.error('Failed to add entry:', err);
+    }
   };
 
   return (
@@ -177,7 +170,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
         <h3 className="text-xs uppercase tracking-widest text-white/50 font-mono">
           Activity Heatmap
         </h3>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] text-white/40 font-mono">
             {activeDays} active days · {fmtHM(totalSeconds)}
           </span>
@@ -192,7 +185,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') commitGoal();
                   if (e.key === 'Escape') {
-                    setGoalDraft(String(goalMin));
+                    setGoalDraft(String(goalMinutes));
                     setEditingGoal(false);
                   }
                 }}
@@ -204,7 +197,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
           ) : (
             <button
               onClick={() => {
-                setGoalDraft(String(goalMin));
+                setGoalDraft(String(goalMinutes));
                 setEditingGoal(true);
               }}
               className="text-[10px] font-mono text-white/50 hover:text-white border border-white/10 hover:border-white/25 rounded px-1.5 py-0.5 transition"
@@ -213,8 +206,45 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
               goal · {fmtHM(goalSeconds)}
             </button>
           )}
+          {entityId && (
+            <button
+              onClick={() => setAdding((v) => !v)}
+              className="text-[10px] font-mono text-white/50 hover:text-white border border-white/10 hover:border-white/25 rounded px-1.5 py-0.5 transition"
+              title="Add a manual entry"
+            >
+              {adding ? '× cancel' : '+ entry'}
+            </button>
+          )}
         </div>
       </div>
+
+      {adding && entityId && (
+        <div className="mb-4 flex items-center gap-2 flex-wrap rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <input
+            type="date"
+            value={entryDate}
+            max={dateKey(new Date())}
+            onChange={(e) => setEntryDate(e.target.value)}
+            className="px-2 py-1 text-[11px] font-mono bg-white/[0.04] border border-white/15 rounded text-white focus:outline-none focus:border-white/30"
+          />
+          <input
+            type="number"
+            min={1}
+            value={entryMin}
+            onChange={(e) => setEntryMin(e.target.value)}
+            placeholder="minutes"
+            className="w-20 px-2 py-1 text-[11px] font-mono bg-white/[0.04] border border-white/15 rounded text-white text-right focus:outline-none focus:border-white/30"
+          />
+          <span className="text-[10px] font-mono text-white/40">min</span>
+          <button
+            onClick={submitEntry}
+            disabled={isAdding}
+            className="ml-auto px-2.5 py-1 text-[11px] font-mono bg-white text-black rounded hover:bg-white/90 transition disabled:opacity-50"
+          >
+            {isAdding ? '...' : 'Add'}
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="h-32" />
