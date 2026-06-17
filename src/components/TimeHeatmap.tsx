@@ -279,25 +279,31 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
             ))}
           </div>
 
-          {hover && (
-            <div
-              className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full mt-[-6px] rounded-md border border-white/15 bg-black/95 px-2.5 py-1.5 shadow-xl backdrop-blur"
-              style={{ left: hover.x, top: hover.y }}
-            >
-              <p className="text-[10px] font-mono uppercase tracking-wider text-white/50">
-                {hover.key}
-                {hover.key === todayKey && ' · today'}
-              </p>
-              <p className="text-xs font-mono text-white mt-0.5">
-                {fmtHM(hover.seconds)} · {hover.count} {hover.count === 1 ? 'entry' : 'entries'}
-              </p>
-              {goalSeconds > 0 && (
-                <p className="text-[10px] font-mono text-white/40 mt-0.5">
-                  {Math.min(999, Math.round((hover.seconds / goalSeconds) * 100))}% of goal
+          {hover && (() => {
+            const W = 180;
+            const margin = 8;
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+            const left = Math.max(margin + W / 2, Math.min(vw - margin - W / 2, hover.x));
+            return (
+              <div
+                className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-md border border-white/15 bg-black/95 px-2.5 py-1.5 shadow-xl backdrop-blur"
+                style={{ left, top: hover.y - 6, width: W }}
+              >
+                <p className="text-[10px] font-mono uppercase tracking-wider text-white/50">
+                  {hover.key}
+                  {hover.key === todayKey && ' · today'}
                 </p>
-              )}
-            </div>
-          )}
+                <p className="text-xs font-mono text-white mt-0.5">
+                  {fmtHM(hover.seconds)} · {hover.count} {hover.count === 1 ? 'entry' : 'entries'}
+                </p>
+                {goalSeconds > 0 && (
+                  <p className="text-[10px] font-mono text-white/40 mt-0.5">
+                    {Math.min(999, Math.round((hover.seconds / goalSeconds) * 100))}% of goal
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="mt-3 flex items-center gap-1.5 text-[10px] text-white/40 font-mono">
             <span>less</span>
