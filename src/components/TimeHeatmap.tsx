@@ -258,13 +258,12 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
                       onMouseEnter={(e) => {
                         if (isFuture) return;
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const parent = (e.currentTarget.closest('.relative') as HTMLElement)?.getBoundingClientRect();
                         setHover({
                           key: cell.key,
                           seconds: cell.seconds,
                           count: cell.count,
-                          x: rect.left - (parent?.left || 0) + rect.width / 2,
-                          y: rect.top - (parent?.top || 0),
+                          x: rect.left + rect.width / 2,
+                          y: rect.top,
                         });
                       }}
                       onMouseLeave={() => setHover(null)}
