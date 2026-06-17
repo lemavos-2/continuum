@@ -141,8 +141,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 end={it.end}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] transition-all active:scale-95",
-                    isActive ? "text-primary font-semibold" : "text-muted-foreground font-medium",
+                    "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium transition-colors active:scale-95",
+                    isActive ? "text-primary" : "text-muted-foreground",
                   )
                 }
               >
@@ -150,15 +150,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   const IconEl = isActive && it.iconSolid ? it.iconSolid : it.icon;
                   return (
                     <>
-                      <span
-                        className={cn(
-                          "grid place-items-center rounded-lg transition-all",
-                          isActive ? "h-9 w-14 bg-primary/15 scale-105" : "h-8 w-12",
-                        )}
-                      >
-                        <IconEl className={cn("transition-all", isActive ? "h-[22px] w-[22px]" : "h-5 w-5")} />
+                      <span className="grid h-8 w-12 place-items-center rounded-lg">
+                        <IconEl className="h-5 w-5" />
                       </span>
-                      <span className={cn("leading-none transition-all", isActive && "text-[11px]")}>{t(it.key)}</span>
+                      <span className="leading-none">{t(it.key)}</span>
                     </>
                   );
                 }}

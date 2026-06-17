@@ -109,15 +109,16 @@ function SidebarLink({
       end={item.end}
       title={collapsed ? label : undefined}
       className={cn(
-        "flex h-9 w-full flex-row items-center rounded-md px-2 text-sidebar-foreground transition-all",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        active && "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]",
+        "flex h-9 w-full flex-row items-center rounded-md px-2 transition-colors",
+        active
+          ? "text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:text-sidebar-foreground",
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0 transition-transform", active && "scale-110")} />
+      <Icon className="h-4 w-4 shrink-0" />
       <motion.span
         variants={labelVariants}
-        className={cn("ml-2 truncate text-sm", active ? "font-semibold" : "font-medium")}
+        className="ml-2 truncate text-sm font-medium"
       >
         {!collapsed && label}
       </motion.span>
