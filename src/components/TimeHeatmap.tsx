@@ -151,7 +151,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
     try {
       await addTimeAsync({
         entityId,
-        date: entryDate,
+        date: dateKey(new Date()),
         durationSeconds: minutes * 60,
       });
       // Force refresh so it appears instantly on the heatmap.
