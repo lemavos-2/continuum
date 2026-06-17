@@ -219,13 +219,9 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
       {adding && entityId && (
         <div className="mb-4 flex items-center gap-2 flex-wrap rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
-          <input
-            type="date"
-            value={entryDate}
-            max={dateKey(new Date())}
-            onChange={(e) => setEntryDate(e.target.value)}
-            className="px-2 py-1 text-[11px] font-mono bg-white/[0.04] border border-white/15 rounded text-white focus:outline-none focus:border-white/30"
-          />
+          <span className="px-2 py-1 text-[11px] font-mono text-white/60 border border-white/10 rounded">
+            today · {dateKey(new Date())}
+          </span>
           <input
             type="number"
             min={1}
