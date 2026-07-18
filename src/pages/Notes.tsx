@@ -396,37 +396,43 @@ export default function Notes() {
 
   const limitMsg = getLimitMessage("notes");
   const viewLabel =
-    view === "all" ? "Archive" : view === "favorites" ? "Favorites" : view === "recent" ? "Recent" : "Dormant";
+    view === "all"
+      ? t("notes_view_archive")
+      : view === "favorites"
+        ? t("notes_view_favorites")
+        : view === "recent"
+          ? t("notes_view_recent")
+          : t("notes_view_dormant");
 
   const SidebarContent = (
     <div className="space-y-7">
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Index</p>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("notes_index")}</p>
         <div className="space-y-0.5">
-          <NavItem label="Archive" count={counts.all} active={view === "all"} onClick={() => { setView("all"); setFilterDrawerOpen(false); }} />
-          <NavItem label="Recent" count={counts.recent} active={view === "recent"} onClick={() => { setView("recent"); setFilterDrawerOpen(false); }} />
-          <NavItem label="Favorites" count={counts.favorites} active={view === "favorites"} onClick={() => { setView("favorites"); setFilterDrawerOpen(false); }} />
-          <NavItem label="Dormant" count={counts.archived} active={view === "archived"} onClick={() => { setView("archived"); setFilterDrawerOpen(false); }} />
+          <NavItem label={t("notes_archive")} count={counts.all} active={view === "all"} onClick={() => { setView("all"); setFilterDrawerOpen(false); }} />
+          <NavItem label={t("notes_recent")} count={counts.recent} active={view === "recent"} onClick={() => { setView("recent"); setFilterDrawerOpen(false); }} />
+          <NavItem label={t("notes_favorites")} count={counts.favorites} active={view === "favorites"} onClick={() => { setView("favorites"); setFilterDrawerOpen(false); }} />
+          <NavItem label={t("notes_dormant")} count={counts.archived} active={view === "archived"} onClick={() => { setView("archived"); setFilterDrawerOpen(false); }} />
         </div>
       </div>
 
       {types.length > 0 && (
         <div>
-          <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Types</p>
+          <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("notes_types")}</p>
           <div className="space-y-0.5">
             <NavItem
-              label="All types"
+              label={t("notes_allTypes")}
               count={counts.all}
               active={!selectedType}
               onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
             />
-            {types.map((t) => (
+            {types.map((tp) => (
               <NavItem
-                key={t}
-                label={t}
-                count={counts.byType[t] || 0}
-                active={selectedType === t}
-                onClick={() => { setSelectedType(t); setFilterDrawerOpen(false); }}
+                key={tp}
+                label={tp}
+                count={counts.byType[tp] || 0}
+                active={selectedType === tp}
+                onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
               />
             ))}
           </div>
