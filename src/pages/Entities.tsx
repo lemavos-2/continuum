@@ -20,6 +20,7 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLongPress } from "@/hooks/useLongPress";
 import type { EntityType } from "@/types";
 
 interface Entity {
@@ -87,6 +88,43 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
         {count}
       </span>
     </button>
+  );
+}
+
+/* ── Row with long-press → select ────────────────────────────────────── */
+interface EntityRowProps {
+  selectMode: boolean;
+  selected: boolean;
+  onLongPress: () => void;
+  onOpen: () => void;
+  children: React.ReactNode;
+}
+function EntityRow({ selectMode, selected, onLongPress, onOpen, children }: EntityRowProps) {
+  const press = useLongPress({ onLongPress, onClick: onOpen });
+  return (
+    <li>
+      <div
+        role="button"
+        tabIndex={0}
+        {...press}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen();
+          }
+        }}
+        className={cn(
+          "group relative flex w-full cursor-pointer select-none items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02] focus:outline-none",
+          selected && "bg-white/[0.04]"
+        )}
+      >
+        <span
+          aria-hidden
+          className="absolute left-0 top-1/2 h-8 w-px -translate-x-3 -translate-y-1/2 bg-white opacity-0 transition-opacity group-hover:opacity-100"
+        />
+        {children}
+      </div>
+    </li>
   );
 }
 
@@ -200,7 +238,7 @@ export default function Entities() {
       const activities = targets.filter((e) => e.type === "ACTIVITY").length;
       applyUsageDelta({ entitiesCount: -targets.length, activitiesCount: -activities });
       void refreshUsage();
-      toast({ title: `${targets.length} ${targets.length === 1 ? "entity" : "entities"} removed` });
+      toast({ title: t(targets.length === 1 ? "entities_countRemoved_one" : "entities_countRemoved", { n: targets.length }) });
       exitSelectMode();
     } catch {
       toast({ title: "Error deleting entities", variant: "destructive" });
@@ -242,15 +280,13 @@ export default function Entities() {
       });
   }, [entities, selectedType, search, sortBy, sortOrder]);
 
-  const viewLabel = selectedType ? typeLabels[selectedType] : "All Atoms";
-
   const SidebarContent = (
     <div className="space-y-7">
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Index</p>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("notes_index")}</p>
         <div className="space-y-0.5">
           <NavItem
-            label="All entities"
+            label={t("entities_all")}
             count={counts.all}
             active={!selectedType}
             onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
@@ -259,15 +295,15 @@ export default function Entities() {
       </div>
 
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Types</p>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("notes_types")}</p>
         <div className="space-y-0.5">
-          {types.map((t) => (
+          {types.map((tp) => (
             <NavItem
-              key={t}
-              label={typeLabels[t]}
-              count={counts.byType[t] || 0}
-              active={selectedType === t}
-              onClick={() => { setSelectedType(t); setFilterDrawerOpen(false); }}
+              key={tp}
+              label={t(`entities_type_${tp}`) ?? typeLabels[tp]}
+              count={counts.byType[tp] || 0}
+              active={selectedType === tp}
+              onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
             />
           ))}
         </div>
@@ -291,7 +327,7 @@ export default function Entities() {
         {/* Menu Lateral Mobile */}
         <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
           <SheetContent side="left" className="w-[280px] border-white/10 bg-black/95 p-6">
-            <p className="mb-6 font-serif text-2xl text-white">Filters</p>
+            <p className="mb-6 font-serif text-2xl text-white">{t("notes_filters")}</p>
             {SidebarContent}
           </SheetContent>
         </Sheet>
@@ -308,11 +344,11 @@ export default function Entities() {
             <header className="mb-8">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{viewLabel}</p>
-                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("entities_title")}</h1>
-                  <p className="mt-2 text-sm text-white/50">
-                    The atoms of your knowledge graph.
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">
+                    {selectedType ? (t(`entities_type_${selectedType}`) ?? typeLabels[selectedType]) : t("entities_allAtoms")}
                   </p>
+                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("entities_title")}</h1>
+                  <p className="mt-2 text-sm text-white/50">{t("entities_tagline")}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <Button
@@ -320,21 +356,17 @@ export default function Entities() {
                     size="icon"
                     onClick={() => setFilterDrawerOpen(true)}
                     className="lg:hidden h-9 w-9 p-0 text-white/80"
-                    aria-label="Open filters"
+                    aria-label={t("notes_filters")}
                   >
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
-                  {selectMode ? (
+                  {selectMode && (
                     <Button size="sm" className="gap-2" onClick={exitSelectMode}>
-                      <X className="h-3.5 w-3.5" /> Done
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="gap-2" onClick={() => setSelectMode(true)}>
-                      <Check className="h-3.5 w-3.5" /> Select
+                      <X className="h-3.5 w-3.5" /> {t("select_done")}
                     </Button>
                   )}
                   <Button size="sm" className="gap-2" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-3.5 w-3.5" /> New entity
+                    <Plus className="h-3.5 w-3.5" /> {t("entities_new")}
                   </Button>
                 </div>
 
@@ -357,29 +389,28 @@ export default function Entities() {
             {/* Barra de ferramentas: Contagem e Controles de Ordenação */}
             <div className="flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-6 text-[11px] text-white/40">
               <div>
-                Showing {filteredAndSorted.length} {filteredAndSorted.length === 1 ? "atom" : "atoms"}
+                {t(filteredAndSorted.length === 1 ? "list_showing_atoms_one" : "list_showing_atoms", { n: filteredAndSorted.length })}
               </div>
               <div className="flex items-center gap-4 font-mono">
                 {/* Tipo de Ordenação */}
                 <div className="flex items-center gap-1.5">
-                  <span>Sort by:</span>
-                  <button 
+                  <span>{t("list_sortBy")}</span>
+                  <button
                     onClick={() => setSortBy(sortBy === "createdAt" ? "updatedAt" : "createdAt")}
                     className="text-white/70 hover:text-white transition-colors"
                   >
-                    [{sortBy === "createdAt" ? "Creation" : "Modification"}]
+                    [{sortBy === "createdAt" ? t("list_sort_creation") : t("list_sort_modification")}]
                   </button>
                 </div>
                 {/* Direção da Ordenação */}
-                <button 
+                <button
                   onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
                   className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors"
                 >
-                  {/* SVG no lugar do ArrowUpDown */}
                   <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
                   </svg>
-                  {sortOrder === "desc" ? "Recent" : "Oldest"}
+                  {sortOrder === "desc" ? t("list_sort_recent") : t("list_sort_oldest")}
                 </button>
               </div>
             </div>
@@ -387,7 +418,7 @@ export default function Entities() {
             {/* Selection action bar */}
             {selectMode && (
               <div className="sticky top-[7.5rem] z-20 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-white/15 bg-black/80 px-3 py-2.5 backdrop-blur-xl">
-                <span className="text-sm text-white/70">{selectedIds.size} selected</span>
+                <span className="text-sm text-white/70">{t("select_selected", { n: selectedIds.size })}</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
@@ -397,14 +428,14 @@ export default function Entities() {
                     }}
                     className="rounded-sm border border-white/15 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/40 hover:text-white"
                   >
-                    {filteredAndSorted.length > 0 && filteredAndSorted.every((e) => selectedIds.has(e.id)) ? "Clear all" : "Select all"}
+                    {filteredAndSorted.length > 0 && filteredAndSorted.every((e) => selectedIds.has(e.id)) ? t("select_clearAll") : t("select_all")}
                   </button>
                   <button
                     onClick={() => setBulkDeleteOpen(true)}
                     disabled={selectedIds.size === 0}
                     className="inline-flex items-center gap-1.5 rounded-sm border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-40"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                    <Trash2 className="h-3.5 w-3.5" /> {t("common_delete")}
                   </button>
                 </div>
               </div>
@@ -419,7 +450,7 @@ export default function Entities() {
             ) : filteredAndSorted.length === 0 ? (
               <div className="py-24 text-center">
                 <p className="font-serif text-2xl italic text-white/40">
-                  {search ? "Nothing matches that search." : "No entities yet. Create your first one."}
+                  {search ? t("entities_empty_search") : t("entities_empty_all")}
                 </p>
               </div>
             ) : (
@@ -428,57 +459,51 @@ export default function Entities() {
                   const targetDate = sortBy === "updatedAt" ? (entity.updatedAt || entity.createdAt) : entity.createdAt;
                   const selected = selectedIds.has(entity.id);
                   return (
-                    <li key={entity.id}>
-                      <button
-                        onClick={() => selectMode ? toggleSelect(entity.id) : navigate(`/entities/${entity.id}`)}
-                        className={cn(
-                          "group relative flex w-full items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02]",
-                          selected && "bg-white/[0.04]"
-                        )}
-                      >
-                        {/* Linha de realce no Hover */}
+                    <EntityRow
+                      key={entity.id}
+                      selectMode={selectMode}
+                      selected={selected}
+                      onLongPress={() => {
+                        setSelectMode(true);
+                        setSelectedIds((prev) => new Set(prev).add(entity.id));
+                      }}
+                      onOpen={() =>
+                        selectMode ? toggleSelect(entity.id) : navigate(`/entities/${entity.id}`)
+                      }
+                    >
+                      {selectMode && (
                         <span
-                          aria-hidden
-                          className="absolute left-0 top-1/2 h-8 w-px -translate-x-3 -translate-y-1/2 bg-white opacity-0 transition-opacity group-hover:opacity-100"
-                        />
-
-                        {selectMode && (
-                          <span
-                            className={cn(
-                              "mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-sm border transition-colors",
-                              selected ? "border-white bg-white text-black" : "border-white/30 text-transparent"
-                            )}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </span>
-                        )}
-
-
-                        {/* Coluna da Data Relativa */}
-                        <div className="hidden w-20 shrink-0 pt-1 sm:block">
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
-                            {relativeDate(targetDate)}
-                          </p>
-                        </div>
-
-                        {/* Conteúdo da Entidade */}
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-serif text-xl leading-snug text-white/90 transition-colors group-hover:text-white">
-                            {entity.title || "Untitled"}
-                          </h3>
-                          {entity.description && (
-                            <p className="mt-1 line-clamp-1 text-sm text-white/45">{entity.description}</p>
+                          className={cn(
+                            "mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-sm border transition-colors",
+                            selected ? "border-white bg-white text-black" : "border-white/30 text-transparent"
                           )}
-                          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/35">
-                            <span className="uppercase tracking-[0.18em]">
-                              {typeLabels[entity.type] ?? entity.type}
-                            </span>
-                            <span className="sm:hidden">{relativeDate(targetDate)}</span>
-                          </div>
-                        </div>
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      )}
 
-                        {/* Ações de Deleção no Hover */}
-                        {!selectMode && (
+                      <div className="hidden w-20 shrink-0 pt-1 sm:block">
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
+                          {relativeDate(targetDate)}
+                        </p>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-serif text-xl leading-snug text-white/90 transition-colors group-hover:text-white">
+                          {entity.title || t("notes_untitled")}
+                        </h3>
+                        {entity.description && (
+                          <p className="mt-1 line-clamp-1 text-sm text-white/45">{entity.description}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/35">
+                          <span className="uppercase tracking-[0.18em]">
+                            {t(`entities_type_${entity.type}`) ?? typeLabels[entity.type] ?? entity.type}
+                          </span>
+                          <span className="sm:hidden">{relativeDate(targetDate)}</span>
+                        </div>
+                      </div>
+
+                      {!selectMode && (
                         <div className="flex shrink-0 items-center gap-1 pt-1">
                           <span
                             role="button"
@@ -491,15 +516,13 @@ export default function Entities() {
                               }
                             }}
                             className="cursor-pointer rounded-sm p-1.5 text-white/20 opacity-0 transition hover:text-white/70 group-hover:opacity-100"
-                            aria-label="Delete entity"
+                            aria-label={t("common_delete")}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </span>
                         </div>
-                        )}
-
-                      </button>
-                    </li>
+                      )}
+                    </EntityRow>
                   );
                 })}
               </ul>
@@ -517,27 +540,27 @@ export default function Entities() {
       <UpgradeModal
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
-        reason="You've reached the entities limit for your plan."
+        reason={t("entities_limit")}
       />
       <ConfirmDialog
         open={!!pendingDeleteEntity}
         onOpenChange={(open) => !open && setPendingDeleteEntity(null)}
-        title="Delete entity?"
+        title={t("entities_delete_one_title")}
         description={
           pendingDeleteEntity
-            ? `${pendingDeleteEntity.title || "Untitled"} will be permanently removed.`
-            : "This action cannot be undone."
+            ? t("entities_delete_one_desc", { title: pendingDeleteEntity.title || t("notes_untitled") })
+            : ""
         }
-        confirmText="Delete"
+        confirmText={t("common_delete")}
         destructive
         onConfirm={confirmDelete}
       />
       <ConfirmDialog
         open={bulkDeleteOpen}
         onOpenChange={(open) => !open && !bulkDeleting && setBulkDeleteOpen(false)}
-        title={`Delete ${selectedIds.size} ${selectedIds.size === 1 ? "entity" : "entities"}?`}
-        description="The selected entities will be permanently removed."
-        confirmText={bulkDeleting ? "Deleting…" : "Delete"}
+        title={t(selectedIds.size === 1 ? "entities_delete_many_title_one" : "entities_delete_many_title", { n: selectedIds.size })}
+        description={t("entities_delete_many_desc")}
+        confirmText={bulkDeleting ? t("entities_deleting") : t("common_delete")}
         destructive
         onConfirm={confirmBulkDelete}
       />
