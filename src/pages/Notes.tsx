@@ -43,6 +43,35 @@ interface NoteSummary {
 
 type View = "all" | "favorites" | "recent" | "archived";
 
+interface NoteRowProps {
+  selectMode: boolean;
+  selected: boolean;
+  onLongPress: () => void;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function NoteRow({ selectMode, selected, onLongPress, onClick, children }: NoteRowProps) {
+  const lp = useLongPress({ onLongPress, onClick, ms: 500 });
+  return (
+    <li>
+      <div
+        role="button"
+        tabIndex={0}
+        {...lp}
+        className={cn(
+          "group relative flex w-full items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02] cursor-pointer select-none",
+          selectMode && "pl-1",
+          selected && "bg-white/[0.04]"
+        )}
+      >
+        {children}
+      </div>
+    </li>
+  );
+}
+
+
 const RECENT_WINDOW = 1000 * 60 * 60 * 24 * 7; // 7d
 const ARCHIVE_WINDOW = 1000 * 60 * 60 * 24 * 90; // 90d
 
