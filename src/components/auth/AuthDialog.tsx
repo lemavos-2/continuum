@@ -18,6 +18,7 @@ interface AuthDialogProps {
 
 export default function AuthDialog({ open, onOpenChange, initialTab = "login" }: AuthDialogProps) {
   const [activeTab, setActiveTab] = useState<AuthTab>(initialTab);
+  const showGoogleAuthOption = (!DEV_MODE || activeTab === "register") && activeTab !== "forgot";
 
   useEffect(() => {
     if (open) {
@@ -71,7 +72,7 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
             {DEV_MODE && activeTab === "register" && <RegisterForm onSwitchToLogin={() => setActiveTab("login")} />}
             {DEV_MODE && activeTab === "forgot" && <ForgotForm onSwitchToLogin={() => setActiveTab("login")} />}
 
-            {DEV_MODE && activeTab !== "forgot" && (
+            {DEV_MODE && activeTab !== "forgot" && activeTab === "login" && (
               <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[hsl(var(--popup-muted))]">
                 <span className="flex-1 h-px bg-white/10" />
                 or
@@ -79,8 +80,8 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
               </div>
             )}
 
-            {/* Google Login - Always visible */}
-            {(!DEV_MODE || activeTab !== "forgot") && <GoogleOnlyForm onSuccess={() => onOpenChange(false)} />}
+            {/* Google Login - visible only when it is the single auth option */}
+            {showGoogleAuthOption && <GoogleOnlyForm onSuccess={() => onOpenChange(false)} />}
 
             {/* Footer */}
             <p className="text-[10px] text-center text-[hsl(var(--popup-muted))] opacity-70 pt-1">
