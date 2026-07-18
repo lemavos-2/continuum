@@ -275,7 +275,7 @@ const en = {
   profile_privacy: "Privacy",
 };
 
-type Dict = typeof en;
+type Dict = Partial<typeof en>;
 
 const es: Dict = {
   nav_dashboard: "Panel",
