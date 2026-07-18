@@ -622,7 +622,7 @@ export default function Notes() {
                           {formatMonth(key)}
                         </span>
                         <span className="font-mono text-[10px] text-white/30 tabular-nums">
-                          {items.length} {items.length === 1 ? "entry" : "entries"}
+                          {t(items.length === 1 ? "list_showing_entries_one" : "list_showing_entries", { n: items.length })}
                         </span>
                       </button>
 
@@ -634,14 +634,13 @@ export default function Notes() {
 
                             const selected = selectedIds.has(note.id);
                             return (
-                              <li key={note.id}>
-                                <button
-                                  onClick={() => selectMode ? toggleSelect(note.id) : navigate(`/notes/${note.id}`)}
-                                  className={cn(
-                                    "group relative flex w-full items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02]",
-                                    selected && "bg-white/[0.04]"
-                                  )}
-                                >
+                              <NoteRow
+                                key={note.id}
+                                selectMode={selectMode}
+                                selected={selected}
+                                onLongPress={() => { setSelectMode(true); toggleSelect(note.id); }}
+                                onClick={() => selectMode ? toggleSelect(note.id) : navigate(`/notes/${note.id}`)}
+                              >
                                   <span
                                     aria-hidden
                                     className="absolute left-0 top-1/2 h-8 w-px -translate-x-3 -translate-y-1/2 bg-white opacity-0 transition-opacity group-hover:opacity-100"
