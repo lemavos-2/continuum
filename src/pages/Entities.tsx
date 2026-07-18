@@ -290,7 +290,7 @@ export default function Entities() {
         {/* Menu Lateral Mobile */}
         <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
           <SheetContent side="left" className="w-[280px] border-white/10 bg-black/95 p-6">
-            <p className="mb-6 font-serif text-2xl text-white">Filters</p>
+            <p className="mb-6 font-serif text-2xl text-white">{t("notes_filters")}</p>
             {SidebarContent}
           </SheetContent>
         </Sheet>
