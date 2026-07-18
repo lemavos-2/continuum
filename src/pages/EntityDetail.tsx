@@ -5,7 +5,7 @@ import { entitiesApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Flame, Edit, StickyNote, Network, Calendar, Tag, Clock } from "@/lib/heroicons";
+import { ArrowLeft, Loader2, Edit, StickyNote, Network, Calendar, Tag, Clock } from "@/lib/heroicons";
 import {
   Accordion,
   AccordionContent,
@@ -219,9 +219,8 @@ export default function EntityDetail() {
   const isHabit = entity.type === "ACTIVITY";
   const today = new Date().toISOString().split("T")[0];
   const trackedToday = entity.trackingDates?.some((date) => date.startsWith(today));
-  const streak = stats?.currentStreak ?? 0;
-  const longestStreak = stats?.longestStreak ?? 0;
   const totalCompletions = entity.trackingDates?.length ?? stats?.totalCompletions ?? 0;
+
 
   const typeLabel = entity.type.charAt(0) + entity.type.slice(1).toLowerCase();
 
@@ -286,13 +285,10 @@ export default function EntityDetail() {
 
           {isHabit && (
             <div className="mt-5 flex flex-wrap gap-2 text-xs uppercase tracking-wider">
-              <span className="px-3 py-1 rounded-md border border-white/10 text-white/60 inline-flex items-center gap-1.5">
-                <Flame className="w-3 h-3" /> Streak {streak}d
-              </span>
-              <span className="px-3 py-1 rounded-md border border-white/10 text-white/60">Max {longestStreak}</span>
               <span className="px-3 py-1 rounded-md border border-white/10 text-white/60">Total {totalCompletions}</span>
             </div>
           )}
+
         </header>
 
         {/* Type-specific primary block */}

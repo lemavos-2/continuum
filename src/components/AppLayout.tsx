@@ -21,6 +21,7 @@ import {
   FolderOpen,
   Squares2x2,
   ArrowLeft,
+  
 } from "@/lib/heroicons";
 import {
   Squares2X2Icon as Squares2x2Solid,
@@ -39,6 +40,7 @@ import {
 
 import { SessionNavBar } from "@/components/ui/session-nav-bar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { OfflineStatus } from "@/components/offline/OfflineStatus";
 
 const mobileItems = [
   { to: "/", icon: Squares2x2, key: "nav_dashboard", end: true },
@@ -87,7 +89,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <CommandPalette />
 
       {/* Mobile top bar */}
-      <div className="fixed left-0 right-0 top-0 z-40 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="fixed left-0 right-0 top-0 z-40 flex items-center gap-3 border-b border-white/5 bg-background/80 px-4 py-3 backdrop-blur-md lg:hidden">
         <div className="flex items-center gap-2">
           <img src="/favicon.ico" alt="Continuum" className="h-7 w-7 rounded-lg object-contain" />
           <span className="text-base font-serif tracking-tight">Continuum</span>
@@ -95,11 +97,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         <div className="flex-1" />
 
+        <OfflineStatus compact />
+
         {isGraphPage && (
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             {t("common_back") || "Back"}
@@ -130,13 +134,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" />
       </main>
 
+      {/* Desktop offline / sync indicator — floating top-right pill */}
+      <div className="pointer-events-none fixed right-4 top-4 z-40 hidden lg:block">
+        <div className="pointer-events-auto rounded-full border border-border bg-background/80 px-1 py-0.5 shadow-sm backdrop-blur">
+          <OfflineStatus compact />
+        </div>
+      </div>
+
       {/* Mobile bottom tab bar — floating, rounded */}
       {!isGraphPage && (
         <nav
           className="fixed inset-x-3 z-40 lg:hidden"
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
         >
-          <div className="flex items-stretch justify-around gap-1 rounded-2xl border border-white/10 bg-background/85 px-2 py-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <div className="flex items-stretch justify-around gap-1 rounded-xl border border-white/5 bg-background/75 px-2 py-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-sm supports-[backdrop-filter]:bg-background/65">
             {mobileTabs.map((it) => (
               <NavLink
                 key={it.to}
@@ -186,6 +197,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/vault")}>
                   <Lock className="mr-2 h-4 w-4" /> {t("nav_vault")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/subscription")}>
+                  <Settings className="mr-2 h-4 w-4" /> {t("nav_subscription")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-zinc-500">{user?.email}</DropdownMenuLabel>

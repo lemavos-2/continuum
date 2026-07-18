@@ -68,21 +68,20 @@ export interface HeatmapData {
 }
 
 export interface EntityStats {
-  currentStreak: number;
-  longestStreak: number;
   totalCompletions?: number;
   averageValue?: number;
   weeklyCompletionRate?: number;
 }
+
 
 export interface DashboardMetrics {
   totalNotes: number;
   totalEntities: number;
   totalHabits: number;
   notesThisWeek: number;
-  currentStreak: number;
   completedToday: number;
 }
+
 
 export interface Subscription {
   id: string;
@@ -150,10 +149,8 @@ export interface RecentNoteDTO {
 export interface ActivityStatsDTO {
   dailyCompletions: Record<string, number>;
   totalDays: number;
-  maxStreak: number;
-  currentStreak: number;
-  longestInactive: number;
 }
+
 
 export interface DashboardSummaryDTO {
   stats: DashboardStatsDTO;

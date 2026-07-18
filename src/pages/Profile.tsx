@@ -22,11 +22,74 @@ import {
   ArrowUpTrayIcon,
   SunIcon,
   MoonIcon,
+  LifebuoyIcon,
+  ChatBubbleLeftEllipsisIcon,
+  BugAntIcon,
+  ChevronRightIcon,
+
 } from "@heroicons/react/24/outline";
 import { useTheme } from "@/contexts/ThemeContext";
 import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
+import { useOfflineStatus } from "@/hooks/use-offline-status";
+import { flushQueue, getLastSyncAt } from "@/lib/offline/sync";
+import { toast as sonnerToast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const formatLimitValue = (value: number, suffix = "") => (value === -1 ? "Unlimited" : `${value}${suffix}`);
+
+function OfflineSyncRow() {
+  const { status, pending, syncing } = useOfflineStatus();
+  const [busy, setBusy] = useState(false);
+  const [lastSync, setLastSync] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    let alive = true;
+    void getLastSyncAt().then((v) => alive && setLastSync(v));
+    return () => { alive = false; };
+  }, [pending, syncing]);
+
+  const onSync = async () => {
+    if (!navigator.onLine) {
+      sonnerToast.error("You're offline. Changes will sync when you're back online.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await flushQueue();
+      if (r.sent === 0 && r.failed === 0) sonnerToast.success("Everything is up to date.");
+      else if (r.failed === 0) sonnerToast.success(`${r.sent} change${r.sent === 1 ? "" : "s"} synced.`);
+      else sonnerToast.warning(`${r.sent} synced, ${r.failed} failed — will retry.`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const subtitle = status === "offline"
+    ? `Working offline${pending > 0 ? ` · ${pending} pending` : ""}`
+    : pending > 0
+      ? `${pending} pending change${pending === 1 ? "" : "s"}`
+      : lastSync
+        ? `Last sync: ${new Date(lastSync).toLocaleString()}`
+        : "Up to date";
+
+  return (
+    <div className="flex items-center gap-4 py-4">
+      <ArrowPathIcon className={`h-4 w-4 text-foreground/30 shrink-0 ${syncing || busy ? "animate-spin" : ""}`} />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-foreground/70">Offline & Sync</p>
+        <p className="text-xs text-foreground/30 truncate">{subtitle}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onSync}
+        disabled={busy || syncing}
+        className="text-xs text-white/70 hover:text-white underline underline-offset-4 disabled:opacity-40"
+      >
+        {busy || syncing ? "Syncing…" : "Sync now"}
+      </button>
+    </div>
+  );
+}
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -34,6 +97,7 @@ export default function Profile() {
   const { toast } = useToast();
   const { usage, loading: usageLoading } = usePlanGate();
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -86,7 +150,7 @@ export default function Profile() {
     () => [
       { label: "Vault Limit", value: limits.maxVaultSizeMB === -1 ? "Unlimited" : `${limits.maxVaultSizeMB} MB` },
       { label: "Upload Metadata", value: limits.maxMetadataSizeKb === -1 ? "Unlimited" : `${limits.maxMetadataSizeKb} KB` },
-      { label: "Version History", value: limits.historyDays === -1 ? "Unlimited" : `${limits.historyDays} days` },
+      { label: "History", value: limits.historyDays === -1 ? "Unlimited" : `${limits.historyDays} days` },
     ],
     [limits],
   );
@@ -114,9 +178,9 @@ export default function Profile() {
 
         {/* HEADER */}
         <header>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">Settings</p>
-          <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">Profile</h1>
-          <p className="mt-2 text-sm text-white/50">Manage your account credentials and application preferences.</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">{t("profile_settings")}</p>
+          <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("profile_title")}</h1>
+          <p className="mt-2 text-sm text-white/50">{t("profile_subtitle")}</p>
         </header>
 
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
@@ -124,26 +188,26 @@ export default function Profile() {
           {/* ACCOUNT SECTION */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-sm font-semibold text-white/80">Account Details</h2>
+              <h2 className="text-sm font-semibold text-white/80">{t("profile_accountDetails")}</h2>
             </div>
 
             <div className="space-y-5 border border-white/5 bg-white/[0.01] p-6 rounded-sm">
               <div className="space-y-2">
-                <Label htmlFor="profile-username" className="text-xs text-white/40">Username</Label>
+                <Label htmlFor="profile-username" className="text-xs text-white/40">{t("profile_username")}</Label>
                 <div className="relative">
                   <UserIcon className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                   <Input
                     id="profile-username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Your username"
+                    placeholder={t("profile_usernamePlaceholder")}
                     className="w-full border-0 border-b border-white/10 bg-transparent pl-6 rounded-none text-sm text-white placeholder:text-white/20 focus:border-white/40 focus:outline-none focus:ring-0 focus-visible:ring-0"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profile-email" className="text-xs text-white/40">Email Address</Label>
+                <Label htmlFor="profile-email" className="text-xs text-white/40">{t("profile_emailAddress")}</Label>
                 <div className="relative">
                   <EnvelopeIcon className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
                   <Input
@@ -160,14 +224,14 @@ export default function Profile() {
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/[0.04]">
-                <div className="hidden">
-                  <p className="text-xs text-white/30">Current Plan</p>
-                  <p className="mt-1 text-sm font-medium text-white/70">{currentPlan}</p>
+                <div>
+                  <p className="text-xs text-white/30">{t("profile_currentPlan")}</p>
+                  <p className="mt-1 text-sm font-medium text-white/70">{currentPlan === "VISION" ? "PRO" : currentPlan}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-white/30">Member Since</p>
+                  <p className="text-xs text-white/30">{t("profile_memberSince")}</p>
                   <p className="mt-1 text-sm font-medium text-white/70">
-                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—"}
                   </p>
                 </div>
               </div>
@@ -178,15 +242,15 @@ export default function Profile() {
                 className="flex items-center justify-center gap-2 w-full h-9 border border-white/15 bg-transparent hover:border-white/40 text-white/80 hover:text-white rounded-sm text-sm font-medium transition-colors disabled:opacity-40 mt-4"
               >
                 {saving && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
-                Save changes
+                {t("profile_saveChanges")}
               </button>
 
               <ConfirmDialog
                 open={saveConfirmOpen}
                 onOpenChange={setSaveConfirmOpen}
-                title="Save profile changes?"
-                description="Your username will be updated across your account network."
-                confirmText="Save"
+                title={t("profile_saveConfirmTitle")}
+                description={t("profile_saveConfirmDesc")}
+                confirmText={t("common_save")}
                 onConfirm={async () => {
                   setSaveConfirmOpen(false);
                   await handleSave();
@@ -197,8 +261,8 @@ export default function Profile() {
             <div className="flex items-center gap-3 border border-white/5 bg-white/[0.01] p-4 rounded-sm">
               <ShieldCheckIcon className="h-4 w-4 text-white/40 shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-white/70">Secure Authentication</p>
-                <p className="text-xs text-white/30 truncate">Verified and connected via Google Sign-In.</p>
+                <p className="text-xs font-medium text-white/70">{t("profile_secureAuth")}</p>
+                <p className="text-xs text-white/30 truncate">{t("profile_secureAuthDesc")}</p>
               </div>
             </div>
 
@@ -206,9 +270,9 @@ export default function Profile() {
               <div className="flex items-start gap-3">
                 <ArrowUpTrayIcon className="h-4 w-4 text-white/40 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-white/70">Import Markdown</p>
+                  <p className="text-xs font-medium text-white/70">{t("profile_importMd")}</p>
                   <p className="text-xs text-white/30 mt-0.5">
-                    Bring notes from Obsidian, Logseq, or any folder of .md files. Entities are detected automatically — you confirm.
+                    {t("profile_importMdDesc")}
                   </p>
                 </div>
               </div>
@@ -216,7 +280,7 @@ export default function Profile() {
                 onClick={() => setImportOpen(true)}
                 className="w-full h-9 border border-white/15 bg-transparent hover:border-white/40 text-white/80 hover:text-white rounded-sm text-sm font-medium transition-colors"
               >
-                Import Markdown Files
+                {t("profile_importMdBtn")}
               </button>
             </div>
           </div>
@@ -224,32 +288,74 @@ export default function Profile() {
           {/* PREFERENCES SECTION */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-sm font-semibold text-white/80">Preferences & Appearance</h2>
+              <h2 className="text-sm font-semibold text-white/80">{t("profile_prefsAppearance")}</h2>
             </div>
 
             <div className="border-t border-b border-white/5 divide-y divide-white/[0.04] dark:border-white/5 light:border-black/5">
+              <LanguageSelector />
+
               <div className="flex items-center gap-4 py-4">
                 <CalendarIcon className="h-4 w-4 text-foreground/30 shrink-0" />
                 <div>
-                  <p className="text-xs font-medium text-foreground/70">History Retention</p>
-                  <p className="text-xs text-foreground/30">{formatLimitValue(limits.historyDays, " days")}</p>
+                  <p className="text-xs font-medium text-foreground/70">{t("profile_history")}</p>
+                  <p className="text-xs text-foreground/30">{limits.historyDays === -1 ? t("common_unlimited") : t("profile_historyDays", { n: limits.historyDays })}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 py-4">
                 <LockClosedIcon className="h-4 w-4 text-foreground/30 shrink-0" />
                 <div>
-                  <p className="text-xs font-medium text-foreground/70">Security Layer</p>
-                  <p className="text-xs text-foreground/30">Active session tokens are isolated and protected.</p>
+                  <p className="text-xs font-medium text-foreground/70">{t("profile_securityLayer")}</p>
+                  <p className="text-xs text-foreground/30">{t("profile_securityLayerDesc")}</p>
                 </div>
               </div>
+
+              <OfflineSyncRow />
+            </div>
+
+            {/* HELP & SUPPORT */}
+            <div className="border border-white/5 bg-white/[0.01] rounded-sm divide-y divide-white/[0.04]">
+              <a
+                href="#/support"
+                className="flex items-center gap-4 p-4 transition-colors hover:bg-white/[0.02]"
+              >
+                <LifebuoyIcon className="h-4 w-4 text-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground/70">{t("profile_supportCenter")}</p>
+                  <p className="text-xs text-foreground/30 truncate">{t("profile_supportCenterDesc")}</p>
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-foreground/20 shrink-0" />
+              </a>
+              <a
+                href="mailto:feedback@continuum.onl?subject=Continuum%20%E2%80%94%20Feedback"
+                className="flex items-center gap-4 p-4 transition-colors hover:bg-white/[0.02]"
+              >
+                <ChatBubbleLeftEllipsisIcon className="h-4 w-4 text-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground/70">{t("profile_sendFeedback")}</p>
+                  <p className="text-xs text-foreground/30 truncate">feedback@continuum.onl</p>
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-foreground/20 shrink-0" />
+              </a>
+              <a
+                href="mailto:bugs@continuum.onl?subject=Continuum%20%E2%80%94%20Bug%20report"
+                className="flex items-center gap-4 p-4 transition-colors hover:bg-white/[0.02]"
+              >
+                <BugAntIcon className="h-4 w-4 text-foreground/40 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground/70">{t("profile_reportBug")}</p>
+                  <p className="text-xs text-foreground/30 truncate">bugs@continuum.onl</p>
+                </div>
+                <ChevronRightIcon className="h-4 w-4 text-foreground/20 shrink-0" />
+              </a>
             </div>
           </div>
 
+
           {/* LIMITS SECTION */}
-          <section className="hidden space-y-6 pt-4 border-t border-white/5 lg:col-span-2">
+          <section className="space-y-6 pt-4 border-t border-white/5 lg:col-span-2">
             <div>
-              <h2 className="text-sm font-semibold text-white/80">Plan Usage & Limits</h2>
+              <h2 className="text-sm font-semibold text-white/80">{t("profile_planUsage")}</h2>
             </div>
 
             {usageLoading && !usage ? (
@@ -287,7 +393,7 @@ export default function Profile() {
               ))}
 
               <div className="border border-white/5 bg-white/[0.01] p-4 flex items-center justify-between gap-3 text-xs rounded-sm">
-                <span className="text-white/40 text-xs">Export Data</span>
+                <span className="text-white/40 text-xs">{t("profile_exportData")}</span>
                 {user?.dataExport ? (
                   <button
                     type="button"
@@ -296,10 +402,10 @@ export default function Profile() {
                     className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white underline underline-offset-4 disabled:opacity-40 transition-colors"
                   >
                     <ArrowDownTrayIcon className="w-3 h-3" />
-                    {exporting ? "Exporting…" : "Download Backup"}
+                    {exporting ? t("profile_exporting") : t("profile_downloadBackup")}
                   </button>
                 ) : (
-                  <span className="text-white/20 text-xs">Locked</span>
+                  <span className="text-white/20 text-xs">{t("profile_locked")}</span>
                 )}
               </div>
             </div>

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { parseTiptapContent } from "@/lib/tiptap-content";
+import { installOfflineLayer } from "@/lib/offline/axios-offline";
 
 // Lê em tempo de execução, não de build
 const getAPIBaseURL = () => {
@@ -29,13 +30,15 @@ const getStoredToken = (key: string) => {
 
 export const setAuthTokens = (accessToken: string, _refreshToken?: string) => {
   if (typeof window === "undefined") return;
+  // Store access token in sessionStorage (for this session only)
   sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  // Also store in localStorage for persistence across reloads/tabs
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   // Persist refresh token across reloads so the client can renew sessions
   // even when the backend doesn't issue an HttpOnly cookie.
   if (_refreshToken) {
     localStorage.setItem(REFRESH_TOKEN_KEY, _refreshToken);
   }
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
 };
 
 export const clearAuthTokens = () => {
@@ -120,6 +123,9 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Install offline-first layer AFTER auth interceptor so auth headers are attached
+installOfflineLayer(api);
 
 /**
  * Gerenciador de Refresh Token com fila de requisições
@@ -456,10 +462,16 @@ export const trackingApi = {
 
 export const subscriptionApi = {
   me: () => api.get("/api/subscriptions/me"),
-  // Accepts either a Lemon Squeezy variant id (var_xxx) or a plan code ("VISION").
+  // Accepts either a Stripe price id (price_xxx) or a plan code ("VISION").
   checkout: (priceOrPlan: string) =>
     api.post("/api/subscriptions/checkout", { priceId: priceOrPlan, planId: priceOrPlan }),
-  cancel: () => api.post("/api/subscriptions/cancel"),
+  cancel: (immediately = false) =>
+    api.post("/api/subscriptions/cancel", { immediately }),
+  changePlan: (priceOrPlan: string) =>
+    api.post("/api/subscriptions/change-plan", { priceId: priceOrPlan, planId: priceOrPlan }),
+  portal: () => api.post("/api/subscriptions/portal"),
+  refund: (chargeId: string, amountCents?: number) =>
+    api.post("/api/subscriptions/refund", { chargeId, amountCents }),
 };
 
 export const plansApi = {

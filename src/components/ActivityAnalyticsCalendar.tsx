@@ -1,223 +1,137 @@
-import { useMemo, useState } from 'react';
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-  addMonths,
-  subMonths,
-} from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar, Check } from "@/lib/heroicons";
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useMemo } from "react";
+import { Calendar as Cal, CalendarCell, CalendarGrid, CalendarGridBody, CalendarGridHeader, CalendarHeaderCell, Heading, Button as RACButton } from "react-aria-components";
+import { getLocalTimeZone, today } from "@internationalized/date";
+import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
 
 interface ActivityAnalyticsCalendarProps {
   trackingDates?: string[];
   historyDays?: number;
 }
 
-/**
- * Activity completion calendar component
- * Shows monthly view of completion dates with intensity colors
- * Similar to TimeAnalyticsCalendar but for activity tracking
- */
-export function ActivityAnalyticsCalendar({
-  trackingDates = [],
-  historyDays = 30,
-}: ActivityAnalyticsCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Build completion dates set for quick lookup
-  const completionDates = useMemo(() => {
-    const dates = new Set<string>();
-    trackingDates.forEach(date => {
-      const dateStr = date.split('T')[0]; // Get YYYY-MM-DD
-      dates.add(dateStr);
-    });
-    return dates;
+export function ActivityAnalyticsCalendar({ trackingDates = [] }: ActivityAnalyticsCalendarProps) {
+  const completionSet = useMemo(() => {
+    const s = new Set<string>();
+    trackingDates.forEach((d) => s.add(d.split("T")[0]));
+    return s;
   }, [trackingDates]);
 
-  // Generate full calendar grid (including days from prev/next month for proper alignment)
-  const fullCalendarGrid = useMemo(() => {
-    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    const calendarStart = startOfWeek(monthStart);
-    const calendarEnd = endOfWeek(monthEnd);
+  const now = today(getLocalTimeZone());
 
-    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  }, [currentDate]);
-
-  // Calculate monthly stats
-  const monthlyStats = useMemo(() => {
-    let activeDays = 0;
-    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    
-    for (let i = 0; i <= monthEnd.getDate() - 1; i++) {
-      const date = new Date(monthStart);
-      date.setDate(monthStart.getDate() + i);
-      const dateStr = format(date, 'yyyy-MM-dd');
-      if (completionDates.has(dateStr)) {
-        activeDays++;
-      }
-    }
-
+  const stats = useMemo(() => {
+    const ymCurrent = `${now.year}-${String(now.month).padStart(2, "0")}`;
+    let monthActive = 0;
+    completionSet.forEach((d) => {
+      if (d.startsWith(ymCurrent)) monthActive += 1;
+    });
+    const daysInMonth = now.calendar.getDaysInMonth(now);
     return {
-      totalCompletions: trackingDates.length,
-      activeDays,
-      currentMonth: format(currentDate, 'MMMM yyyy'),
+      total: trackingDates.length,
+      monthActive,
+      monthPct: daysInMonth ? Math.round((monthActive / daysInMonth) * 100) : 0,
     };
-  }, [currentDate, completionDates, trackingDates.length]);
-
-  const getIntensityClass = (isCompleted: boolean): string => {
-    if (!isCompleted) return 'bg-zinc-50 dark:bg-zinc-900';
-    return 'bg-zinc-100 dark:bg-zinc-900/30 border-zinc-500/50';
-  };
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      setCurrentDate(subMonths(currentDate, 1));
-    } else {
-      setCurrentDate(addMonths(currentDate, 1));
-    }
-  };
-
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
+  }, [completionSet, trackingDates.length, now]);
 
   return (
     <div className="space-y-6">
-      {/* Monthly Stats */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Check className="w-5 h-5 text-zinc-500" />
-            Completion Summary
-          </h3>
-          <Badge variant="secondary">
-            {format(currentDate, 'MMM yyyy')}
-          </Badge>
+      {/* Completion Summary — minimal, app-aligned */}
+      <div className="border border-white/5 bg-white/[0.01] rounded-sm p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Completion</p>
+            <h3 className="mt-1 font-serif text-xl text-white">Summary</h3>
+          </div>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+            {now.toDate(getLocalTimeZone()).toLocaleString(undefined, { month: "short", year: "numeric" })}
+          </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {monthlyStats.totalCompletions}
-            </div>
-            <div className="text-sm text-zinc-500">Total Completions</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {monthlyStats.activeDays}
-            </div>
-            <div className="text-sm text-zinc-500">Days Completed</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {trackingDates.length > 0 ? ((monthlyStats.activeDays / new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()) * 100).toFixed(0) : 0}%
-            </div>
-            <div className="text-sm text-zinc-500">This Month</div>
-          </div>
+        <div className="grid grid-cols-3 gap-px bg-white/5">
+          <SummaryStat label="Total" value={stats.total} />
+          <SummaryStat label="This month" value={stats.monthActive} />
+          <SummaryStat label="Month rate" value={`${stats.monthPct}%`} />
         </div>
-      </Card>
+      </div>
+
 
       {/* Calendar */}
-      <Card className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-zinc-500" />
-            {format(currentDate, 'MMMM yyyy')}
-          </h2>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('prev')}
+      <div className="border border-white/5 bg-white/[0.01] rounded-sm p-3 sm:p-4 md:p-5">
+        <Cal aria-label="Activity calendar" className="w-full">
+          <header className="flex items-center gap-1 pb-3 sm:pb-4">
+            <RACButton
+              slot="previous"
+              className="flex size-8 items-center justify-center rounded-sm text-white/40 outline-none transition-colors hover:bg-white/5 hover:text-white"
             >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToToday}
+              <ChevronLeftIcon className="h-4 w-4" />
+            </RACButton>
+            <Heading className="grow text-center font-mono text-[11px] uppercase tracking-[0.28em] text-white/70" />
+            <RACButton
+              slot="next"
+              className="flex size-8 items-center justify-center rounded-sm text-white/40 outline-none transition-colors hover:bg-white/5 hover:text-white"
             >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('next')}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+              <ChevronRightIcon className="h-4 w-4" />
+            </RACButton>
+          </header>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-1">
-          {/* Day headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="p-2 text-center text-sm font-medium text-zinc-500">
-              {day}
-            </div>
-          ))}
-
-          {/* Calendar days */}
-          {fullCalendarGrid.map((date, index) => {
-            const dateStr = format(date, 'yyyy-MM-dd');
-            const isCurrentMonth = isSameMonth(date, currentDate);
-            const isToday = isSameDay(date, new Date());
-            const isCompleted = completionDates.has(dateStr);
-
-            return (
-              <div
-                key={index}
-                className={`
-                  min-h-[80px] p-2 border border-zinc-200 dark:border-zinc-700 rounded-lg
-                  transition-all hover:shadow-md cursor-default
-                  ${isCurrentMonth ? 'bg-white dark:bg-zinc-800' : 'bg-zinc-50 dark:bg-zinc-900 opacity-50'}
-                  ${isToday ? 'ring-2 ring-zinc-500' : ''}
-                  ${isCompleted ? 'bg-zinc-500/10 dark:bg-zinc-900/20' : ''}
-                `}
-              >
-                <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  {format(date, 'd')}
-                </div>
-
-                {isCompleted ? (
-                  <div className="flex items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-zinc-500/30 flex items-center justify-center">
-                      <Check className="w-4 h-4 text-zinc-400" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-zinc-400 text-center">-</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+          <CalendarGrid className="w-full [&_table]:w-full [&_table]:border-collapse">
+            <CalendarGridHeader>
+              {(day) => (
+                <CalendarHeaderCell className="pb-2 sm:pb-2 md:pb-3 font-mono text-[8px] sm:text-[9px] md:text-[9px] uppercase tracking-widest text-white/30">
+                  {day}
+                </CalendarHeaderCell>
+              )}
+            </CalendarGridHeader>
+            <CalendarGridBody className="[&_td]:p-0.5 [&_tr:not(:last-child)]:mb-1">
+              {(date) => {
+                const dateStr = date.toString();
+                const isCompleted = completionSet.has(dateStr);
+                const isToday = date.compare(now) === 0;
+                return (
+                  <CalendarCell
+                    date={date}
+                    className={cn(
+                      "relative mx-auto flex aspect-square w-full max-w-9 sm:max-w-10 md:max-w-11 items-center justify-center rounded-sm border text-xs outline-none transition-colors",
+                      "data-[outside-month]:opacity-30 data-[focus-visible]:ring-1 data-[focus-visible]:ring-white/40",
+                      isCompleted
+                        ? "border-white/30 bg-white/15 text-white"
+                        : "border-white/5 bg-transparent text-white/60 hover:bg-white/5 hover:text-white",
+                      isToday && !isCompleted && "border-white/40 text-white",
+                    )}
+                  />
+                );
+              }}
+            </CalendarGridBody>
+          </CalendarGrid>
+        </Cal>
 
         {/* Legend */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-          <div className="flex items-center gap-3 text-xs text-zinc-500">
-            <span>Completion Status:</span>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-zinc-900 border border-zinc-700"></div>
-              <span>Not completed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-zinc-500/30 border border-zinc-500/50"></div>
-              <span>Completed</span>
-            </div>
+        <div className="flex items-center justify-end gap-4 mt-5 pt-4 border-t border-white/5 font-mono text-[10px] uppercase tracking-widest text-white/40">
+          <div className="flex items-center gap-2">
+            <span className="block size-3 rounded-sm border border-white/5 bg-transparent" />
+            <span>Empty</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="block size-3 rounded-sm border border-white/40" />
+            <span>Today</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="block size-3 rounded-sm border border-white/30 bg-white/20" />
+            <span>Done</span>
           </div>
         </div>
-      </Card>
+      </div>
+    </div>
+  );
+}
+
+function SummaryStat({ label, value, suffix }: { label: string; value: string | number; suffix?: string }) {
+  return (
+    <div className="bg-black/40 p-4">
+      <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-white/30">{label}</p>
+      <p className="mt-2 font-serif text-2xl text-white tabular-nums">
+        {value}
+        {suffix ? <span className="ml-1 text-xs text-white/40 font-sans">{suffix}</span> : null}
+      </p>
     </div>
   );
 }

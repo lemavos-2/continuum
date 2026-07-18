@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTimeTracking } from '@/hooks/useTimeTracking';
 import { useTodayTimeStats } from '@/hooks/useTodayTimeStats';
+import { ensureNotificationPermission, primeEntityName } from '@/lib/timer-notifications';
 
 
 // ============================================================
@@ -136,9 +137,28 @@ export function TimerWidget({
     if (isFullscreen) {
       const elem = fullscreenContainerRef.current;
       if (elem?.requestFullscreen) {
-        elem.requestFullscreen().catch((err) => console.warn('Erro ao forçar fullscreen:', err));
+        elem.requestFullscreen()
+          .then(() => {
+            // After entering fullscreen, lock to landscape on mobile devices.
+            const isCoarse =
+              typeof window !== 'undefined' &&
+              (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768);
+            if (isCoarse) {
+              const orientation = (screen as any)?.orientation;
+              if (orientation && typeof orientation.lock === 'function') {
+                orientation.lock('landscape').catch((err: unknown) => {
+                  console.warn('Orientation lock unavailable:', err);
+                });
+              }
+            }
+          })
+          .catch((err) => console.warn('Erro ao forçar fullscreen:', err));
       }
     } else {
+      const orientation = (screen as any)?.orientation;
+      if (orientation && typeof orientation.unlock === 'function') {
+        try { orientation.unlock(); } catch (err) { console.warn(err); }
+      }
       if (document.fullscreenElement) {
         document.exitFullscreen().catch((err) => console.warn(err));
       }
@@ -160,6 +180,8 @@ export function TimerWidget({
 
   const handleStart = async () => {
     try {
+      primeEntityName(entityId, entityName);
+      void ensureNotificationPermission();
       await startTimer(entityId);
       onTimerStart?.(entityId);
     } catch (error) {
@@ -245,52 +267,59 @@ export function TimerWidget({
   }
 
   return (
-    <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] text-white max-w-sm">
-      <span className="text-xs font-mono font-bold uppercase tracking-widest text-white/50">
-        {entityName}
-      </span>
+    <div className="border border-white/5 bg-white/[0.01] rounded-sm p-5 text-white">
+      {/* Header — Activity aesthetic */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Timer</p>
+          <h3 className="mt-1 font-serif text-xl text-white truncate">{entityName}</h3>
+        </div>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+          {isRunning ? (isPaused ? "Paused" : "Running") : "Idle"}
+        </span>
+      </div>
 
-      <div className={`text-5xl sm:text-6xl font-mono font-bold text-center my-6 tracking-widest transition-colors ${isPaused ? 'text-white/50' : 'text-white'}`}>
+      {/* Clock readout */}
+      <div className={`font-mono text-5xl sm:text-6xl text-center my-5 tracking-widest tabular-nums transition-colors ${isPaused ? 'text-white/50' : 'text-white'}`}>
         {hrs}:{mins}:{secs}
       </div>
 
       {timerLoading && (
-        <p className="text-xs text-white/40 text-center mb-2">Carregando timer...</p>
+        <p className="text-[10px] uppercase tracking-widest font-mono text-white/40 text-center mb-3">Loading timer…</p>
       )}
 
-      {/* BUTTONS */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      {/* CONTROLS */}
+      <div className="grid grid-cols-3 gap-px bg-white/5 mb-3">
         {!isRunning ? (
           <button
             onClick={handleStart}
             disabled={isStarting || timerLoading}
-            className="col-span-2 py-2.5 bg-white hover:bg-white/90 text-black font-semibold rounded-lg transition text-sm disabled:opacity-50"
+            className="col-span-2 py-3 bg-black/40 hover:bg-white/[0.06] text-white font-mono text-[11px] uppercase tracking-[0.28em] transition disabled:opacity-50"
           >
-            {isStarting ? 'Iniciando...' : 'Start Timer'}
+            {isStarting ? 'Starting…' : 'Start'}
           </button>
         ) : (
           <>
             <button
               onClick={handlePauseToggle}
               disabled={timerLoading}
-              className="py-2.5 bg-white hover:bg-white/90 text-black font-semibold rounded-lg transition text-sm disabled:opacity-50"
+              className="py-3 bg-black/40 hover:bg-white/[0.06] text-white font-mono text-[11px] uppercase tracking-[0.28em] transition disabled:opacity-50"
             >
               {isPaused ? 'Resume' : 'Pause'}
             </button>
             <button
               onClick={handleStop}
               disabled={isStopping || timerLoading}
-              className="py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white font-semibold rounded-lg transition text-sm border border-white/10 disabled:opacity-50"
+              className="py-3 bg-black/40 hover:bg-white/[0.06] text-white/70 hover:text-white font-mono text-[11px] uppercase tracking-[0.28em] transition disabled:opacity-50"
             >
-              {isStopping ? '...' : 'Stop'}
+              {isStopping ? '…' : 'Stop'}
             </button>
           </>
         )}
         <button
           onClick={handleRestart}
           disabled={!isRunning || timerLoading}
-          title="Restart timer"
-          className="py-2.5 bg-white/[0.02] hover:bg-white/[0.06] text-white/60 hover:text-white font-semibold rounded-lg transition text-sm border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="py-3 bg-black/40 hover:bg-white/[0.06] text-white/50 hover:text-white font-mono text-[11px] uppercase tracking-[0.28em] transition disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Restart
         </button>
@@ -298,27 +327,16 @@ export function TimerWidget({
 
       <button
         onClick={() => setIsFullscreen(true)}
-        className="w-full py-2.5 bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white font-semibold rounded-lg text-xs tracking-wider uppercase transition text-center border border-white/10"
+        className="w-full py-2.5 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] text-white/60 hover:text-white font-mono text-[10px] uppercase tracking-[0.32em] rounded-sm transition"
       >
-        Go to Flip Clock
+        Flip Clock
       </button>
 
-      {/* TODAY SECTION */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-white/40">Today</p>
-          <p className="mt-1 font-mono text-sm text-white">
-            {formatSeconds(today.todaySeconds + (isRunning ? currentElapsed : 0))}
-          </p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-white/40">Sessions</p>
-          <p className="mt-1 font-mono text-sm text-white">{today.todayEntriesCount}</p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-white/40">Avg</p>
-          <p className="mt-1 font-mono text-sm text-white">{formatSeconds(today.avgEntrySeconds)}</p>
-        </div>
+      {/* TODAY SECTION — Activity stat grid */}
+      <div className="mt-5 grid grid-cols-3 gap-px bg-white/5">
+        <SummaryStat label="Today" value={formatSeconds(today.todaySeconds + (isRunning ? currentElapsed : 0))} />
+        <SummaryStat label="Sessions" value={today.todayEntriesCount} />
+        <SummaryStat label="Avg" value={formatSeconds(today.avgEntrySeconds)} />
       </div>
 
 
@@ -412,4 +430,14 @@ export function TimerWidget({
     </div>
   );
 }
+
+function SummaryStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-black/40 p-3">
+      <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-white/30">{label}</p>
+      <p className="mt-1.5 font-serif text-lg text-white tabular-nums">{value}</p>
+    </div>
+  );
+}
+
 

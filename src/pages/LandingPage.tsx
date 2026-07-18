@@ -36,7 +36,7 @@ export default function LandingPage() {
       title: "Your second brain,",
       subtitle: "without the friction.",
       description:
-        "Native sync across devices. Zero folder mess. Intelligent resurfacing that brings the right note back when you need it. Built for thinkers coming from Obsidian and Roam.",
+        "Native sync across devices. Zero folder mess. Intelligent resurfacing that brings the right note back when you need it.",
       align: "left" as const,
       actions: [
         { label: "Start for free", variant: "primary" as const, onClick: () => openAuth() },
@@ -90,7 +90,7 @@ export default function LandingPage() {
       title: "Your second brain,",
       subtitle: "without the friction.",
       description:
-        "Native sync across devices. Zero folder mess. Intelligent resurfacing that brings the right note back when you need it. Built for thinkers coming from Obsidian and Roam.",
+        "Native sync across devices. Zero folder mess. Intelligent resurfacing that brings the right note back when you need it.",
       align: "center" as const,
       actions: [
         { label: "Start for free", variant: "primary" as const, onClick: () => openAuth() },

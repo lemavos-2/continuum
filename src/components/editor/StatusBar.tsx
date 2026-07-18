@@ -11,18 +11,23 @@ export function StatusBar({ editor }: Props) {
   useEffect(() => {
     if (!editor) return;
     const update = () => {
-      const text = editor.getText();
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const chars = text.length;
-      const readMin = Math.max(1, Math.round(words / 200));
+      if (editor.isDestroyed) return;
+      try {
+        const text = editor.getText();
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        const readMin = Math.max(1, Math.round(words / 200));
 
-      const { from } = editor.state.selection;
-      const before = editor.state.doc.textBetween(0, from, "\n");
-      const lines = before.split("\n");
-      const line = lines.length;
-      const col = (lines[lines.length - 1]?.length ?? 0) + 1;
+        const { from } = editor.state.selection;
+        const before = editor.state.doc.textBetween(0, from, "\n");
+        const lines = before.split("\n");
+        const line = lines.length;
+        const col = (lines[lines.length - 1]?.length ?? 0) + 1;
 
-      setStats({ words, chars, line, col, readMin });
+        setStats({ words, chars, line, col, readMin });
+      } catch {
+        // editor view not ready yet; ignore
+      }
     };
     update();
     editor.on("update", update);

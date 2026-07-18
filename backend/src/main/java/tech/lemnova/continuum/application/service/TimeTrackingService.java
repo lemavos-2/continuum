@@ -162,21 +162,37 @@ public class TimeTrackingService {
     /**
      * Manually add time to an entity
      */
-    @Transactional
     public TimeEntryResponse addTime(String userId, String vaultId, AddTimeRequest request) {
-        if (request.getDurationSeconds() <= 0) {
-            throw new IllegalArgumentException("Duration must be positive");
+        if (request == null) {
+            throw new tech.lemnova.continuum.application.exception.BadRequestException("Request body is required");
+        }
+        if (request.getEntityId() == null || request.getEntityId().isBlank()) {
+            throw new tech.lemnova.continuum.application.exception.BadRequestException("entityId is required");
+        }
+        if (request.getDurationSeconds() == null || request.getDurationSeconds() <= 0) {
+            throw new tech.lemnova.continuum.application.exception.BadRequestException("durationSeconds must be positive");
+        }
+        LocalDate date = request.getDate() != null ? request.getDate() : LocalDate.now();
+
+        // Fallback vaultId from user record if missing
+        String resolvedVaultId = (vaultId != null && !vaultId.isBlank())
+                ? vaultId
+                : userRepo.findById(userId).map(User::getVaultId).orElse(null);
+        if (resolvedVaultId == null || resolvedVaultId.isBlank()) {
+            resolvedVaultId = userId; // last-resort fallback to keep @NotBlank happy
         }
 
         TimeEntry entry = TimeEntry.builder()
+                .id(java.util.UUID.randomUUID().toString().replace("-", ""))
                 .userId(userId)
                 .entityId(request.getEntityId())
-                .vaultId(vaultId)
-                .date(request.getDate())
+                .vaultId(resolvedVaultId)
+                .date(date)
                 .durationSeconds(request.getDurationSeconds())
                 .note(request.getNote())
                 .source(TimeEntrySource.MANUAL)
                 .createdAt(Instant.now())
+                .updatedAt(Instant.now())
                 .build();
 
         TimeEntry saved = timeEntryRepository.save(entry);

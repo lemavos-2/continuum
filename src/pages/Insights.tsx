@@ -225,7 +225,7 @@ export default function Insights() {
 
   const onSwipeStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
-    if (t.clientX > 96) return; // Only left edge (0-96px)
+    if (t.clientX > 160) return; // Wider edge zone for easier grab
     swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
   };
 
@@ -233,12 +233,13 @@ export default function Insights() {
     const s = swipeRef.current;
     if (!s) return;
     const t = e.changedTouches[0];
-    const dx = t.clientX - s.x; // Δx (horizontal)
-    const dy = Math.abs(t.clientY - s.y); // Δy (vertical)
-    // Opens drawer if: >50px horizontal, <80px vertical, <700ms
-    if (dx > 50 && dy < 80 && Date.now() - s.t < 700) setFilterDrawerOpen(true);
+    const dx = t.clientX - s.x;
+    const dy = Math.abs(t.clientY - s.y);
+    // More sensitive: shorter horizontal distance, longer time window
+    if (dx > 28 && dy < 100 && Date.now() - s.t < 1000) setFilterDrawerOpen(true);
     swipeRef.current = null;
   };
+
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);

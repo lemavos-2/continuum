@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { timeTrackingApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntry } from '@/hooks/useTimeTracking';
@@ -7,7 +7,7 @@ import { useTimerGoal } from '@/hooks/useTimerGoal';
 interface Props {
   /** Optional entityId filter; when omitted, aggregates across user. */
   entityId?: string;
-  /** Number of weeks to show (default 26). */
+  /** Number of weeks to show (default 52 — full year). */
   weeks?: number;
 }
 
@@ -15,7 +15,6 @@ function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Intensity is the % of the daily goal achieved. */
 function intensity(seconds: number, goalSeconds: number): number {
   if (!seconds || goalSeconds <= 0) return 0;
   const ratio = seconds / goalSeconds;
@@ -36,10 +35,10 @@ function fmtHM(s: number) {
 }
 
 const LEVEL_BG = [
-  'bg-white/[0.04]',
-  'bg-white/15',
-  'bg-white/35',
-  'bg-white/60',
+  'bg-white/[0.05]',
+  'bg-white/20',
+  'bg-white/40',
+  'bg-white/65',
   'bg-white/90',
 ];
 
@@ -51,17 +50,20 @@ interface HoverCell {
   y: number;
 }
 
-export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
+interface YearBlock {
+  year: number;
+  cols: { date: Date; key: string; seconds: number; count: number }[][];
+}
+
+export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
   const qc = useQueryClient();
   const to = useMemo(() => new Date(), []);
-  const from = useMemo(() => {
-    const d = new Date(to);
-    d.setDate(d.getDate() - weeks * 7);
-    return d;
-  }, [to, weeks]);
+  const minYear = to.getFullYear() - Math.ceil(weeks / 52);
 
   const { activeTimers, addTimeAsync, isAdding } = useTimeTracking();
   const [hover, setHover] = useState<HoverCell | null>(null);
+  const hoverRef = useRef<HoverCell | null>(null);
+  hoverRef.current = hover;
 
   const { goalMinutes, setGoal } = useTimerGoal(entityId);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -69,11 +71,15 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const [adding, setAdding] = useState(false);
   const [entryMin, setEntryMin] = useState<string>('30');
+  const [entryError, setEntryError] = useState<string | null>(null);
 
   const goalSeconds = goalMinutes * 60;
 
+  // Fetch full range from earliest year to today
+  const from = useMemo(() => new Date(minYear, 0, 1), [minYear]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['timeTracking', 'heatmap', dateKey(from), dateKey(to)],
+    queryKey: ['timeTracking', 'heatmap', dateKey(from), dateKey(to), entityId || 'all'],
     queryFn: () =>
       timeTrackingApi
         .getAllInRange(dateKey(from), dateKey(to))
@@ -86,9 +92,7 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
 
   const liveTodaySeconds = useMemo(() => {
     if (!activeTimers || activeTimers.size === 0) return 0;
-    if (entityId) {
-      return activeTimers.get(entityId)?.elapsedSeconds || 0;
-    }
+    if (entityId) return activeTimers.get(entityId)?.elapsedSeconds || 0;
     let total = 0;
     activeTimers.forEach((t) => (total += t.elapsedSeconds || 0));
     return total;
@@ -108,27 +112,37 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
     return { byDay: sec, countByDay: cnt };
   }, [data, entityId, liveTodaySeconds, todayKey]);
 
-  const grid = useMemo(() => {
-    const start = new Date(from);
-    start.setDate(start.getDate() - start.getDay());
-    const cols: { date: Date; key: string; seconds: number; count: number }[][] = [];
-    for (let w = 0; w < weeks + 1; w++) {
-      const col: { date: Date; key: string; seconds: number; count: number }[] = [];
-      for (let d = 0; d < 7; d++) {
-        const day = new Date(start);
-        day.setDate(start.getDate() + w * 7 + d);
-        const key = dateKey(day);
-        col.push({
-          date: day,
-          key,
-          seconds: byDay.get(key) || 0,
-          count: countByDay.get(key) || 0,
-        });
+  // Build per-year column groups. Years shown: from earliestActivityYear..currentYear.
+  // If no data, just show the current year.
+  const yearBlocks: YearBlock[] = useMemo(() => {
+    const years = new Set<number>([to.getFullYear()]);
+    byDay.forEach((_, k) => years.add(parseInt(k.slice(0, 4), 10)));
+    const sorted = [...years].sort((a, b) => b - a);
+
+    return sorted.map((year) => {
+      const start = new Date(year, 0, 1);
+      start.setDate(start.getDate() - start.getDay()); // align to Sunday
+      const end = new Date(year, 11, 31);
+      const numWeeks = Math.ceil((end.getTime() - start.getTime()) / (7 * 86400 * 1000)) + 1;
+      const cols: YearBlock['cols'] = [];
+      for (let w = 0; w < numWeeks; w++) {
+        const col: YearBlock['cols'][number] = [];
+        for (let d = 0; d < 7; d++) {
+          const day = new Date(start);
+          day.setDate(start.getDate() + w * 7 + d);
+          const key = dateKey(day);
+          col.push({
+            date: day,
+            key,
+            seconds: byDay.get(key) || 0,
+            count: countByDay.get(key) || 0,
+          });
+        }
+        cols.push(col);
       }
-      cols.push(col);
-    }
-    return cols;
-  }, [from, weeks, byDay, countByDay]);
+      return { year, cols };
+    });
+  }, [byDay, countByDay, to]);
 
   const totalSeconds = useMemo(() => {
     let t = 0;
@@ -145,22 +159,56 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
   };
 
   const submitEntry = async () => {
+    setEntryError(null);
     if (!entityId) return;
     const minutes = parseInt(entryMin, 10);
-    if (!Number.isFinite(minutes) || minutes <= 0) return;
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      setEntryError('Enter a positive number of minutes');
+      return;
+    }
     try {
       await addTimeAsync({
         entityId,
         date: dateKey(new Date()),
         durationSeconds: minutes * 60,
       });
-      // Force refresh so it appears instantly on the heatmap.
       await qc.invalidateQueries({ queryKey: ['timeTracking'] });
       setAdding(false);
       setEntryMin('30');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to add entry:', err);
+      setEntryError(err?.response?.data?.message || err?.message || 'Failed to add entry');
     }
+  };
+
+  // Dismiss tap-tooltip when tapping outside
+  useEffect(() => {
+    if (!hover) return;
+    const close = (e: Event) => {
+      const tgt = e.target as HTMLElement;
+      if (!tgt.closest?.('[data-heatmap-cell]')) setHover(null);
+    };
+    document.addEventListener('touchstart', close, { passive: true });
+    document.addEventListener('mousedown', close);
+    return () => {
+      document.removeEventListener('touchstart', close);
+      document.removeEventListener('mousedown', close);
+    };
+  }, [hover]);
+
+  const openCell = (
+    el: HTMLElement,
+    cell: { key: string; seconds: number; count: number; date: Date },
+  ) => {
+    if (cell.date > to) return;
+    const rect = el.getBoundingClientRect();
+    setHover({
+      key: cell.key,
+      seconds: cell.seconds,
+      count: cell.count,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    });
   };
 
   return (
@@ -207,7 +255,10 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
           )}
           {entityId && (
             <button
-              onClick={() => setAdding((v) => !v)}
+              onClick={() => {
+                setEntryError(null);
+                setAdding((v) => !v);
+              }}
               className="text-[10px] font-mono text-white/50 hover:text-white border border-white/10 hover:border-white/25 rounded px-1.5 py-0.5 transition"
               title="Add a manual entry"
             >
@@ -218,66 +269,84 @@ export function TimeHeatmap({ entityId, weeks = 26 }: Props) {
       </div>
 
       {adding && entityId && (
-        <div className="mb-4 flex items-center gap-2 flex-wrap rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
-          <span className="px-2 py-1 text-[11px] font-mono text-white/60 border border-white/10 rounded">
-            today · {dateKey(new Date())}
-          </span>
-          <input
-            type="number"
-            min={1}
-            value={entryMin}
-            onChange={(e) => setEntryMin(e.target.value)}
-            placeholder="minutes"
-            className="w-20 px-2 py-1 text-[11px] font-mono bg-white/[0.04] border border-white/15 rounded text-white text-right focus:outline-none focus:border-white/30"
-          />
-          <span className="text-[10px] font-mono text-white/40">min</span>
-          <button
-            onClick={submitEntry}
-            disabled={isAdding}
-            className="ml-auto px-2.5 py-1 text-[11px] font-mono bg-white text-black rounded hover:bg-white/90 transition disabled:opacity-50"
-          >
-            {isAdding ? '...' : 'Add'}
-          </button>
+        <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2 py-1 text-[11px] font-mono text-white/60 border border-white/10 rounded">
+              today · {dateKey(new Date())}
+            </span>
+            <input
+              type="number"
+              min={1}
+              value={entryMin}
+              onChange={(e) => setEntryMin(e.target.value)}
+              placeholder="minutes"
+              className="w-20 px-2 py-1 text-[11px] font-mono bg-white/[0.04] border border-white/15 rounded text-white text-right focus:outline-none focus:border-white/30"
+            />
+            <span className="text-[10px] font-mono text-white/40">min</span>
+            <button
+              onClick={submitEntry}
+              disabled={isAdding}
+              className="ml-auto px-2.5 py-1 text-[11px] font-mono bg-white text-black rounded hover:bg-white/90 transition disabled:opacity-50"
+            >
+              {isAdding ? '...' : 'Add'}
+            </button>
+          </div>
+          {entryError && (
+            <p className="mt-2 text-[10px] font-mono text-red-400">{entryError}</p>
+          )}
         </div>
       )}
 
       {isLoading ? (
         <div className="h-32" />
       ) : (
-        <div className="overflow-x-auto relative">
-          <div className="flex gap-[3px] min-w-fit">
-            {grid.map((col, i) => (
-              <div key={i} className="flex flex-col gap-[3px]">
-                {col.map((cell) => {
-                  const isFuture = cell.date > to;
-                  const lvl = intensity(cell.seconds, goalSeconds);
-                  const isToday = cell.key === todayKey;
-                  return (
-                    <div
-                      key={cell.key}
-                      onMouseEnter={(e) => {
-                        if (isFuture) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setHover({
-                          key: cell.key,
-                          seconds: cell.seconds,
-                          count: cell.count,
-                          x: rect.left + rect.width / 2,
-                          y: rect.top,
-                        });
-                      }}
-                      onMouseLeave={() => setHover(null)}
-                      className={`w-[11px] h-[11px] rounded-[2px] ${
-                        isFuture ? 'bg-transparent' : LEVEL_BG[lvl]
-                      } border ${
-                        isToday ? 'border-white/40' : 'border-white/[0.04]'
-                      } cursor-pointer`}
-                    />
-                  );
-                })}
+        <div className="relative space-y-5">
+          {yearBlocks.map((block) => (
+            <div key={block.year}>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">
+                  {block.year}
+                </span>
+                <span className="h-px flex-1 bg-white/[0.06]" />
               </div>
-            ))}
-          </div>
+              <div className="overflow-x-auto -mx-1 px-1">
+                <div className="flex gap-[4px] min-w-fit">
+                  {block.cols.map((col, i) => (
+                    <div key={i} className="flex flex-col gap-[4px]">
+                      {col.map((cell) => {
+                        const isFuture = cell.date > to;
+                        const inYear = cell.date.getFullYear() === block.year;
+                        const lvl = intensity(cell.seconds, goalSeconds);
+                        const isToday = cell.key === todayKey;
+                        if (!inYear) {
+                          return <div key={cell.key} className="w-[14px] h-[14px]" />;
+                        }
+                        return (
+                          <button
+                            type="button"
+                            key={cell.key}
+                            data-heatmap-cell
+                            onMouseEnter={(e) => openCell(e.currentTarget, cell)}
+                            onMouseLeave={() => setHover(null)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openCell(e.currentTarget, cell);
+                            }}
+                            disabled={isFuture}
+                            className={`w-[14px] h-[14px] sm:w-[13px] sm:h-[13px] rounded-[3px] ${
+                              isFuture ? 'bg-transparent' : LEVEL_BG[lvl]
+                            } border ${
+                              isToday ? 'border-white/60' : 'border-white/[0.04]'
+                            } ${isFuture ? '' : 'hover:ring-1 hover:ring-white/40 active:scale-110'} transition-transform`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
 
           {hover && (() => {
             const W = 180;

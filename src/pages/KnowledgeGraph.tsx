@@ -171,6 +171,28 @@ export default function KnowledgeGraph() {
   const tappedAtRef = useRef(0);
   const focusModeRef = useRef(false);
   const clusterRef = useRef(false);
+  const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
+
+  const cancelPendingOpen = useCallback(() => {
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+    pressOriginRef.current = null;
+  }, []);
+
+  const schedulePanelOpen = useCallback((node: GraphNode) => {
+    if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+    openTimeoutRef.current = setTimeout(() => {
+      openTimeoutRef.current = null;
+      pressOriginRef.current = null;
+      // call focusNode via ref to avoid stale closure issues
+      focusNodeRef.current?.(node);
+    }, 700);
+  }, []);
+
+  const focusNodeRef = useRef<((n: GraphNode) => void) | null>(null);
 
   // Re-aquecer a simulação ao mudar seleções
   useEffect(() => { selectedRef.current = selectedNode; alphaRef.current = Math.max(alphaRef.current, 0.4); }, [selectedNode]);
@@ -655,6 +677,12 @@ export default function KnowledgeGraph() {
     });
   }, [allEntities, openInspector]);
 
+  // keep ref in sync so the delayed open uses the latest focusNode
+  useEffect(() => { focusNodeRef.current = focusNode; }, [focusNode]);
+
+  // clear any pending open timeout on unmount
+  useEffect(() => () => cancelPendingOpen(), [cancelPendingOpen]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -662,9 +690,11 @@ export default function KnowledgeGraph() {
     const node = findNodeAt(sx, sy);
     if (node) {
       draggingRef.current = node;
-      focusNode(node);
       alphaRef.current = Math.max(alphaRef.current, 0.5); // Acorda a simulação ao tocar
+      pressOriginRef.current = { x: e.clientX, y: e.clientY };
+      schedulePanelOpen(node);
     } else {
+      cancelPendingOpen();
       panningRef.current = true;
       setSelectedNode(null);
       closeInspector();
@@ -678,6 +708,12 @@ export default function KnowledgeGraph() {
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
 
     if (draggingRef.current) {
+      // Cancel pending panel open if user starts actually dragging
+      if (pressOriginRef.current) {
+        const ddx = e.clientX - pressOriginRef.current.x;
+        const ddy = e.clientY - pressOriginRef.current.y;
+        if (ddx * ddx + ddy * ddy > 36) cancelPendingOpen();
+      }
       const w = screenToWorld(sx, sy);
       draggingRef.current.x = w.x;
       draggingRef.current.y = w.y;
@@ -777,12 +813,16 @@ export default function KnowledgeGraph() {
       return;
     }
     tappedAtRef.current = now;
-    if (node) { 
-      draggingRef.current = node; 
-      focusNode(node); 
+    if (node) {
+      draggingRef.current = node;
       alphaRef.current = Math.max(alphaRef.current, 0.5);
+      pressOriginRef.current = { x: touch.clientX, y: touch.clientY };
+      schedulePanelOpen(node);
     }
-    else { panningRef.current = true; setSelectedNode(null); closeInspector(); }
+    else {
+      cancelPendingOpen();
+      panningRef.current = true; setSelectedNode(null); closeInspector();
+    }
     lastMouseRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
@@ -810,6 +850,11 @@ export default function KnowledgeGraph() {
     if (!rect) return;
     const sx = touch.clientX - rect.left, sy = touch.clientY - rect.top;
     if (draggingRef.current) {
+      if (pressOriginRef.current) {
+        const ddx = touch.clientX - pressOriginRef.current.x;
+        const ddy = touch.clientY - pressOriginRef.current.y;
+        if (ddx * ddx + ddy * ddy > 36) cancelPendingOpen();
+      }
       const w = screenToWorld(sx, sy);
       draggingRef.current.x = w.x; draggingRef.current.y = w.y;
       draggingRef.current.vx = 0; draggingRef.current.vy = 0;

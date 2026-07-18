@@ -70,7 +70,7 @@ export default function FeaturesSection() {
               transition={{ duration: 0.65, ease: EASE, delay: 0.1 }}
               className="font-display text-[clamp(2rem,4vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-white"
             >
-              The power of Roam,{' '}
+              The power of entities,{' '}
               <span className="italic text-[#888888]">the simplicity you wished for.</span>
             </motion.h2>
           </div>

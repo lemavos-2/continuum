@@ -22,7 +22,7 @@ export default function Activities() {
               <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">Tracking</p>
               <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("activities_title")}</h1>
             </div>
-            <p className="mt-3 text-sm text-white/40">Track your daily activities and task history.</p>
+            <p className="mt-3 text-sm text-white/40">{t("activities_subtitle")}</p>
           </header>
 
           <div className="sticky top-14 z-10 -mx-4 border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">

@@ -589,17 +589,29 @@ export default function Dashboard() {
               Here's what's happening across your knowledge graph.
             </p>
           </div>
-          <Button onClick={() => void createNote()} disabled={creating} className="gap-2 self-start sm:self-auto">
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {creating ? "Creating…" : "New note"}
-          </Button>
+          <div className="flex items-center gap-1.5 self-start sm:self-auto">
+            <Button size="sm" variant="outline" onClick={() => navigate("/activities")} className="gap-1 h-7 px-2.5 text-[11px]">
+              <Flame className="h-3 w-3" />
+              Activities
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/projects")} className="gap-1 h-7 px-2.5 text-[11px]">
+              <Clock className="h-3 w-3" />
+              Project
+            </Button>
+            <Button size="sm" onClick={() => void createNote()} disabled={creating} className="gap-1 h-7 px-2.5 text-[11px]">
+              {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              {creating ? "Creating…" : "New note"}
+            </Button>
+          </div>
+
+
         </header>
 
 
         {/* CONTADORES / CARDS KPI */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard icon={FileText} label={t("notes_title")} value={totalNotes} hint={isUnlimited(limits.maxNotes) ? t("unlimited") || "Unlimited" : `of ${limits.maxNotes}`} />
-          <StatCard icon={Tag} label={t("entities_title")} value={totalEntities} hint={isUnlimited(limits.maxEntities) ? t("unlimited") || "Unlimited" : `of ${limits.maxEntities}`} />
+          <StatCard icon={FileText} label={t("notes_title")} value={totalNotes} hint={isUnlimited(limits.maxNotes) ? t("common_unlimited") : `${t("common_of")} ${limits.maxNotes}`} />
+          <StatCard icon={Tag} label={t("entities_title")} value={totalEntities} hint={isUnlimited(limits.maxEntities) ? t("common_unlimited") : `${t("common_of")} ${limits.maxEntities}`} />
           <StatCard icon={Network} label="Graph nodes" value={graphNodeCount} hint="In your network" />
           <StatCard icon={HardDrive} label="Storage" value={storageUsed} hint={`of ${storageLimit}`} />
         </section>
@@ -614,7 +626,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">{t("dashboard_signal")}</p>
-                    <h2 className="mt-1 font-serif text-2xl text-white">{t("Dashboard score evolution") || "Score evolution"}</h2>
+                    <h2 className="mt-1 font-serif text-2xl text-white">{t("dashboard_scoreEvolution")}</h2>
                     <p className="mt-1 text-xs text-white/50">Knowledge graph gravity index</p>
                   </div>
                 </div>

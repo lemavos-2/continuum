@@ -160,7 +160,8 @@ export default function Notes() {
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const onSwipeStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
-    if (t.clientX > 96) return;
+    // Wider edge zone (160px) so it's easier to grab on mobile.
+    if (t.clientX > 160) return;
     swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
   };
   const onSwipeEnd = (e: React.TouchEvent) => {
@@ -169,9 +170,11 @@ export default function Notes() {
     const t = e.changedTouches[0];
     const dx = t.clientX - s.x;
     const dy = Math.abs(t.clientY - s.y);
-    if (dx > 50 && dy < 80 && Date.now() - s.t < 700) setFilterDrawerOpen(true);
+    // More sensitive: shorter distance, longer time window.
+    if (dx > 28 && dy < 100 && Date.now() - s.t < 1000) setFilterDrawerOpen(true);
     swipeRef.current = null;
   };
+
 
   /* Load */
   const fetchData = async () => {

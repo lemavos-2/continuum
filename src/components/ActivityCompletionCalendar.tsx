@@ -1,121 +1,110 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameDay,
-} from 'date-fns';
-import { Check } from "@/lib/heroicons";
-import { Button } from '@/components/ui/button';
-import { entitiesApi } from '@/lib/api';
-import { useQueryClient } from '@tanstack/react-query';
+  Calendar as Cal,
+  CalendarCell,
+  CalendarGrid,
+  CalendarGridBody,
+  CalendarGridHeader,
+  CalendarHeaderCell,
+  Heading,
+  Button as RACButton,
+} from "react-aria-components";
+import { getLocalTimeZone, today } from "@internationalized/date";
+import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
+import { ArrowRight } from "@/lib/heroicons";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ActivityCompletionCalendarProps {
   entityId: string;
   trackingDates?: string[];
   onMarkComplete?: () => void;
+  onOpenDetail?: () => void;
 }
 
 /**
- * Mini completion calendar for activities/activities
- * Shows a 4-week view of completions
+ * Inline preview calendar for activities — visually aligned with
+ * ActivityAnalyticsCalendar (RAC + monospace headers) but compact.
  */
 export function ActivityCompletionCalendar({
   entityId,
   trackingDates = [],
-  onMarkComplete
+  onMarkComplete,
+  onOpenDetail,
 }: ActivityCompletionCalendarProps) {
-  const queryClient = useQueryClient();
-  
-  // Build tracking dates set for quick lookup
-  const completionDates = useMemo(() => {
-    const dates = new Set<string>();
-    trackingDates.forEach(date => {
-      const dateStr = date.split('T')[0]; // Get YYYY-MM-DD
-      dates.add(dateStr);
-    });
-    return dates;
+  void entityId;
+  void onMarkComplete;
+
+  const completionSet = useMemo(() => {
+    const s = new Set<string>();
+    trackingDates.forEach((d) => s.add(d.split("T")[0]));
+    return s;
   }, [trackingDates]);
 
-  // Get last 4 weeks from today
-  const fourWeeksAgo = useMemo(() => {
-    const today = new Date();
-    return new Date(today.getTime() - 28 * 24 * 60 * 60 * 1000);
-  }, []);
-
-  const lastFourWeeks = useMemo(() => {
-    const start = startOfWeek(fourWeeksAgo);
-    const end = new Date();
-    return eachDayOfInterval({ start, end });
-  }, [fourWeeksAgo]);
-
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const isTrackedToday = completionDates.has(todayStr);
-
-  const handleMarkComplete = async () => {
-    try {
-      await entitiesApi.track(entityId);
-      queryClient.invalidateQueries({ queryKey: ['entities'] });
-      onMarkComplete?.();
-    } catch (error) {
-      console.error('Failed to mark activity as complete:', error);
-    }
-  };
+  const now = today(getLocalTimeZone());
 
   return (
-    <div className="w-full max-w-[240px] mx-auto rounded-2xl border border-white/10 bg-zinc-950/50 p-3">
-      <div className="grid grid-cols-7 gap-0.5 text-[10px]">
-        {['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa'].map(day => (
-          <div key={day} className="text-center font-medium text-zinc-500">
-            {day}
-          </div>
-        ))}
+    <div className="w-full border border-white/5 bg-white/[0.01] rounded-sm p-3 sm:p-4 md:p-5">
+      <Cal aria-label="Activity calendar" className="w-full">
+        <header className="flex items-center gap-1 pb-2 sm:pb-3">
+          <RACButton
+            slot="previous"
+            className="flex size-8 items-center justify-center rounded-sm text-white/40 outline-none transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </RACButton>
+          <Heading className="grow text-center font-mono text-[11px] uppercase tracking-[0.28em] text-white/70" />
+          <RACButton
+            slot="next"
+            className="flex size-8 items-center justify-center rounded-sm text-white/40 outline-none transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </RACButton>
+        </header>
 
-        {lastFourWeeks.map((date, index) => {
-          const dateStr = format(date, 'yyyy-MM-dd');
-          const isCompleted = completionDates.has(dateStr);
-          const isToday = isSameDay(date, new Date());
+        <CalendarGrid className="w-full [&_table]:w-full [&_table]:border-collapse">
+          <CalendarGridHeader>
+            {(day) => (
+              <CalendarHeaderCell className="pb-1.5 font-mono text-[9px] sm:text-[9px] md:text-[10px] uppercase tracking-widest text-white/30">
+                {day}
+              </CalendarHeaderCell>
+            )}
+          </CalendarGridHeader>
+          <CalendarGridBody className="[&_td]:p-0.5 [&_tr:not(:last-child)]:mb-1">
+            {(date) => {
+              const dateStr = date.toString();
+              const isCompleted = completionSet.has(dateStr);
+              const isToday = date.compare(now) === 0;
+              return (
+                <CalendarCell
+                  date={date}
+                  className={cn(
+                    "relative mx-auto flex aspect-square w-full max-w-9 sm:max-w-10 md:max-w-11 items-center justify-center rounded-sm border text-[11px] outline-none transition-colors",
+                    "data-[outside-month]:opacity-30 data-[focus-visible]:ring-1 data-[focus-visible]:ring-white/40",
+                    isCompleted
+                      ? "border-white/30 bg-white/15 text-white"
+                      : "border-white/5 bg-transparent text-white/60 hover:bg-white/5 hover:text-white",
+                    isToday && !isCompleted && "border-white/40 text-white",
+                  )}
+                />
+              );
+            }}
+          </CalendarGridBody>
+        </CalendarGrid>
+      </Cal>
 
-          return (
-            <div
-              key={index}
-              className={
-                `aspect-square rounded-sm overflow-hidden relative transition-all border ${
-                isCompleted
-                  ? 'border-zinc-500/50 text-zinc-400'
-                  : isToday
-                  ? 'bg-zinc-500/10 border-zinc-500/50 text-zinc-400'
-                  : 'bg-zinc-900/50 border-zinc-700 text-zinc-600'
-              }`
-              }
-              title={format(date, 'MMM d')}
-            >
-              {isCompleted ? (
-                <div className="absolute inset-0 bg-zinc-500/20 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-zinc-400" />
-                </div>
-              ) : isToday ? (
-                <span className="block text-center leading-[1.1rem]">•</span>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex items-center justify-between pt-2">
-        <div className="text-[11px] text-zinc-400">
-          <span className="font-semibold text-zinc-400">{trackingDates.length}</span> sequence
+      <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
+        <div className="font-mono text-[11px] uppercase tracking-widest text-white/40">
+          <span className="text-white/70">{trackingDates.length}</span> tracked
         </div>
         <Button
           size="sm"
-          variant={isTrackedToday ? 'default' : 'outline'}
-          className="gap-2 h-7 px-3 text-[11px]"
-          onClick={handleMarkComplete}
-          disabled={isTrackedToday}
+          variant="outline"
+          className="gap-1.5 h-7 px-3 text-[11px]"
+          onClick={onOpenDetail}
         >
-          <Check className="w-3 h-3" />
-          {isTrackedToday ? 'Done Today' : 'Complete'}
+          Open detail
+          <ArrowRight className="w-3 h-3" />
         </Button>
       </div>
     </div>

@@ -358,29 +358,22 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                         </div>
                       </div>
 
-                      {displayEntity.type === "ACTIVITY" && stats && (
+                      {displayEntity.type === "ACTIVITY" && (
                         <div className="border border-white/5 bg-white/[0.01] rounded-sm p-4">
                           <h3 className="mb-3 text-[10px] uppercase tracking-[0.28em] text-white/40 font-mono">Activity Metrics</h3>
-                          <div className="grid grid-cols-3 gap-3 text-center text-[10px] font-mono">
+                          <div className="grid grid-cols-2 gap-3 text-center text-[10px] font-mono">
                             <div>
-                              <div className="font-semibold text-white">{stats.currentStreak}</div>
-                              <p className="mt-1 text-white/40">Streak</p>
-                            </div>
-                            <div>
-                              <div className="font-semibold text-white">{stats.longestStreak}</div>
-                              <p className="mt-1 text-white/40">Longest</p>
+                              <div className="font-semibold text-white">{activityTotalCompletions}</div>
+                              <p className="mt-1 text-white/40">Total tracked</p>
                             </div>
                             <div>
                               <div className="font-semibold text-white">{Math.round(weeklyCompletionRate)}%</div>
                               <p className="mt-1 text-white/40">Weekly</p>
                             </div>
                           </div>
-                          <div className="mt-3 border-t border-white/5 pt-3 text-center text-[10px] font-mono text-white/40">
-                            <span>Total tracked: </span>
-                            <span className="font-semibold text-white/60">{activityTotalCompletions}</span>
-                          </div>
                         </div>
                       )}
+
 
                       <div className="border border-white/5 bg-white/[0.01] rounded-sm p-4">
                         <h3 className="mb-3 text-[10px] uppercase tracking-[0.28em] text-white/40 font-mono">Connected Notes</h3>

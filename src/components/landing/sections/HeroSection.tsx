@@ -62,7 +62,7 @@ export default function HeroSection() {
               {...fadeUp(0.3)}
               className="font-body text-[1.0625rem] leading-[1.75] text-[#888888] mb-10 max-w-md"
             >
-              Obsidian and Roam are powerful, but they demand too much from you. Continuum gives you linked thinking, native sync across devices, and intelligent resurfacing — all in a clean, mobile-first experience with zero folders to manage.
+              Continuum gives you linked thinking, native sync across devices, and intelligent resurfacing — all in a clean, mobile-first experience with zero folders to manage.
             </motion.p>
 
             {/* CTAs */}

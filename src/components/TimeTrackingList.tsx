@@ -201,16 +201,19 @@ export function TimeTrackingList({
                           entityId={entity.id}
                           trackingDates={entity.trackingDates}
                           onMarkComplete={() => queryClient.invalidateQueries({ queryKey: ['entities'] })}
+                          onOpenDetail={() => navigate(`/entities/${entity.id}`)}
                         />
                       )}
-                      <div>
-                        <button
-                          onClick={() => navigate(`/entities/${entity.id}`)}
-                          className="text-xs px-3 py-1.5 rounded-md border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
-                        >
-                          Open detail →
-                        </button>
-                      </div>
+                      {entity.type !== 'ACTIVITY' && (
+                        <div>
+                          <button
+                            onClick={() => navigate(`/entities/${entity.id}`)}
+                            className="text-xs px-3 py-1.5 rounded-md border border-white/10 text-white/70 hover:text-white hover:border-white/30 transition-colors"
+                          >
+                            Open detail →
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

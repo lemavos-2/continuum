@@ -270,6 +270,8 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
           heading: { levels: [1, 2, 3, 4, 5, 6] },
           codeBlock: false,
           dropcursor: false,
+          link: false,
+          underline: false,
         }),
         Underline,
         Highlight.configure({ multicolor: false }),
