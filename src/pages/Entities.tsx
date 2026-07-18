@@ -243,15 +243,13 @@ export default function Entities() {
       });
   }, [entities, selectedType, search, sortBy, sortOrder]);
 
-  const viewLabel = selectedType ? typeLabels[selectedType] : "All Atoms";
-
   const SidebarContent = (
     <div className="space-y-7">
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Index</p>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("notes_index")}</p>
         <div className="space-y-0.5">
           <NavItem
-            label="All entities"
+            label={t("entities_all")}
             count={counts.all}
             active={!selectedType}
             onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
@@ -260,15 +258,15 @@ export default function Entities() {
       </div>
 
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">Types</p>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("notes_types")}</p>
         <div className="space-y-0.5">
-          {types.map((t) => (
+          {types.map((tp) => (
             <NavItem
-              key={t}
-              label={typeLabels[t]}
-              count={counts.byType[t] || 0}
-              active={selectedType === t}
-              onClick={() => { setSelectedType(t); setFilterDrawerOpen(false); }}
+              key={tp}
+              label={t(`entities_type_${tp}`) ?? typeLabels[tp]}
+              count={counts.byType[tp] || 0}
+              active={selectedType === tp}
+              onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
             />
           ))}
         </div>
