@@ -309,11 +309,11 @@ export default function Entities() {
             <header className="mb-8">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{viewLabel}</p>
-                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("entities_title")}</h1>
-                  <p className="mt-2 text-sm text-white/50">
-                    The atoms of your knowledge graph.
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">
+                    {selectedType ? (t(`entities_type_${selectedType}`) ?? typeLabels[selectedType]) : t("entities_allAtoms")}
                   </p>
+                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("entities_title")}</h1>
+                  <p className="mt-2 text-sm text-white/50">{t("entities_tagline")}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <Button
@@ -321,21 +321,17 @@ export default function Entities() {
                     size="icon"
                     onClick={() => setFilterDrawerOpen(true)}
                     className="lg:hidden h-9 w-9 p-0 text-white/80"
-                    aria-label="Open filters"
+                    aria-label={t("notes_filters")}
                   >
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
-                  {selectMode ? (
+                  {selectMode && (
                     <Button size="sm" className="gap-2" onClick={exitSelectMode}>
-                      <X className="h-3.5 w-3.5" /> Done
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="gap-2" onClick={() => setSelectMode(true)}>
-                      <Check className="h-3.5 w-3.5" /> Select
+                      <X className="h-3.5 w-3.5" /> {t("select_done")}
                     </Button>
                   )}
                   <Button size="sm" className="gap-2" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-3.5 w-3.5" /> New entity
+                    <Plus className="h-3.5 w-3.5" /> {t("entities_new")}
                   </Button>
                 </div>
 
