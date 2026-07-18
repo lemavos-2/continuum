@@ -91,6 +91,43 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
   );
 }
 
+/* ── Row with long-press → select ────────────────────────────────────── */
+interface EntityRowProps {
+  selectMode: boolean;
+  selected: boolean;
+  onLongPress: () => void;
+  onOpen: () => void;
+  children: React.ReactNode;
+}
+function EntityRow({ selectMode, selected, onLongPress, onOpen, children }: EntityRowProps) {
+  const press = useLongPress({ onLongPress, onClick: onOpen });
+  return (
+    <li>
+      <div
+        role="button"
+        tabIndex={0}
+        {...press}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpen();
+          }
+        }}
+        className={cn(
+          "group relative flex w-full cursor-pointer select-none items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02] focus:outline-none",
+          selected && "bg-white/[0.04]"
+        )}
+      >
+        <span
+          aria-hidden
+          className="absolute left-0 top-1/2 h-8 w-px -translate-x-3 -translate-y-1/2 bg-white opacity-0 transition-opacity group-hover:opacity-100"
+        />
+        {children}
+      </div>
+    </li>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────────────────── */
 
 export default function Entities() {
