@@ -28,6 +28,7 @@ import { InsightSignalBadge } from "@/components/InsightSignal";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLongPress } from "@/hooks/useLongPress";
 
 interface NoteSummary {
   id: string;
