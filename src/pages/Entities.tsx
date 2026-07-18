@@ -20,6 +20,7 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLongPress } from "@/hooks/useLongPress";
 import type { EntityType } from "@/types";
 
 interface Entity {
