@@ -238,7 +238,7 @@ export default function Entities() {
       const activities = targets.filter((e) => e.type === "ACTIVITY").length;
       applyUsageDelta({ entitiesCount: -targets.length, activitiesCount: -activities });
       void refreshUsage();
-      toast({ title: `${targets.length} ${targets.length === 1 ? "entity" : "entities"} removed` });
+      toast({ title: t(targets.length === 1 ? "entities_countRemoved_one" : "entities_countRemoved", { n: targets.length }) });
       exitSelectMode();
     } catch {
       toast({ title: "Error deleting entities", variant: "destructive" });
