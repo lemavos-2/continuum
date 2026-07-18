@@ -641,7 +641,7 @@ export default function Notes() {
                                 selectMode={selectMode}
                                 selected={selected}
                                 onLongPress={() => { setSelectMode(true); toggleSelect(note.id); }}
-                                onClick={() => selectMode ? toggleSelect(note.id) : navigate(`/notes/${note.id}`)}
+                                onOpen={() => selectMode ? toggleSelect(note.id) : navigate(`/notes/${note.id}`)}
                               >
                                   <span
                                     aria-hidden
