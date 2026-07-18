@@ -475,7 +475,7 @@ export default function Notes() {
         {/* Mobile filter drawer */}
         <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
           <SheetContent side="left" className="w-[280px] border-white/10 bg-black/95 p-6">
-            <p className="mb-6 font-serif text-2xl text-white">Filters</p>
+            <p className="mb-6 font-serif text-2xl text-white">{t("notes_filters")}</p>
             {SidebarContent}
           </SheetContent>
         </Sheet>
@@ -501,21 +501,17 @@ export default function Notes() {
                     size="icon"
                     onClick={() => setFilterDrawerOpen(true)}
                     className="lg:hidden h-9 w-9 p-0 text-white/80"
-                    aria-label="Open filters"
+                    aria-label={t("notes_filters")}
                   >
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
-                  {selectMode ? (
+                  {selectMode && (
                     <Button size="sm" className="gap-2" onClick={exitSelectMode}>
-                      <X className="h-3.5 w-3.5" /> Done
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="gap-2" onClick={() => setSelectMode(true)}>
-                      <Check className="h-3.5 w-3.5" /> Select
+                      <X className="h-3.5 w-3.5" /> {t("select_done")}
                     </Button>
                   )}
                   <Button onClick={handleCreate} className="gap-2" disabled={creating}>
-                    <Plus className="h-3.5 w-3.5" /> {creating ? "Creating..." : "New note"}
+                    <Plus className="h-3.5 w-3.5" /> {creating ? t("notes_creating") : t("notes_new")}
                   </Button>
                 </div>
 
@@ -539,27 +535,26 @@ export default function Notes() {
             {/* Toolbar de Contagem e Controles de Ordenação */}
             <div className="flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-6 text-[11px] text-white/40">
               <div>
-                Showing {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
+                {t(filtered.length === 1 ? "list_showing_entries_one" : "list_showing_entries", { n: filtered.length })}
               </div>
               <div className="flex items-center gap-4 font-mono">
                 <div className="flex items-center gap-1.5">
-                  <span>Sort by:</span>
-                  <button 
+                  <span>{t("list_sortBy")}</span>
+                  <button
                     onClick={() => setSortBy(sortBy === "createdAt" ? "updatedAt" : "createdAt")}
                     className="text-white/70 hover:text-white transition-colors"
                   >
-                    [{sortBy === "createdAt" ? "Creation" : "Modification"}]
+                    [{sortBy === "createdAt" ? t("list_sort_creation") : t("list_sort_modification")}]
                   </button>
                 </div>
-                <button 
+                <button
                   onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
                   className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors"
                 >
-                  {/* Ícone customizado em SVG puro para evitar problemas de re-export de bundles */}
                   <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
                   </svg>
-                  {sortOrder === "desc" ? "Recent" : "Oldest"}
+                  {sortOrder === "desc" ? t("list_sort_recent") : t("list_sort_oldest")}
                 </button>
               </div>
             </div>
@@ -568,7 +563,7 @@ export default function Notes() {
             {selectMode && (
               <div className="sticky top-[7.5rem] z-20 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-white/15 bg-black/80 px-3 py-2.5 backdrop-blur-xl">
                 <span className="text-sm text-white/70">
-                  {selectedIds.size} selected
+                  {t("select_selected", { n: selectedIds.size })}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -579,14 +574,14 @@ export default function Notes() {
                     }}
                     className="rounded-sm border border-white/15 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/40 hover:text-white"
                   >
-                    {filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id)) ? "Clear all" : "Select all"}
+                    {filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id)) ? t("select_clearAll") : t("select_all")}
                   </button>
                   <button
                     onClick={() => setBulkDeleteOpen(true)}
                     disabled={selectedIds.size === 0}
                     className="inline-flex items-center gap-1.5 rounded-sm border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-40"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                    <Trash2 className="h-3.5 w-3.5" /> {t("common_delete")}
                   </button>
                 </div>
               </div>
@@ -602,14 +597,14 @@ export default function Notes() {
               <div className="py-24 text-center">
                 <p className="font-serif text-2xl italic text-white/40">
                   {search
-                    ? "Nothing matches that search."
+                    ? t("notes_empty_search")
                     : view === "favorites"
-                      ? "You haven't pinned anything yet."
+                      ? t("notes_empty_favorites")
                       : view === "recent"
-                        ? "Nothing written in the last few days."
+                        ? t("notes_empty_recent")
                         : view === "archived"
-                          ? "No dormant entries — your archive is alive."
-                          : "Your archive is still empty."}
+                          ? t("notes_empty_archived")
+                          : t("notes_empty_all")}
                 </p>
               </div>
             ) : (
