@@ -456,13 +456,13 @@ export default function Notes() {
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div className="rounded-md border border-dashed border-white/30 px-10 py-8 text-center">
               <Upload className="mx-auto mb-3 h-6 w-6 text-white/70" />
-              <p className="text-sm text-white/80">Release to save in Vault</p>
+              <p className="text-sm text-white/80">{t("notes_dropToVault")}</p>
             </div>
           </div>
         )}
         {uploading && (
           <div className="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-md border border-white/10 bg-black/90 px-3 py-2 text-[11px] text-white/70 backdrop-blur-xl">
-            <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
+            <Loader2 className="h-3 w-3 animate-spin" /> {t("notes_uploading")}
           </div>
         )}
 
