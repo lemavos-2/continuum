@@ -702,7 +702,7 @@ export default function Notes() {
                                           ? "text-white"
                                           : "text-white/20 opacity-0 hover:text-white/70 group-hover:opacity-100"
                                       )}
-                                      aria-label={note.favorite ? "Unfavorite" : "Favorite"}
+                                      aria-label={note.favorite ? t("notes_unfavorite") : t("notes_favorite")}
                                     >
                                       {note.favorite ? (
                                         <BookmarkCheck className="h-3.5 w-3.5 fill-current" />
@@ -719,15 +719,13 @@ export default function Notes() {
                                         setPendingDelete(note);
                                       }}
                                       className="cursor-pointer rounded-sm p-1.5 text-white/20 opacity-0 transition hover:text-white/70 group-hover:opacity-100"
-                                      aria-label="Delete"
+                                      aria-label={t("common_delete")}
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </span>
                                   </div>
                                   )}
-                                </button>
-
-                              </li>
+                              </NoteRow>
                             );
                           })}
                         </ul>
