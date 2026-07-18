@@ -120,6 +120,37 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
   );
 }
 
+/* ── Row with long-press → select ────────────────────────────────────── */
+interface NoteRowProps {
+  selectMode: boolean;
+  selected: boolean;
+  onLongPress: () => void;
+  onOpen: () => void;
+  children: React.ReactNode;
+}
+function NoteRow({ selectMode, selected, onLongPress, onOpen, children }: NoteRowProps) {
+  const press = useLongPress({ onLongPress, onClick: onOpen });
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      {...press}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className={cn(
+        "group relative flex w-full cursor-pointer select-none items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02] focus:outline-none",
+        selected && "bg-white/[0.04]"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────────────────── */
 
 export default function Notes() {
