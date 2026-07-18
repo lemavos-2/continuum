@@ -540,27 +540,27 @@ export default function Entities() {
       <UpgradeModal
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
-        reason="You've reached the entities limit for your plan."
+        reason={t("entities_limit")}
       />
       <ConfirmDialog
         open={!!pendingDeleteEntity}
         onOpenChange={(open) => !open && setPendingDeleteEntity(null)}
-        title="Delete entity?"
+        title={t("entities_delete_one_title")}
         description={
           pendingDeleteEntity
-            ? `${pendingDeleteEntity.title || "Untitled"} will be permanently removed.`
-            : "This action cannot be undone."
+            ? t("entities_delete_one_desc", { title: pendingDeleteEntity.title || t("notes_untitled") })
+            : ""
         }
-        confirmText="Delete"
+        confirmText={t("common_delete")}
         destructive
         onConfirm={confirmDelete}
       />
       <ConfirmDialog
         open={bulkDeleteOpen}
         onOpenChange={(open) => !open && !bulkDeleting && setBulkDeleteOpen(false)}
-        title={`Delete ${selectedIds.size} ${selectedIds.size === 1 ? "entity" : "entities"}?`}
-        description="The selected entities will be permanently removed."
-        confirmText={bulkDeleting ? "Deleting…" : "Delete"}
+        title={t(selectedIds.size === 1 ? "entities_delete_many_title_one" : "entities_delete_many_title", { n: selectedIds.size })}
+        description={t("entities_delete_many_desc")}
+        confirmText={bulkDeleting ? t("entities_deleting") : t("common_delete")}
         destructive
         onConfirm={confirmBulkDelete}
       />
