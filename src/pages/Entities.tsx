@@ -413,7 +413,7 @@ export default function Entities() {
             ) : filteredAndSorted.length === 0 ? (
               <div className="py-24 text-center">
                 <p className="font-serif text-2xl italic text-white/40">
-                  {search ? "Nothing matches that search." : "No entities yet. Create your first one."}
+                  {search ? t("entities_empty_search") : t("entities_empty_all")}
                 </p>
               </div>
             ) : (
@@ -422,57 +422,51 @@ export default function Entities() {
                   const targetDate = sortBy === "updatedAt" ? (entity.updatedAt || entity.createdAt) : entity.createdAt;
                   const selected = selectedIds.has(entity.id);
                   return (
-                    <li key={entity.id}>
-                      <button
-                        onClick={() => selectMode ? toggleSelect(entity.id) : navigate(`/entities/${entity.id}`)}
-                        className={cn(
-                          "group relative flex w-full items-start gap-4 py-5 text-left transition-colors hover:bg-white/[0.02]",
-                          selected && "bg-white/[0.04]"
-                        )}
-                      >
-                        {/* Linha de realce no Hover */}
+                    <EntityRow
+                      key={entity.id}
+                      selectMode={selectMode}
+                      selected={selected}
+                      onLongPress={() => {
+                        setSelectMode(true);
+                        setSelectedIds((prev) => new Set(prev).add(entity.id));
+                      }}
+                      onOpen={() =>
+                        selectMode ? toggleSelect(entity.id) : navigate(`/entities/${entity.id}`)
+                      }
+                    >
+                      {selectMode && (
                         <span
-                          aria-hidden
-                          className="absolute left-0 top-1/2 h-8 w-px -translate-x-3 -translate-y-1/2 bg-white opacity-0 transition-opacity group-hover:opacity-100"
-                        />
-
-                        {selectMode && (
-                          <span
-                            className={cn(
-                              "mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-sm border transition-colors",
-                              selected ? "border-white bg-white text-black" : "border-white/30 text-transparent"
-                            )}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </span>
-                        )}
-
-
-                        {/* Coluna da Data Relativa */}
-                        <div className="hidden w-20 shrink-0 pt-1 sm:block">
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
-                            {relativeDate(targetDate)}
-                          </p>
-                        </div>
-
-                        {/* Conteúdo da Entidade */}
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-serif text-xl leading-snug text-white/90 transition-colors group-hover:text-white">
-                            {entity.title || "Untitled"}
-                          </h3>
-                          {entity.description && (
-                            <p className="mt-1 line-clamp-1 text-sm text-white/45">{entity.description}</p>
+                          className={cn(
+                            "mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-sm border transition-colors",
+                            selected ? "border-white bg-white text-black" : "border-white/30 text-transparent"
                           )}
-                          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/35">
-                            <span className="uppercase tracking-[0.18em]">
-                              {typeLabels[entity.type] ?? entity.type}
-                            </span>
-                            <span className="sm:hidden">{relativeDate(targetDate)}</span>
-                          </div>
-                        </div>
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                      )}
 
-                        {/* Ações de Deleção no Hover */}
-                        {!selectMode && (
+                      <div className="hidden w-20 shrink-0 pt-1 sm:block">
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
+                          {relativeDate(targetDate)}
+                        </p>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-serif text-xl leading-snug text-white/90 transition-colors group-hover:text-white">
+                          {entity.title || t("notes_untitled")}
+                        </h3>
+                        {entity.description && (
+                          <p className="mt-1 line-clamp-1 text-sm text-white/45">{entity.description}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/35">
+                          <span className="uppercase tracking-[0.18em]">
+                            {t(`entities_type_${entity.type}`) ?? typeLabels[entity.type] ?? entity.type}
+                          </span>
+                          <span className="sm:hidden">{relativeDate(targetDate)}</span>
+                        </div>
+                      </div>
+
+                      {!selectMode && (
                         <div className="flex shrink-0 items-center gap-1 pt-1">
                           <span
                             role="button"
@@ -485,15 +479,13 @@ export default function Entities() {
                               }
                             }}
                             className="cursor-pointer rounded-sm p-1.5 text-white/20 opacity-0 transition hover:text-white/70 group-hover:opacity-100"
-                            aria-label="Delete entity"
+                            aria-label={t("common_delete")}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </span>
                         </div>
-                        )}
-
-                      </button>
-                    </li>
+                      )}
+                    </EntityRow>
                   );
                 })}
               </ul>
