@@ -602,6 +602,32 @@ export default function Notes() {
                   >
                     {filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id)) ? t("select_clearAll") : t("select_all")}
                   </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        disabled={selectedIds.size === 0}
+                        className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-white/40 hover:text-white disabled:opacity-40"
+                      >
+                        <Tag className="h-3.5 w-3.5" /> {t("notes_set_type") || "Set type"}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-[180px]">
+                      {types.map((tp) => (
+                        <DropdownMenuItem key={tp} onSelect={() => applyBulkType(tp)}>
+                          {tp}
+                        </DropdownMenuItem>
+                      ))}
+                      {types.length > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          const v = window.prompt(t("notes_new_type_prompt") || "New type name");
+                          if (v && v.trim()) applyBulkType(v.trim());
+                        }}
+                      >
+                        {t("notes_new_type") || "New type…"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <button
                     onClick={() => setBulkDeleteOpen(true)}
                     disabled={selectedIds.size === 0}
