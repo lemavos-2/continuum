@@ -22,7 +22,15 @@ import {
   SlidersHorizontal,
   Check,
   X,
+  Tag,
 } from "@/lib/heroicons";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { InsightSignalBadge } from "@/components/InsightSignal";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
