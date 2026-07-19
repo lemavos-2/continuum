@@ -173,7 +173,6 @@ const en = {
   notes_new_type_prompt: "New type name",
   notes_bulk_type_applied: "Type applied to {n} notes",
   editor_commands: "Editor commands",
-  common_close: "Close",
   list_showing_entries: "Showing {n} entries",
   list_showing_entries_one: "Showing {n} entry",
   list_showing_atoms: "Showing {n} atoms",
