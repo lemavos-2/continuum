@@ -304,6 +304,22 @@ export default function Notes() {
     }
   };
 
+  const applyBulkType = async (newType: string) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0 || !newType) return;
+    const clean = newType.trim();
+    if (!clean) return;
+    try {
+      await Promise.all(ids.map((id) => notesApi.update(id, { type: clean })));
+      setNotes((prev) => prev.map((n) => (selectedIds.has(n.id) ? { ...n, type: clean } : n)));
+      if (!types.includes(clean)) setTypes((prev) => [...prev, clean]);
+      toast({ title: t("notes_bulk_type_applied", { n: ids.length }) || `${ids.length} updated` });
+      exitSelectMode();
+    } catch {
+      toast({ title: "Error updating type", variant: "destructive" });
+    }
+  };
+
 
 
   /* Filter + group */
