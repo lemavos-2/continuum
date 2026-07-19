@@ -294,7 +294,7 @@ export default function Notes() {
       setNotes((prev) => prev.filter((n) => !selectedIds.has(n.id)));
       applyUsageDelta({ notesCount: -ids.length });
       void refresh();
-      toast({ title: `${ids.length} ${ids.length === 1 ? "entry" : "entries"} removed` });
+      toast({ title: t(ids.length === 1 ? "notes_bulk_removed_one" : "notes_bulk_removed", { n: ids.length }) || `${ids.length} removed` });
       exitSelectMode();
     } catch {
       toast({ title: "Error deleting entries", variant: "destructive" });
