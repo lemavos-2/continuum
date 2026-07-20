@@ -1,10 +1,10 @@
-import { Children, ComponentType, ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AppLayout from "@/components/AppLayout";
+import ContinuumDashboardPreview from "@/components/dashboard/ContinuumDashboardPreview";
 import { dashboardApi, graphApi, metricsApi, notesApi, vaultApi, insightsApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useCreateNote } from "@/hooks/useCreateNote";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChartContainer } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -103,205 +104,51 @@ const formatNoteDate = (timestamp?: number) => {
   return new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
-// --- SUB-COMPONENTS ---
-const DashboardSkeleton = () => (
-  <AppLayout>
-    <div className="px-4 sm:px-6 lg:px-12 py-6 sm:py-10 max-w-7xl mx-auto space-y-6">
-      <div className="h-16 rounded-2xl bg-neutral-900/40 border border-white/5 animate-pulse" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-2xl bg-neutral-900/20 border border-white/5 animate-pulse" />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 h-[360px] rounded-2xl bg-neutral-900/20 border border-white/5 animate-pulse" />
-        <div className="lg:col-span-4 h-[360px] rounded-2xl bg-neutral-900/20 border border-white/5 animate-pulse" />
-      </div>
-    </div>
-  </AppLayout>
-);
-
-function StatCard({ icon: Icon, label, value, hint }: { icon: ComponentType<{ className?: string }>; label: string; value: string | number; hint?: string; }) {
+function DashboardSkeleton() {
   return (
-    <div className="border border-white/5 bg-white/[0.01] rounded-sm p-4 flex flex-col gap-1 min-w-0 transition-colors hover:border-white/10">
-      <div className="flex items-center gap-1.5 text-white/30">
-        <Icon className="h-3 w-3 shrink-0" />
-        <span className="text-[9px] uppercase tracking-widest font-mono truncate">{label}</span>
-      </div>
-      <p className="text-2xl font-mono tracking-tight text-white tabular-nums leading-none mt-2 truncate">{value}</p>
-      {hint && <p className="text-[10px] font-mono uppercase tracking-wider text-white/30 truncate mt-1">{hint}</p>}
-    </div>
-  );
-}
-
-function StatChip({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-sm border border-white/5 bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] text-white/40">
-      {children}
-    </span>
-  );
-}
-
-function NoteCard({ item, onOpen }: { item: NoteInsight; onOpen: () => void }) {
-  return (
-    <motion.button
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.99 }}
-      onClick={onOpen}
-      className={cn(
-        "group relative flex w-full flex-col gap-2.5 overflow-hidden rounded-xl border border-white/5 bg-neutral-900/40 p-3.5 text-left shadow-sm",
-        "transition-all duration-300 hover:border-white/10 hover:bg-neutral-900/60",
-      )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <Badge variant="outline" className={cn("border text-[9px] font-medium px-1.5 py-0 shadow-sm", badgeStyle(item.badge))}>
-          {item.badge}
-        </Badge>
-        <span className="font-mono text-[9px] text-white/50">{item.score.toFixed(1)}</span>
-      </div>
-      <div className="flex items-start gap-2 flex-1 min-w-0">
-        <div className="mt-0.5 rounded-lg bg-white/[0.06] p-1 border border-white/5 shrink-0">
-          <StickyNote className="h-3.5 w-3.5 text-neutral-400" />
-        </div>
-        <h3 className="line-clamp-2 text-xs sm:text-sm font-medium text-neutral-200 group-hover:text-white transition-colors">{item.note.title || "Untitled"}</h3>
-      </div>
-      <div className="mt-auto flex flex-wrap gap-1 pt-2 border-t border-white/5">
-        {item.mentionCount > 0 && <StatChip>{item.mentionCount} m</StatChip>}
-        {item.hoursTracked > 0 && <StatChip>{formatHours(item.hoursTracked)}</StatChip>}
-        <StatChip>{formatDays(item.daysSinceLastInteraction)}</StatChip>
-      </div>
-    </motion.button>
-  );
-}
-
-function EntityCard({ item, onOpen }: { item: EntityInsight; onOpen: () => void }) {
-  return (
-    <motion.button
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.99 }}
-      onClick={onOpen}
-      className={cn(
-        "group relative flex w-full flex-col gap-2.5 overflow-hidden rounded-xl border border-white/5 bg-neutral-900/40 p-3.5 text-left shadow-sm",
-        "transition-all duration-300 hover:border-white/10 hover:bg-neutral-900/60",
-      )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <Badge variant="outline" className={cn("border text-[9px] font-medium px-1.5 py-0 shadow-sm", badgeStyle(item.badge))}>
-          {item.badge}
-        </Badge>
-        <span className="font-mono text-[9px] text-white/50">{item.score.toFixed(1)}</span>
-      </div>
-      <div className="flex items-start gap-2 flex-1 min-w-0">
-        <div className="mt-0.5 rounded-lg bg-white/[0.06] p-1 border border-white/5 shrink-0">
-          <Network className="h-3.5 w-3.5 text-neutral-400" />
-        </div>
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 text-xs sm:text-sm font-medium text-neutral-200 group-hover:text-white transition-colors">{item.entity.title}</h3>
-          {item.entity.type && (
-            <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-white/50 truncate">{item.entity.type}</p>
-          )}
-        </div>
-      </div>
-      <div className="mt-auto flex flex-wrap gap-1 pt-2 border-t border-white/5">
-        {item.mentionCount > 0 && <StatChip>{item.mentionCount} m</StatChip>}
-        {item.hoursTracked > 0 && <StatChip>{formatHours(item.hoursTracked)}</StatChip>}
-        <StatChip>{formatDays(item.daysSinceLastMention)}</StatChip>
-      </div>
-    </motion.button>
-  );
-}
-
-function DashboardInsightSection({
-  title, subtitle, icon: Icon, children, empty, loading, className, onRefresh, refreshing, viewMoreHref, viewMoreLabel, gridColsClass = "grid-cols-1"
-}: {
-  title: string; subtitle?: string; icon: ComponentType<{ className?: string }>; children: ReactNode; empty: boolean; loading: boolean; className?: string; onRefresh?: () => void; refreshing?: boolean; viewMoreHref?: string; viewMoreLabel?: string; gridColsClass?: string;
-}) {
-  const navigate = useNavigate();
-  const items = Children.toArray(children);
-  const previewItems = items.slice(0, 4);
-  const expandedItems = items.slice(4, 10);
-  const totalCount = items.length;
-  const visibleCount = Math.min(10, totalCount);
-  const showAccordion = !loading && !empty && items.length > 4;
-
-  return (
-    <div className={cn("border border-white/5 bg-white/[0.01] rounded-sm p-4 sm:p-6 flex flex-col", className)}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Signal</p>
-          <h2 className="mt-1 font-serif text-xl text-white">{title}</h2>
-          {subtitle && <p className="mt-1 text-xs text-white/50">{subtitle}</p>}
-        </div>
-        <div className="flex items-center justify-between sm:justify-end gap-4 mt-1 sm:mt-0 border-t border-white/5 sm:border-none pt-2 sm:pt-0">
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="text-[11px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors flex items-center gap-1.5"
-            >
-              <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
-              <span>Refresh</span>
-            </button>
-          )}
-          {viewMoreHref && (
-            <button
-              type="button"
-              onClick={() => navigate(viewMoreHref)}
-              className="text-[11px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors"
-            >
-              {viewMoreLabel || "View all"}
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col justify-between min-h-0">
-        {loading ? (
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-            {[0, 1].map((i) => (
-              <div key={i} className="h-[120px] w-full animate-pulse rounded-xl border border-white/5 bg-neutral-900/30" />
-            ))}
+    <AppLayout>
+      <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+          <Skeleton className="h-4 w-28 bg-white/10" />
+          <Skeleton className="mt-4 h-8 w-72 bg-white/10" />
+          <Skeleton className="mt-3 h-4 w-96 bg-white/10" />
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Skeleton className="h-10 w-24 bg-white/10" />
+            <Skeleton className="h-10 w-24 bg-white/10" />
+            <Skeleton className="h-10 w-28 bg-white/10" />
           </div>
-        ) : empty ? (
-          <div className="rounded-xl border border-dashed border-white/5 bg-white/[0.01] p-6 text-center text-xs text-white/30 h-full flex flex-col items-center justify-center min-h-[120px]">
-            Nothing to show yet.
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <Skeleton className="h-4 w-20 bg-white/10" />
+              <Skeleton className="mt-4 h-8 w-16 bg-white/10" />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[2fr_1fr]">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Skeleton className="h-5 w-40 bg-white/10" />
+            <Skeleton className="mt-3 h-4 w-60 bg-white/10" />
+            <div className="mt-6 space-y-3">
+              <Skeleton className="h-10 w-full bg-white/10" />
+              <Skeleton className="h-10 w-full bg-white/10" />
+              <Skeleton className="h-10 w-full bg-white/10" />
+            </div>
           </div>
-        ) : (
-          <>
-            <div className={cn("grid gap-3", gridColsClass)}>{previewItems}</div>
-            {showAccordion ? (
-              <Accordion type="single" collapsible className="mt-3">
-                <AccordionItem value={title} className="border-none">
-                  <AccordionTrigger className="px-0 py-0 hover:no-underline">
-                    <div className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.01] px-3 py-2 text-xs font-medium text-white/50 hover:bg-white/[0.02] transition-colors">
-                      <span>Show {visibleCount - previewItems.length} more</span>
-                      <span>{visibleCount} of {totalCount}</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-0 pt-3 pb-0">
-                    <div className={cn("grid gap-3 mb-3", gridColsClass)}>
-                      {expandedItems}
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-[10px] text-white/40 pt-2 border-t border-white/5">
-                      <span>{totalCount > visibleCount ? `Showing ${visibleCount} of ${totalCount}` : `Showing all ${visibleCount}`}</span>
-                      {viewMoreHref && (
-                        <button
-                          type="button"
-                          onClick={() => navigate(viewMoreHref)}
-                          className="text-white/50 hover:text-white transition-colors"
-                        >
-                          {viewMoreLabel || "View all"}
-                        </button>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ) : null}
-          </>
-        )}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Skeleton className="h-5 w-32 bg-white/10" />
+            <Skeleton className="mt-3 h-4 w-48 bg-white/10" />
+            <div className="mt-6 space-y-3">
+              <Skeleton className="h-10 w-full bg-white/10" />
+              <Skeleton className="h-10 w-full bg-white/10" />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 
@@ -576,397 +423,32 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="px-4 sm:px-6 lg:px-12 py-6 sm:py-10 max-w-7xl mx-auto space-y-6">
-        
-        {/* HEADER */}
-        <header className="border-b border-white/10 pb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">{t("dashboard_overview")}</p>
-            <h1 className="mt-2 font-serif text-4xl sm:text-5xl tracking-tight text-white">
-              {greeting}, {displayName}
-            </h1>
-            <p className="mt-2 text-sm text-white/50">
-              Here's what's happening across your knowledge graph.
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            <Button size="sm" variant="outline" onClick={() => navigate("/activities")} className="gap-1 h-7 px-2.5 text-[11px]">
-              <Flame className="h-3 w-3" />
-              Activities
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => navigate("/projects")} className="gap-1 h-7 px-2.5 text-[11px]">
-              <Clock className="h-3 w-3" />
-              Project
-            </Button>
-            <Button size="sm" onClick={() => void createNote()} disabled={creating} className="gap-1 h-7 px-2.5 text-[11px]">
-              {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-              {creating ? "Creating…" : "New note"}
-            </Button>
-          </div>
-
-
-        </header>
-
-
-        {/* CONTADORES / CARDS KPI */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard icon={FileText} label={t("notes_title")} value={totalNotes} hint={isUnlimited(limits.maxNotes) ? t("common_unlimited") : `${t("common_of")} ${limits.maxNotes}`} />
-          <StatCard icon={Tag} label={t("entities_title")} value={totalEntities} hint={isUnlimited(limits.maxEntities) ? t("common_unlimited") : `${t("common_of")} ${limits.maxEntities}`} />
-          <StatCard icon={Network} label="Graph nodes" value={graphNodeCount} hint="In your network" />
-          <StatCard icon={HardDrive} label="Storage" value={storageUsed} hint={`of ${storageLimit}`} />
-        </section>
-
-        {/* CORPO DO DASHBOARD */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* BLOCO 1: PERFORMANCE & METRICS */}
-          <div className="border border-white/5 bg-white/[0.01] rounded-sm p-4 sm:p-6 lg:col-span-8 flex flex-col justify-between">
-            <div className="flex flex-col gap-4 mb-6">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">{t("dashboard_signal")}</p>
-                    <h2 className="mt-1 font-serif text-2xl text-white">{t("dashboard_scoreEvolution")}</h2>
-                    <p className="mt-1 text-xs text-white/50">Knowledge graph gravity index</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
-                    <p className="text-[9px] uppercase tracking-widest text-white/30 font-mono">Current</p>
-                    <p className="font-mono text-2xl text-white tabular-nums leading-none mt-1">
-                      {scoreStats.current.toFixed(2)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => refetchScoreTimeline()}
-                    disabled={scoreTimelineFetching}
-                    className="text-xs text-white/50 hover:text-white hidden sm:flex items-center gap-1 transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw className={cn("h-3 w-3", scoreTimelineFetching && "animate-spin")} />
-                    Score
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/insights")}
-                    className="text-xs text-white/50 hover:text-white hidden sm:block transition-colors"
-                  >
-                    Insights →
-                  </button>
-                </div>
-              </div>
-
-              {/* BARRA SELETORA DE PERÍODO */}
-              <div className="flex items-center -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-none gap-1 border-y sm:border border-white/5 sm:rounded-sm bg-white/[0.01] p-1">
-                {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => {
-                  const labels: Record<TimeRange, string> = {
-                    "14d": "14 Days",
-                    "1mo": "1 Month",
-                    "3mo": "3 Months",
-                    "6mo": "6 Months",
-                    "1y": "1 Year",
-                    "total": "All Time"
-                  };
-                  return (
-                    <button
-                      key={range}
-                      type="button"
-                      onClick={() => setTimeRange(range)}
-                      className={cn(
-                        "text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm transition-colors shrink-0",
-                        timeRange === range
-                          ? "bg-white/[0.06] text-white"
-                          : "text-white/40 hover:text-white/70"
-                      )}
-                    >
-                      {labels[range]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="h-[200px] sm:h-[250px] w-full -mx-2 relative">
-              {scoreTimelineLoading && scoreTimelineData.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
-                  Loading score history…
-                </div>
-              ) : !scoreStats.hasData ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center px-4">
-                  <p className="text-xs text-white/40">No score history yet</p>
-                  <p className="text-[11px] text-white/30">Create notes and entities to build your knowledge gravity.</p>
-                </div>
-              ) : (
-                <>
-                  {/* Alerta visual de falha na sincronização */}
-                  {scoreTimelineError && (
-                    <div className="absolute right-2 top-1 z-10 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
-                      Failed to sync score
-                    </div>
-                  )}
-                  <ChartContainer config={{}} className="h-full w-full">
-                    <AreaChart data={scoreTimelineData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.22} />
-                          <stop offset="60%" stopColor="hsl(var(--foreground))" stopOpacity={0.06} />
-                          <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid stroke="hsl(var(--foreground) / 0.04)" strokeDasharray="2 6" vertical={false} />
-                      <XAxis
-                        dataKey="label"
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                        tickMargin={8}
-                        minTickGap={32}
-                        interval="preserveStartEnd"
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                        domain={[0, (dataMax: number) => Math.max(dataMax * 1.2, 1)]}
-                        tickFormatter={(value) => Number(value).toFixed(0)}
-                        width={32}
-                        tickCount={4}
-                      />
-                      <Tooltip
-                        cursor={{ stroke: "hsl(var(--foreground) / 0.2)", strokeWidth: 1, strokeDasharray: "3 3" }}
-                        contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: 10,
-                          fontSize: 11,
-                          color: "hsl(var(--foreground))",
-                          boxShadow: "0 8px 24px -8px rgba(0,0,0,0.6)",
-                          padding: "8px 10px",
-                        }}
-                        labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 10, marginBottom: 4 }}
-                        labelFormatter={(_label, payload) => {
-                          const ts = (payload?.[0]?.payload as any)?.ts;
-                          if (!ts) return _label as string;
-                          return new Date(ts).toLocaleDateString("en-US", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          });
-                        }}
-                        formatter={(value) => [Number(value as number).toFixed(2), "Score"]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="score"
-                        stroke="hsl(var(--foreground))"
-                        strokeWidth={1.75}
-                        fill="url(#scoreFill)"
-                        dot={false}
-                        activeDot={{ r: 4, fill: "hsl(var(--foreground))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
-                        isAnimationActive
-                        animationDuration={500}
-                      />
-                    </AreaChart>
-                  </ChartContainer>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* PLAN USAGE CARD */}
-          <div className="hidden border border-white/5 bg-white/[0.01] rounded-sm p-4 sm:p-6 lg:col-span-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between gap-3 mb-5">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Account</p>
-                  <h2 className="mt-1 font-serif text-2xl text-white">{t("planLimits")}</h2>
-                </div>
-                <span className="text-[9px] font-mono uppercase tracking-widest text-white/70 border border-white/10 px-2 py-1 rounded-sm">
-                  {user?.plan || "FREE"}
-                </span>
-              </div>
-
-              {usage ? (
-                <div className="space-y-3.5">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/60">{t("notes")}</span>
-                      <span className="text-white/80 font-mono text-[11px] tabular-nums">
-                        {usage.notesCount} / {isUnlimited(limits.maxNotes) ? "∞" : limits.maxNotes}
-                      </span>
-                    </div>
-                    <Progress value={isUnlimited(limits.maxNotes) ? 0 : Math.min((usage.notesCount / limits.maxNotes) * 100, 100)} className="h-1 bg-white/5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/60">{t("entities")}</span>
-                      <span className="text-white/80 font-mono text-[11px] tabular-nums">
-                        {usage.entitiesCount} / {isUnlimited(limits.maxEntities) ? "∞" : limits.maxEntities}
-                      </span>
-                    </div>
-                    <Progress value={isUnlimited(limits.maxEntities) ? 0 : Math.min((usage.entitiesCount / limits.maxEntities) * 100, 100)} className="h-1 bg-white/5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/60">{t("vault")}</span>
-                      <span className="text-white/80 font-mono text-[11px] tabular-nums">{storageUsed} / {storageLimit}</span>
-                    </div>
-                    <Progress value={isUnlimited(limits.maxVaultSizeMB) ? 0 : Math.min((usage.vaultSizeMB / limits.maxVaultSizeMB) * 100, 100)} className="h-1 bg-white/5" />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-xs text-white/40">Loading usage…</div>
-              )}
-
-              <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.01] p-3.5 text-[11px]">
-                <div className="grid gap-3 grid-cols-2">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-neutral-500 text-[9px] uppercase font-semibold tracking-wider">History retention</span>
-                    <span className="text-neutral-300 font-medium">{isUnlimited(limits.historyDays) ? "Unlimited" : `${limits.historyDays} days`}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-neutral-500 text-[9px] uppercase font-semibold tracking-wider">Metadata limit</span>
-                    <span className="text-neutral-300 font-medium">{isUnlimited(limits.maxMetadataSizeKb) ? "Unlimited" : `${limits.maxMetadataSizeKb} KB`}</span>
-                  </div>
-                  <div className="flex items-center justify-between col-span-2 pt-2.5 border-t border-white/5 mt-0.5 text-neutral-400">
-                    <span>Data export</span>
-                    {user?.dataExport ? (
-                      <button
-                        type="button"
-                        onClick={handleExportData}
-                        disabled={exporting}
-                        className="text-neutral-200 underline underline-offset-4 hover:text-white disabled:opacity-50 transition-colors"
-                      >
-                        {exporting ? "Exporting…" : "Download backup"}
-                      </button>
-                    ) : (
-                      <span className="text-neutral-600 text-[10px]">Upgrade required</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/subscription")}
-              className="mt-4 text-xs text-neutral-400 hover:text-white self-start transition-colors"
-            >
-              Manage subscription →
-            </button>
-          </div>
-
-          {/* BLOCO 2: WORKSPACE ACTIVITY */}
-          {/* RECENT NOTES CARD */}
-          <div className="border border-white/5 bg-white/[0.01] rounded-sm p-4 sm:p-6 lg:col-span-4 flex flex-col">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Stream</p>
-                <h2 className="mt-1 font-serif text-xl text-white">{t("dashboard_recentNotes")}</h2>
-              </div>
-              <button type="button" onClick={() => navigate("/notes")} className="text-[11px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors">
-                View all
-              </button>
-            </div>
-            <div className="space-y-1 flex-1 overflow-y-auto max-h-[280px] sm:max-h-[310px] pr-1 scrollbar-thin">
-              {recentNotes.length > 0 ? (
-                recentNotes.map((note) => (
-                  <button
-                    key={note.id}
-                    type="button"
-                    onClick={() => navigate(`/notes/${note.id}`)}
-                    className="group w-full rounded-xl border border-transparent px-2.5 py-2 text-left transition-all hover:bg-neutral-900/50 hover:border-white/5"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs sm:text-sm font-medium text-white/80 group-hover:text-white truncate">{note.title || "Untitled"}</p>
-                      <ArrowRight className="h-3.5 w-3.5 text-white/30 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50" />
-                    </div>
-                    <p className="mt-0.5 text-[9px] font-mono text-white/40">{formatNoteDate(note.createdAtTimestamp)}</p>
-                  </button>
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-white/5 bg-white/[0.01] p-6 text-center text-xs text-white/30 h-full flex items-center justify-center">
-                  No recent notes yet.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* INSIGHTS: HOT RIGHT NOW */}
-          <DashboardInsightSection
-            title="Hot right now"
-            subtitle="Strongest recent gravity across notes"
-            icon={Flame}
-            loading={insightsLoading}
-            empty={hotNotes.length === 0}
-            className="lg:col-span-8"
-            gridColsClass="grid-cols-1 sm:grid-cols-2"
-            onRefresh={() => loadInsights(true)}
-            refreshing={refreshingInsights}
-            viewMoreHref="/notes"
-            viewMoreLabel="View all notes"
-          >
-            {hotNotes.map((n) => (
-              <NoteCard key={n.note.id} item={n} onOpen={() => navigate(`/notes/${n.note.id}`)} />
-            ))}
-          </DashboardInsightSection>
-
-          {/* BLOCO 3: GRAPH DISCOVERY */}
-          {/* INSIGHTS: KEY PEOPLE & PROJECTS */}
-          <DashboardInsightSection
-            title="Key people & projects"
-            subtitle="Trending graph entities"
-            icon={Users}
-            loading={insightsLoading}
-            empty={hotEntities.length === 0}
-            className="lg:col-span-4"
-            gridColsClass="grid-cols-1"
-            viewMoreHref="/entities"
-            viewMoreLabel="View all entities"
-          >
-            {hotEntities.map((e) => (
-              <EntityCard key={e.entity.id} item={e} onOpen={() => navigate(`/entities/${e.entity.id}`)} />
-            ))}
-          </DashboardInsightSection>
-
-          {/* INSIGHTS: WORTH REVISITING */}
-          <DashboardInsightSection
-            title="Worth revisiting"
-            subtitle="High-value aging notes"
-            icon={Clock}
-            loading={insightsLoading}
-            empty={forgottenNotes.length === 0}
-            className="lg:col-span-4"
-            gridColsClass="grid-cols-1"
-            viewMoreHref="/notes"
-            viewMoreLabel="View all notes"
-          >
-            {forgottenNotes.map((n) => (
-              <NoteCard key={n.note.id} item={n} onOpen={() => navigate(`/notes/${n.note.id}`)} />
-            ))}
-          </DashboardInsightSection>
-
-          {/* INSIGHTS: FORGOTTEN GEMS */}
-          <DashboardInsightSection
-            title="Forgotten gems"
-            subtitle="Entities that once mattered"
-            icon={TrendingUp}
-            loading={insightsLoading}
-            empty={forgottenEntities.length === 0}
-            className="lg:col-span-4"
-            gridColsClass="grid-cols-1"
-            viewMoreHref="/entities"
-            viewMoreLabel="View all entities"
-          >
-            {forgottenEntities.map((e) => (
-              <EntityCard key={e.entity.id} item={e} onOpen={() => navigate(`/entities/${e.entity.id}`)} />
-            ))}
-          </DashboardInsightSection>
-
-        </section>
-      </div>
+      <ContinuumDashboardPreview
+        greeting={greeting}
+        displayName={displayName}
+        stats={[
+          { label: t("notes_title"), value: totalNotes, delta: isUnlimited(limits.maxNotes) ? t("common_unlimited") : `${t("common_of")} ${limits.maxNotes}`, trend: "up" },
+          { label: t("entities_title"), value: totalEntities, delta: isUnlimited(limits.maxEntities) ? t("common_unlimited") : `${t("common_of")} ${limits.maxEntities}`, trend: "up" },
+          { label: "Graph nodes", value: graphNodeCount, delta: "in your network", trend: "up" },
+          { label: "Storage", value: storageUsed, delta: `of ${storageLimit}`, trend: "neutral" },
+        ]}
+        documents={recentNotes.slice(0, 5).map((note) => ({
+          title: note.title || "Untitled",
+          type: "Note",
+          connections: 0,
+          updated: formatNoteDate(note.createdAtTimestamp),
+        }))}
+        onCreateNote={() => void createNote()}
+        onOpenNotes={() => navigate("/notes")}
+        onOpenEntities={() => navigate("/entities")}
+        onOpenInsights={() => navigate("/insights")}
+        onOpenActivities={() => navigate("/activities")}
+        onOpenProjects={() => navigate("/projects")}
+        onOpenGraph={() => navigate("/graph")}
+        onOpenEditor={() => navigate("/notes")}
+      />
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="You've reached the notes limit for your plan." />
-      
-      {/* Onboarding popup after account creation */}
+
       <Dialog open={showOnboardingPopup} onOpenChange={setShowOnboardingPopup}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1011,6 +493,5 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
     </AppLayout>
-
   );
 }
