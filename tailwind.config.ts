@@ -88,6 +88,19 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        surface: {
+          DEFAULT: "hsl(var(--bg-surface))",
+          2: "hsl(var(--bg-surface-2))",
+          hover: "hsl(var(--bg-hover))",
+          active: "hsl(var(--bg-active))",
+          selected: "hsl(var(--bg-selected))",
+        },
+        text: {
+          primary: "hsl(var(--text-primary))",
+          secondary: "hsl(var(--text-secondary))",
+          tertiary: "hsl(var(--text-tertiary))",
+          disabled: "hsl(var(--text-disabled))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
