@@ -303,15 +303,39 @@
 }
 
 /* ============================================================
-   Borderless system sweep — neutralize hard-coded 1px outlines
-   across the app. Editor + intentional dividers keep theirs.
+   Continuum surface sweep
+   Map the app's legacy translucent "glass" fills to the reference
+   surface tokens so panels, sticky headers, sidebars actually
+   render as solid quiet surfaces. Soften decorative outlines,
+   preserve intentional dividers (border-b / border-t / .keep-border).
    ============================================================ */
 @layer utilities {
+  /* Very faint glass → primary surface (#0D0D0D) */
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.02"],
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.03"],
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class~="bg-white/5"] {
+    background-color: hsl(var(--bg-surface)) !important;
+  }
+  /* Slightly stronger → surface-2 (#161616) */
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class~="bg-white/10"],
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.06"],
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.08"] {
+    background-color: hsl(var(--bg-surface-2)) !important;
+  }
+  /* Sticky headers backdrop */
+  :where(:not(.continuum-editor):not(.continuum-editor *))[class*="bg-black/60"],
+  :where(:not(.continuum-editor):not(.continuum-editor *))[class*="bg-black/70"],
+  :where(:not(.continuum-editor):not(.continuum-editor *))[class*="bg-black/80"] {
+    background-color: hsl(var(--bg-base) / 0.85) !important;
+  }
+
+  /* Decorative outlines (any border-*-white/xx that ISN'T a structural
+     divider on one side) get quieted to the hairline token. */
   :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-border):not(.keep-border *))[class*="border-white/"] {
-    border-color: transparent !important;
+    border-color: hsl(var(--border)) !important;
   }
   :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-border):not(.keep-border *))[class*="border-black/"] {
-    border-color: transparent !important;
+    border-color: hsl(var(--border)) !important;
   }
 }
 
