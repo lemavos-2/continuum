@@ -15,7 +15,7 @@
     /* Continuum reference palette
        base:#000  surface:#0D0D0D  surface-2:#161616  hover:#212121  active:#292929
        text: #EAE8E2 / #A3A19B / #726F69   accent: #F3F1EB */
-    --bg-base: 0 0% 5%;
+    --bg-base: 0 0% 0%;
     --bg-surface: 0 0% 5%;
     --bg-surface-2: 0 0% 9%;
     --bg-hover: 0 0% 13%;
@@ -27,7 +27,7 @@
     --text-tertiary: 40 5% 43%;
     --text-disabled: 40 5% 29%;
 
-    --background: 0 0% 5%;
+    --background: 0 0% 0%;
     --foreground: 46 15% 90%;
 
     --card: 0 0% 5%;
