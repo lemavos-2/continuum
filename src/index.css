@@ -286,6 +286,19 @@
   }
 }
 
+/* ============================================================
+   Borderless system sweep — neutralize hard-coded 1px outlines
+   across the app. Editor + intentional dividers keep theirs.
+   ============================================================ */
+@layer utilities {
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-border):not(.keep-border *))[class*="border-white/"] {
+    border-color: transparent !important;
+  }
+  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-border):not(.keep-border *))[class*="border-black/"] {
+    border-color: transparent !important;
+  }
+}
+
 /* Continuum editor */
 @layer components {
   .continuum-editor { @apply text-foreground leading-relaxed; font-family: 'Inter', system-ui, sans-serif; font-size: 16px; }
