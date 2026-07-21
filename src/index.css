@@ -398,3 +398,111 @@
   .hljs-variable, .hljs-template-variable { color: hsl(0 0% 80%); }
   .hljs-attr, .hljs-attribute { color: hsl(0 0% 70%); }
 }
+
+/* ============================================================
+   Continuum Visual System (cx-*) — utility classes mirroring
+   the reference doc. Screens can adopt these incrementally
+   without touching shadcn primitives.
+   ============================================================ */
+@layer components {
+  /* Typography */
+  .cx-eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: hsl(var(--text-tertiary));
+    font-weight: 600;
+  }
+
+  /* Stat / metric display (§7) */
+  .cx-stat-value {
+    font-size: 32px;
+    line-height: 38px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: hsl(var(--foreground));
+    font-variant-numeric: tabular-nums;
+  }
+  .cx-stat-label {
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    margin: 2px 0 12px;
+  }
+  .cx-trend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: hsl(var(--bg-hover));
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .cx-trend-pill svg { width: 8px; height: 8px; }
+
+  /* Calendar (§8) */
+  .cx-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cx-calendar-weekday {
+    font-size: 11px;
+    color: hsl(var(--text-tertiary));
+    text-align: center;
+    padding: 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cx-calendar-day {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    transition: background 120ms cubic-bezier(0.2, 0, 0, 1),
+                color 120ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  .cx-calendar-day:hover { background: hsl(var(--bg-hover)); color: hsl(var(--foreground)); }
+  .cx-calendar-day.outside-month { color: hsl(var(--text-disabled)); }
+  .cx-calendar-day.today {
+    background: hsl(43 20% 94% / 0.14);
+    color: hsl(var(--primary));
+    font-weight: 600;
+  }
+  .cx-calendar-day.selected {
+    background: hsl(var(--bg-active));
+    color: hsl(var(--foreground));
+    font-weight: 600;
+  }
+  .cx-calendar-day.done {
+    background: hsl(var(--bg-active));
+    color: hsl(var(--foreground));
+    font-weight: 500;
+  }
+
+  /* Tabs (§9) */
+  .cx-tabs { display: inline-flex; gap: 4px; }
+  .cx-tab {
+    all: unset;
+    box-sizing: border-box;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    transition: background 120ms, color 120ms;
+  }
+  .cx-tab:hover { color: hsl(var(--foreground)); }
+  .cx-tab.active {
+    background: hsl(var(--bg-hover));
+    color: hsl(var(--foreground));
+    font-weight: 500;
+  }
+}
+
