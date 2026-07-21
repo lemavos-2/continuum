@@ -57,20 +57,20 @@ export function TimeAnalyticsCalendar({ projectId, onDayClick }: TimeAnalyticsCa
     return `${minutes}m`;
   };
 
-  const getIntensityClass = (seconds: number): string => {
-    if (seconds === 0) return 'bg-zinc-50 dark:bg-zinc-900';
-    if (seconds < 1800) return 'bg-zinc-100 dark:bg-zinc-900/20'; // < 30min
-    if (seconds < 3600) return 'bg-zinc-200 dark:bg-zinc-800/30'; // < 1h
-    if (seconds < 7200) return 'bg-zinc-300 dark:bg-zinc-700/40'; // < 2h
-    return 'bg-zinc-400 dark:bg-zinc-600/50'; // >= 2h
+  const getIntensityBg = (seconds: number): string => {
+    if (seconds === 0) return 'transparent';
+    if (seconds < 1800) return 'hsl(43 20% 94% / 0.06)';
+    if (seconds < 3600) return 'hsl(43 20% 94% / 0.10)';
+    if (seconds < 7200) return 'hsl(43 20% 94% / 0.16)';
+    return 'hsl(43 20% 94% / 0.24)';
   };
 
   if (!canAccessAnalytics) {
     return (
       <Card className="p-8 text-center">
-        <BarChart3 className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">Analytics Premium</h3>
-        <p className="text-sm text-zinc-500 mb-4">
+        <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-foreground mb-2">Analytics Premium</h3>
+        <p className="text-sm text-muted-foreground mb-4">
           Upgrade your plan to access detailed time analytics and calendar view.
         </p>
         <Button>Upgrade Plan</Button>
@@ -79,129 +79,103 @@ export function TimeAnalyticsCalendar({ projectId, onDayClick }: TimeAnalyticsCa
   }
 
   return (
-    <div className="space-y-6">
-      {/* Monthly Stats */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Monthly Summary
-          </h3>
-          <Badge variant="secondary">
-            {format(currentDate, 'MMM yyyy')}
-          </Badge>
+    <div className="space-y-8">
+      {/* Monthly Stats — plain numbers, no boxes (§7) */}
+      <div>
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <p className="cx-eyebrow">Overview</p>
+            <h3 className="mt-1 font-serif text-xl text-foreground">Monthly Summary</h3>
+          </div>
+          <Badge variant="secondary">{format(currentDate, 'MMM yyyy')}</Badge>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {formatDuration(monthlyStats.totalSeconds)}
-            </div>
-            <div className="text-sm text-zinc-500">Total Time</div>
+        <div className="flex flex-wrap gap-x-10 gap-y-6">
+          <div>
+            <div className="cx-stat-value">{formatDuration(monthlyStats.totalSeconds)}</div>
+            <p className="cx-stat-label">Total Time</p>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {monthlyStats.activeDays}
-            </div>
-            <div className="text-sm text-zinc-500">Active Days</div>
+          <div>
+            <div className="cx-stat-value">{monthlyStats.activeDays}</div>
+            <p className="cx-stat-label">Active Days</p>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {monthlyStats.totalEntries}
-            </div>
-            <div className="text-sm text-zinc-500">Time Entries</div>
+          <div>
+            <div className="cx-stat-value">{monthlyStats.totalEntries}</div>
+            <p className="cx-stat-label">Time Entries</p>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-500">
-              {formatDuration(monthlyStats.averageDaily)}
-            </div>
-            <div className="text-sm text-zinc-500">Daily Average</div>
+          <div>
+            <div className="cx-stat-value">{formatDuration(monthlyStats.averageDaily)}</div>
+            <p className="cx-stat-label">Daily Average</p>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Calendar */}
-      <Card className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Calendar className="w-6 h-6" />
+      {/* Calendar — borderless cells (§8) */}
+      <div className="rounded-lg bg-[hsl(var(--bg-surface))] p-5">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="font-serif text-xl text-foreground flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
             {format(currentDate, 'MMMM yyyy')}
           </h2>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('prev')}
-            >
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" onClick={() => navigateMonth('prev')}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToToday}
-            >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('next')}
-            >
+            <Button variant="ghost" size="sm" onClick={goToToday}>Today</Button>
+            <Button variant="ghost" size="icon" onClick={() => navigateMonth('next')}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
 
-        {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
-          {/* Day headers */}
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="p-2 text-center text-sm font-medium text-zinc-500">
-              {day}
-            </div>
+            <div key={day} className="cx-calendar-weekday">{day}</div>
           ))}
 
-          {/* Calendar days */}
           {fullCalendarGrid.map((date, index) => {
             const dayData = getDayData(date);
             const isCurrentMonth = isSameMonth(date, currentDate);
             const isToday = isSameDay(date, new Date());
+            const hasTime = dayData && dayData.totalSeconds > 0;
 
             return (
-              <div
+              <button
                 key={index}
-                className={`
-                  min-h-[80px] p-2 border border-zinc-200 dark:border-zinc-700 rounded-lg cursor-pointer
-                  transition-all hover:shadow-md
-                  ${isCurrentMonth ? 'bg-white dark:bg-zinc-800' : 'bg-zinc-50 dark:bg-zinc-900 opacity-50'}
-                  ${isToday ? 'ring-2 ring-zinc-500' : ''}
-                `}
                 onClick={() => dayData && onDayClick?.(dayData)}
+                style={hasTime ? { background: getIntensityBg(dayData.totalSeconds) } : undefined}
+                className={cnCal(
+                  "min-h-[72px] rounded-md p-2 text-left cursor-pointer transition-colors",
+                  "hover:bg-[hsl(var(--bg-hover))]",
+                  !isCurrentMonth && "opacity-30",
+                  isToday && "ring-1 ring-[hsl(var(--ring))]",
+                )}
               >
-                <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                <div className="text-[13px] font-medium text-foreground/80">
                   {format(date, 'd')}
                 </div>
 
                 {isLoading ? (
-                  <Skeleton className="h-4 w-12" />
-                ) : dayData && dayData.totalSeconds > 0 ? (
-                  <div className="space-y-1">
-                    <div className={`text-xs px-2 py-1 rounded text-center text-white font-medium ${getIntensityClass(dayData.totalSeconds)}`}>
+                  <Skeleton className="mt-1 h-3 w-10" />
+                ) : hasTime ? (
+                  <div className="mt-1">
+                    <div className="text-xs font-medium text-foreground">
                       {formatDuration(dayData.totalSeconds)}
                     </div>
-                    <div className="text-xs text-zinc-500 text-center">
-                      {dayData.entries.length}
+                    <div className="text-[10px] text-[hsl(var(--text-tertiary))]">
+                      {dayData.entries.length} entr{dayData.entries.length === 1 ? 'y' : 'ies'}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-xs text-zinc-400 text-center">-</div>
-                )}
-              </div>
+                ) : null}
+              </button>
             );
           })}
         </div>
-      </Card>
+      </div>
     </div>
   );
+}
+
+function cnCal(...args: Array<string | false | null | undefined>) {
+  return args.filter(Boolean).join(' ');
 }
