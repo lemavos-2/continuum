@@ -608,13 +608,15 @@ export default function Dashboard() {
         </header>
 
 
-        {/* CONTADORES / CARDS KPI */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard icon={FileText} label={t("notes_title")} value={totalNotes} hint={isUnlimited(limits.maxNotes) ? t("common_unlimited") : `${t("common_of")} ${limits.maxNotes}`} />
-          <StatCard icon={Tag} label={t("entities_title")} value={totalEntities} hint={isUnlimited(limits.maxEntities) ? t("common_unlimited") : `${t("common_of")} ${limits.maxEntities}`} />
-          <StatCard icon={Network} label="Graph nodes" value={graphNodeCount} hint="In your network" />
-          <StatCard icon={HardDrive} label="Storage" value={storageUsed} hint={`of ${storageLimit}`} />
-        </section>
+        {/* WEEKLY SUMMARY */}
+        <WeeklySummary
+          notes={Array.isArray(notes) ? notes : []}
+          totalNotes={totalNotes}
+          totalEntities={totalEntities}
+          graphNodeCount={graphNodeCount}
+          currentScore={currentScore}
+        />
+
 
         {/* CORPO DO DASHBOARD */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
