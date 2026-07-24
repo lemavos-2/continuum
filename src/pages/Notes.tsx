@@ -306,17 +306,28 @@ export default function Notes() {
 
   const applyBulkType = async (newType: string) => {
     const ids = Array.from(selectedIds);
-    if (ids.length === 0 || !newType) return;
-    const clean = newType.trim();
-    if (!clean) return;
+    const clean = (newType || "").trim();
+    if (ids.length === 0 || !clean) return;
+    // Optimistic UI update
+    setNotes((prev) => prev.map((n) => (selectedIds.has(n.id) ? { ...n, type: clean } : n)));
+    if (!types.includes(clean)) setTypes((prev) => [...prev, clean]);
     try {
-      await Promise.all(ids.map((id) => notesApi.update(id, { type: clean })));
-      setNotes((prev) => prev.map((n) => (selectedIds.has(n.id) ? { ...n, type: clean } : n)));
-      if (!types.includes(clean)) setTypes((prev) => [...prev, clean]);
-      toast({ title: t("notes_bulk_type_applied", { n: ids.length }) || `${ids.length} updated` });
+      const results = await Promise.allSettled(
+        ids.map((id) => notesApi.update(id, { type: clean }))
+      );
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        console.error("[Notes] bulk type failed for", failed.length, "notes", failed);
+        toast({ title: `Failed to update ${failed.length} of ${ids.length}`, variant: "destructive" });
+      } else {
+        toast({ title: t("notes_bulk_type_applied", { n: ids.length }) || `${ids.length} updated` });
+      }
       exitSelectMode();
-    } catch {
+      void fetchData();
+    } catch (e) {
+      console.error("[Notes] bulk type error", e);
       toast({ title: "Error updating type", variant: "destructive" });
+      void fetchData();
     }
   };
 
