@@ -134,6 +134,52 @@ function StatCard({ icon: Icon, label, value, hint }: { icon: ComponentType<{ cl
   );
 }
 
+function SummaryMetric({ label, value, delta, comparison }: { label: string; value: string; delta: number; comparison: string }) {
+  const isUp = delta > 0;
+  const isDown = delta < 0;
+  const arrow = isDown ? "↓" : isUp ? "↑" : "–";
+  return (
+    <div className="flex flex-col gap-3 min-w-0">
+      <p className="text-[10px] uppercase tracking-[0.24em] text-white/40 font-mono truncate">{label}</p>
+      <p className="font-serif text-4xl sm:text-5xl text-white leading-none tabular-nums truncate">{value}</p>
+      <div className="inline-flex items-center gap-1.5 self-start rounded-sm border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-mono text-white/50">
+        <span className={cn(isDown && "text-red-300/80", isUp && "text-emerald-300/80")}>{arrow} {Math.abs(delta)}</span>
+        <span className="text-white/30">{comparison}</span>
+      </div>
+    </div>
+  );
+}
+
+function WeeklySummary({ notes, totalNotes, totalEntities, graphNodeCount, currentScore }: {
+  notes: any[]; totalNotes: number; totalEntities: number; graphNodeCount: number; currentScore: number;
+}) {
+  const now = Date.now();
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  const list = Array.isArray(notes) ? notes : [];
+  const inRange = (n: any, from: number, to: number) => {
+    const t = new Date(n?.createdAt || n?.updatedAt || 0).getTime();
+    return t >= from && t < to;
+  };
+  const thisWeek = list.filter((n) => inRange(n, now - WEEK, now + 1)).length;
+  const lastWeek = list.filter((n) => inRange(n, now - 2 * WEEK, now - WEEK)).length;
+  const notesDelta = thisWeek - lastWeek;
+
+  return (
+    <section className="border border-white/5 bg-white/[0.01] rounded-sm p-5 sm:p-8">
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Weekly summary</p>
+        <p className="text-[10px] uppercase tracking-widest text-white/30 font-mono hidden sm:block">Last 7 days</p>
+      </div>
+      <div className="grid grid-cols-3 gap-4 sm:gap-8">
+        <SummaryMetric label="Notes" value={String(totalNotes)} delta={notesDelta} comparison="vs last week" />
+        <SummaryMetric label="Entities" value={String(totalEntities)} delta={0} comparison={`${graphNodeCount} nodes`} />
+        <SummaryMetric label="Score" value={currentScore.toFixed(2)} delta={0} comparison="gravity index" />
+      </div>
+    </section>
+  );
+}
+
+
 function StatChip({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-sm border border-white/5 bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] text-white/40">
