@@ -12,77 +12,61 @@
 
 @layer base {
   :root {
-    /* Continuum reference palette
-       base:#000  surface:#0D0D0D  surface-2:#161616  hover:#212121  active:#292929
-       text: #EAE8E2 / #A3A19B / #726F69   accent: #F3F1EB */
-    --bg-base: 0 0% 0%;
-    --bg-surface: 0 0% 5%;
-    --bg-surface-2: 0 0% 9%;
-    --bg-hover: 0 0% 13%;
-    --bg-active: 0 0% 16%;
-    --bg-selected: 43 20% 94% / 0.08;
-
-    --text-primary: 46 15% 90%;
-    --text-secondary: 45 5% 62%;
-    --text-tertiary: 40 5% 43%;
-    --text-disabled: 40 5% 29%;
-
     --background: 0 0% 0%;
-    --foreground: 46 15% 90%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 5%;
-    --card-foreground: 46 15% 90%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 46 15% 90%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 43 20% 94%;
-    --primary-foreground: 30 6% 4%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 0 0% 13%;
-    --secondary-foreground: 46 15% 90%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 0 0% 9%;
-    --muted-foreground: 45 5% 62%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 0 0% 13%;
-    --accent-foreground: 46 15% 90%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 353 82% 66%;
-    --destructive-foreground: 46 15% 90%;
+    --destructive: 0 0% 100%;
+    --destructive-foreground: 0 0% 0%;
 
-    /* Subtle hairline — visible but quiet. Used only for structural dividers. */
-    --border: 0 0% 100% / 0.05;
-    --input: 0 0% 100% / 0;
-    --ring: 43 20% 94% / 0.38;
+    --border: 0 0% 100% / 0.08;
+    --input: 0 0% 100% / 0.08;
+    --ring: 0 0% 100% / 0.20;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 0%;
-    --sidebar-foreground: 45 5% 62%;
-    --sidebar-primary: 43 20% 94%;
-    --sidebar-primary-foreground: 30 6% 4%;
-    --sidebar-accent: 0 0% 13%;
-    --sidebar-accent-foreground: 46 15% 90%;
-    --sidebar-border: 0 0% 100% / 0.04;
-    --sidebar-ring: 43 20% 94% / 0.38;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 70%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100% / 0.06;
+    --sidebar-ring: 0 0% 100% / 0.18;
 
-    --success: 152 63% 54%;
-    --success-foreground: 46 15% 90%;
-    --warning: 40 78% 60%;
-    --warning-foreground: 46 15% 90%;
-    --info: 210 84% 65%;
-    --info-foreground: 46 15% 90%;
+    --success: 0 0% 100%;
+    --success-foreground: 0 0% 0%;
+    --warning: 0 0% 100%;
+    --warning-foreground: 0 0% 0%;
+    --info: 0 0% 100%;
+    --info-foreground: 0 0% 0%;
 
     --bento-dot: 0 0% 100% / 0.015;
-    --bento-border: 0 0% 100% / 0;
+    --bento-border: 0 0% 100% / 0.06;
     --bento-hover-shadow: 0 0% 100% / 0.04;
     --bento-gradient-via: 0 0% 100% / 0.02;
 
-    --popup-background: 0 0% 9%;
-    --popup-foreground: 46 15% 90%;
-    --popup-muted: 45 5% 62%;
-    --popup-border: 0 0% 100% / 0;
+    --popup-background: 0 0% 1%;
+    --popup-foreground: 0 0% 98%;
+    --popup-muted: 0 0% 64%;
+    --popup-border: 0 0% 100% / 0.10;
   }
 
   /* Light theme — soft paper aesthetic, hairline borders @ 8% black. */
@@ -165,32 +149,36 @@
   .hairline { border-color: hsl(var(--border)); }
 
   .bento-card {
-    @apply relative p-5 rounded-lg overflow-hidden transition-all duration-200;
-    background: hsl(0 0% 5%);
+    @apply relative p-5 rounded-lg overflow-hidden transition-all duration-200 backdrop-blur-xl;
+    background: hsl(0 0% 100% / 0.025);
+    border: 1px solid hsl(0 0% 100% / 0.08);
   }
-  .bento-card:hover { background: hsl(0 0% 8%); }
+  .bento-card:hover { border-color: hsl(0 0% 100% / 0.18); background: hsl(0 0% 100% / 0.04); }
 
   .glass-panel {
-    @apply rounded-lg;
-    background: hsl(0 0% 5%);
+    @apply backdrop-blur-xl rounded-lg;
+    background: hsl(0 0% 100% / 0.025);
+    border: 1px solid hsl(0 0% 100% / 0.08);
   }
 
   .bento-tag {
     @apply px-2.5 py-1 rounded-md text-xs transition-colors duration-150;
-    background: hsl(0 0% 13%);
+    background: hsl(0 0% 8%);
     color: hsl(var(--muted-foreground));
+    border: 1px solid hsl(var(--border));
   }
-  .bento-tag:hover { background: hsl(0 0% 16%); color: hsl(var(--foreground)); }
+  .bento-tag:hover { background: hsl(0 0% 12%); color: #fff; }
 
   .bento-icon-box {
     @apply w-9 h-9 rounded-md flex items-center justify-center transition-colors duration-200;
-    background: hsl(0 0% 13%);
-    color: hsl(var(--foreground));
+    background: hsl(0 0% 8%);
+    color: #fff;
+    border: 1px solid hsl(var(--border));
   }
 
   .bento-status {
     @apply text-xs font-medium px-2 py-1 rounded-md;
-    background: hsl(0 0% 13%);
+    background: hsl(0 0% 8%);
     color: hsl(var(--muted-foreground));
   }
 
@@ -204,20 +192,21 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-[13px] transition-colors duration-150;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-sm font-medium text-[11px] uppercase tracking-[0.22em] transition-colors duration-150;
+    background-color: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
   }
-  .btn-primary:hover { background: #ffffff; }
+  .btn-primary:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-[13px] transition-colors duration-150;
-    background: transparent;
-    color: hsl(var(--foreground));
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-sm font-medium text-[11px] uppercase tracking-[0.22em] transition-colors duration-150;
+    background-color: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.16);
   }
-  .btn-secondary:hover { background: hsl(0 0% 13%); }
-
+  .btn-secondary:hover { background: hsl(0 0% 100% / 0.06); border-color: hsl(0 0% 100% / 0.32); }
 
   .container {
     width: 100%; margin-left: auto; margin-right: auto;
@@ -302,43 +291,6 @@
   }
 }
 
-/* ============================================================
-   Continuum surface sweep
-   Map the app's legacy translucent "glass" fills to the reference
-   surface tokens so panels, sticky headers, sidebars actually
-   render as solid quiet surfaces. Soften decorative outlines,
-   preserve intentional dividers (border-b / border-t / .keep-border).
-   ============================================================ */
-@layer utilities {
-  /* Very faint glass → primary surface (#0D0D0D) */
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.02"],
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.03"],
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class~="bg-white/5"] {
-    background-color: hsl(var(--bg-surface)) !important;
-  }
-  /* Slightly stronger → surface-2 (#161616) */
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class~="bg-white/10"],
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.06"],
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-glass):not(.keep-glass *))[class*="bg-white/[0.08"] {
-    background-color: hsl(var(--bg-surface-2)) !important;
-  }
-  /* Sticky headers backdrop */
-  :where(:not(.continuum-editor):not(.continuum-editor *))[class*="bg-black/60"],
-  :where(:not(.continuum-editor):not(.continuum-editor *))[class*="bg-black/70"],
-  :where(:not(.continuum-editor):not(.continuum-editor *))[class*="bg-black/80"] {
-    background-color: hsl(var(--bg-base) / 0.85) !important;
-  }
-
-  /* Decorative outlines (any border-*-white/xx that ISN'T a structural
-     divider on one side) get quieted to the hairline token. */
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-border):not(.keep-border *))[class*="border-white/"] {
-    border-color: hsl(var(--border)) !important;
-  }
-  :where(:not(.continuum-editor):not(.continuum-editor *):not(.ProseMirror):not(.ProseMirror *):not(.keep-border):not(.keep-border *))[class*="border-black/"] {
-    border-color: hsl(var(--border)) !important;
-  }
-}
-
 /* Continuum editor */
 @layer components {
   .continuum-editor { @apply text-foreground leading-relaxed; font-family: 'Inter', system-ui, sans-serif; font-size: 16px; }
@@ -398,111 +350,3 @@
   .hljs-variable, .hljs-template-variable { color: hsl(0 0% 80%); }
   .hljs-attr, .hljs-attribute { color: hsl(0 0% 70%); }
 }
-
-/* ============================================================
-   Continuum Visual System (cx-*) — utility classes mirroring
-   the reference doc. Screens can adopt these incrementally
-   without touching shadcn primitives.
-   ============================================================ */
-@layer components {
-  /* Typography */
-  .cx-eyebrow {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: hsl(var(--text-tertiary));
-    font-weight: 600;
-  }
-
-  /* Stat / metric display (§7) */
-  .cx-stat-value {
-    font-size: 32px;
-    line-height: 38px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    color: hsl(var(--foreground));
-    font-variant-numeric: tabular-nums;
-  }
-  .cx-stat-label {
-    font-size: 13px;
-    color: hsl(var(--muted-foreground));
-    margin: 2px 0 12px;
-  }
-  .cx-trend-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 26px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: hsl(var(--bg-hover));
-    color: hsl(var(--muted-foreground));
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .cx-trend-pill svg { width: 8px; height: 8px; }
-
-  /* Calendar (§8) */
-  .cx-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cx-calendar-weekday {
-    font-size: 11px;
-    color: hsl(var(--text-tertiary));
-    text-align: center;
-    padding: 8px 0;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .cx-calendar-day {
-    all: unset;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    font-size: 14px;
-    color: hsl(var(--muted-foreground));
-    cursor: pointer;
-    transition: background 120ms cubic-bezier(0.2, 0, 0, 1),
-                color 120ms cubic-bezier(0.2, 0, 0, 1);
-  }
-  .cx-calendar-day:hover { background: hsl(var(--bg-hover)); color: hsl(var(--foreground)); }
-  .cx-calendar-day.outside-month { color: hsl(var(--text-disabled)); }
-  .cx-calendar-day.today {
-    background: hsl(43 20% 94% / 0.14);
-    color: hsl(var(--primary));
-    font-weight: 600;
-  }
-  .cx-calendar-day.selected {
-    background: hsl(var(--bg-active));
-    color: hsl(var(--foreground));
-    font-weight: 600;
-  }
-  .cx-calendar-day.done {
-    background: hsl(var(--bg-active));
-    color: hsl(var(--foreground));
-    font-weight: 500;
-  }
-
-  /* Tabs (§9) */
-  .cx-tabs { display: inline-flex; gap: 4px; }
-  .cx-tab {
-    all: unset;
-    box-sizing: border-box;
-    height: 32px;
-    padding: 0 14px;
-    border-radius: 6px;
-    font-size: 13px;
-    color: hsl(var(--muted-foreground));
-    cursor: pointer;
-    transition: background 120ms, color 120ms;
-  }
-  .cx-tab:hover { color: hsl(var(--foreground)); }
-  .cx-tab.active {
-    background: hsl(var(--bg-hover));
-    color: hsl(var(--foreground));
-    font-weight: 500;
-  }
-}
-

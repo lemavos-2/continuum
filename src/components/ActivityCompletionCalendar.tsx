@@ -44,19 +44,19 @@ export function ActivityCompletionCalendar({
   const now = today(getLocalTimeZone());
 
   return (
-    <div className="w-full rounded-lg bg-[hsl(var(--bg-surface))] p-4 sm:p-5">
+    <div className="w-full border border-white/5 bg-white/[0.01] rounded-sm p-3 sm:p-4 md:p-5">
       <Cal aria-label="Activity calendar" className="w-full">
-        <header className="mb-3 flex items-center gap-1">
+        <header className="flex items-center gap-1 pb-2 sm:pb-3">
           <RACButton
             slot="previous"
-            className="flex size-8 items-center justify-center rounded-md text-[hsl(var(--text-tertiary))] outline-none transition-colors hover:bg-[hsl(var(--bg-hover))] hover:text-foreground"
+            className="flex size-8 items-center justify-center rounded-sm text-white/40 outline-none transition-colors hover:bg-white/5 hover:text-white"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </RACButton>
-          <Heading className="grow text-center text-sm font-medium text-foreground" />
+          <Heading className="grow text-center font-mono text-[11px] uppercase tracking-[0.28em] text-white/70" />
           <RACButton
             slot="next"
-            className="flex size-8 items-center justify-center rounded-md text-[hsl(var(--text-tertiary))] outline-none transition-colors hover:bg-[hsl(var(--bg-hover))] hover:text-foreground"
+            className="flex size-8 items-center justify-center rounded-sm text-white/40 outline-none transition-colors hover:bg-white/5 hover:text-white"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </RACButton>
@@ -65,12 +65,12 @@ export function ActivityCompletionCalendar({
         <CalendarGrid className="w-full [&_table]:w-full [&_table]:border-collapse">
           <CalendarGridHeader>
             {(day) => (
-              <CalendarHeaderCell className="cx-calendar-weekday">
+              <CalendarHeaderCell className="pb-1.5 font-mono text-[9px] sm:text-[9px] md:text-[10px] uppercase tracking-widest text-white/30">
                 {day}
               </CalendarHeaderCell>
             )}
           </CalendarGridHeader>
-          <CalendarGridBody className="[&_td]:p-0.5">
+          <CalendarGridBody className="[&_td]:p-0.5 [&_tr:not(:last-child)]:mb-1">
             {(date) => {
               const dateStr = date.toString();
               const isCompleted = completionSet.has(dateStr);
@@ -79,11 +79,12 @@ export function ActivityCompletionCalendar({
                 <CalendarCell
                   date={date}
                   className={cn(
-                    "cx-calendar-day",
-                    "data-[outside-month]:opacity-30",
-                    "data-[focus-visible]:ring-1 data-[focus-visible]:ring-[hsl(var(--ring))]",
-                    isCompleted && "done",
-                    isToday && !isCompleted && "today",
+                    "relative mx-auto flex aspect-square w-full max-w-9 sm:max-w-10 md:max-w-11 items-center justify-center rounded-sm border text-[11px] outline-none transition-colors",
+                    "data-[outside-month]:opacity-30 data-[focus-visible]:ring-1 data-[focus-visible]:ring-white/40",
+                    isCompleted
+                      ? "border-white/30 bg-white/15 text-white"
+                      : "border-white/5 bg-transparent text-white/60 hover:bg-white/5 hover:text-white",
+                    isToday && !isCompleted && "border-white/40 text-white",
                   )}
                 />
               );
@@ -92,14 +93,14 @@ export function ActivityCompletionCalendar({
         </CalendarGrid>
       </Cal>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div className="text-xs text-[hsl(var(--text-tertiary))]">
-          <span className="text-foreground font-medium">{trackingDates.length}</span> tracked
+      <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
+        <div className="font-mono text-[11px] uppercase tracking-widest text-white/40">
+          <span className="text-white/70">{trackingDates.length}</span> tracked
         </div>
         <Button
           size="sm"
-          variant="ghost"
-          className="gap-1.5"
+          variant="outline"
+          className="gap-1.5 h-7 px-3 text-[11px]"
           onClick={onOpenDetail}
         >
           Open detail
@@ -109,4 +110,3 @@ export function ActivityCompletionCalendar({
     </div>
   );
 }
-

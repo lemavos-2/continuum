@@ -44,19 +44,11 @@ const queryClient = new QueryClient();
 
 function HomeRoute() {
   const { user, loading } = useAuth();
+  sanitizeAuthRedirectUrl();
   const authTokens = extractAuthTokensFromLocation();
 
-  // Only hand off to LoginSuccess when we actually have a token AND no
-  // authenticated user yet. Otherwise a stray ?access_token= fragment left
-  // over from an OAuth redirect could re-mount LoginSuccess on every render
-  // and cause an infinite reload loop in production.
-  if (authTokens?.accessToken && !user && !loading) {
+  if (authTokens?.accessToken) {
     return <LoginSuccess />;
-  }
-
-  // Clean any leftover auth params once we've decided we don't need them.
-  if (!authTokens?.accessToken || user) {
-    sanitizeAuthRedirectUrl();
   }
 
   if (loading) {
