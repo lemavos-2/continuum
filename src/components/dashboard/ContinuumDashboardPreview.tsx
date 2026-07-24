@@ -191,14 +191,32 @@ export default function ContinuumDashboardPreview({
           </div>
         </header>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3" style={{ marginBottom: 20 }}>
+        <section
+          className="flex flex-wrap items-start gap-x-10 gap-y-6"
+          style={{ marginBottom: 24, padding: "4px 4px 20px" }}
+        >
           {stats.map((s) => (
-            <div key={s.label} className="cx-card" style={{ padding: 18 }}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="cx-text-xs cx-text-tertiary">{s.label}</p>
-                <div className="cx-badge cx-badge-neutral">{s.delta}</div>
+            <div key={s.label} style={{ minWidth: 96 }}>
+              <div
+                className="cx-text-2xl"
+                style={{ fontSize: 30, lineHeight: "36px", fontWeight: 600, letterSpacing: "-0.01em" }}
+              >
+                {s.value}
               </div>
-              <div className="cx-text-2xl" style={{ marginTop: 10 }}>{s.value}</div>
+              <p
+                className="cx-text-sm cx-text-secondary"
+                style={{ marginTop: 4, fontSize: 13 }}
+              >
+                {s.label}
+              </p>
+              {s.delta ? (
+                <span
+                  className="cx-badge cx-badge-neutral"
+                  style={{ marginTop: 10, height: 22, padding: "0 8px", fontSize: 11 }}
+                >
+                  {s.delta}
+                </span>
+              ) : null}
             </div>
           ))}
         </section>
