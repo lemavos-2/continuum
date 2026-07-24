@@ -1,3 +1,4 @@
+import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -44,12 +45,17 @@ const queryClient = new QueryClient();
 
 function HomeRoute() {
   const { user, loading } = useAuth();
-  sanitizeAuthRedirectUrl();
-  const authTokens = extractAuthTokensFromLocation();
+  // Read tokens once per mount so we don't recompute on every render.
+  const [hasIncomingToken] = React.useState(() => {
+    const t = extractAuthTokensFromLocation();
+    return !!t?.accessToken;
+  });
 
-  if (authTokens?.accessToken) {
-    return <LoginSuccess />;
-  }
+  React.useEffect(() => {
+    if (!hasIncomingToken) sanitizeAuthRedirectUrl();
+  }, [hasIncomingToken]);
+
+  if (hasIncomingToken) return <LoginSuccess />;
 
   if (loading) {
     return (
