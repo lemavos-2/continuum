@@ -44,12 +44,17 @@ const queryClient = new QueryClient();
 
 function HomeRoute() {
   const { user, loading } = useAuth();
-  sanitizeAuthRedirectUrl();
-  const authTokens = extractAuthTokensFromLocation();
+  // Read tokens once per mount so we don't recompute on every render.
+  const [hasIncomingToken] = React.useState(() => {
+    const t = extractAuthTokensFromLocation();
+    return !!t?.accessToken;
+  });
 
-  if (authTokens?.accessToken) {
-    return <LoginSuccess />;
-  }
+  React.useEffect(() => {
+    if (!hasIncomingToken) sanitizeAuthRedirectUrl();
+  }, [hasIncomingToken]);
+
+  if (hasIncomingToken) return <LoginSuccess />;
 
   if (loading) {
     return (
