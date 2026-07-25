@@ -121,30 +121,22 @@ const DashboardSkeleton = () => (
   </AppLayout>
 );
 
-function StatCard({ icon: Icon, label, value, hint }: { icon: ComponentType<{ className?: string }>; label: string; value: string | number; hint?: string; }) {
+function SummaryMetric({ label, value, delta, comparison }: { label: string; value: string; delta?: number; comparison: string }) {
+  const deltaValue = delta ?? 0;
+  const isUp = deltaValue > 0;
+  const isDown = deltaValue < 0;
+  const arrow = isDown ? "↓" : isUp ? "↑" : "—";
   return (
-    <div className="border border-white/5 bg-white/[0.01] rounded-sm p-4 flex flex-col gap-1 min-w-0 transition-colors hover:border-white/10">
-      <div className="flex items-center gap-1.5 text-white/30">
-        <Icon className="h-3 w-3 shrink-0" />
-        <span className="text-[9px] uppercase tracking-widest font-mono truncate">{label}</span>
-      </div>
-      <p className="text-2xl font-mono tracking-tight text-white tabular-nums leading-none mt-2 truncate">{value}</p>
-      {hint && <p className="text-[10px] font-mono uppercase tracking-wider text-white/30 truncate mt-1">{hint}</p>}
-    </div>
-  );
-}
-
-function SummaryMetric({ label, value, delta, comparison }: { label: string; value: string; delta: number; comparison: string }) {
-  const isUp = delta > 0;
-  const isDown = delta < 0;
-  const arrow = isDown ? "↓" : isUp ? "↑" : "–";
-  return (
-    <div className="flex flex-col gap-3 min-w-0">
-      <p className="text-[10px] uppercase tracking-[0.24em] text-white/40 font-mono truncate">{label}</p>
-      <p className="font-serif text-4xl sm:text-5xl text-white leading-none tabular-nums truncate">{value}</p>
-      <div className="inline-flex items-center gap-1.5 self-start rounded-sm border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-mono text-white/50">
-        <span className={cn(isDown && "text-red-300/80", isUp && "text-emerald-300/80")}>{arrow} {Math.abs(delta)}</span>
-        <span className="text-white/30">{comparison}</span>
+    <div className="min-w-0 border-t border-white/[0.08] pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 first:sm:border-l-0 first:sm:pl-0">
+      <p className="text-[10px] uppercase tracking-[0.24em] text-white/35 font-mono truncate">{label}</p>
+      <p className="mt-3 font-serif text-[3.25rem] leading-[0.9] text-white tabular-nums tracking-tight sm:text-6xl lg:text-7xl">
+        {value}
+      </p>
+      <div className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.025] px-2.5 py-1 text-[10px] font-mono text-white/45">
+        {typeof delta === "number" && (
+          <span className={cn("shrink-0", isDown && "text-red-300/80", isUp && "text-emerald-300/80")}>{arrow} {Math.abs(deltaValue)}</span>
+        )}
+        <span className="truncate text-white/35">{comparison}</span>
       </div>
     </div>
   );
@@ -165,15 +157,18 @@ function WeeklySummary({ notes, totalNotes, totalEntities, graphNodeCount, curre
   const notesDelta = thisWeek - lastWeek;
 
   return (
-    <section className="border border-white/5 bg-white/[0.01] rounded-sm p-5 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Weekly summary</p>
-        <p className="text-[10px] uppercase tracking-widest text-white/30 font-mono hidden sm:block">Last 7 days</p>
+    <section className="overflow-hidden border-y border-white/[0.08] bg-white/[0.012] px-1 py-7 sm:border sm:px-8 sm:py-8">
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">Weekly summary</p>
+          <h2 className="mt-2 font-serif text-3xl leading-none text-white sm:text-4xl">Activity at a glance</h2>
+        </div>
+        <p className="shrink-0 pt-1 text-[10px] uppercase tracking-widest text-white/30 font-mono">Last 7 days</p>
       </div>
-      <div className="grid grid-cols-3 gap-4 sm:gap-8">
+      <div className="grid grid-cols-1 gap-7 sm:grid-cols-3 sm:gap-0">
         <SummaryMetric label="Notes" value={String(totalNotes)} delta={notesDelta} comparison="vs last week" />
-        <SummaryMetric label="Entities" value={String(totalEntities)} delta={0} comparison={`${graphNodeCount} nodes`} />
-        <SummaryMetric label="Score" value={currentScore.toFixed(2)} delta={0} comparison="gravity index" />
+        <SummaryMetric label="Entities" value={String(totalEntities)} comparison={`${graphNodeCount} graph nodes`} />
+        <SummaryMetric label="Score" value={currentScore.toFixed(2)} comparison="gravity index" />
       </div>
     </section>
   );

@@ -187,6 +187,7 @@ export default function Notes() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkTypeApplying, setBulkTypeApplying] = useState(false);
 
   // Estados de Ordenação Dinâmica
   const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("updatedAt");
@@ -307,27 +308,25 @@ export default function Notes() {
   const applyBulkType = async (newType: string) => {
     const ids = Array.from(selectedIds);
     const clean = (newType || "").trim();
-    if (ids.length === 0 || !clean) return;
-    // Optimistic UI update
-    setNotes((prev) => prev.map((n) => (selectedIds.has(n.id) ? { ...n, type: clean } : n)));
-    if (!types.includes(clean)) setTypes((prev) => [...prev, clean]);
+    if (ids.length === 0 || !clean || bulkTypeApplying) return;
+    const idSet = new Set(ids);
+    const previousNotes = notes;
+    setBulkTypeApplying(true);
+    setNotes((prev) => prev.map((n) => (idSet.has(n.id) ? { ...n, type: clean } : n)));
+    setTypes((prev) => (prev.includes(clean) ? prev : [...prev, clean].sort((a, b) => a.localeCompare(b))));
     try {
-      const results = await Promise.allSettled(
-        ids.map((id) => notesApi.update(id, { type: clean }))
-      );
-      const failed = results.filter((r) => r.status === "rejected");
-      if (failed.length > 0) {
-        console.error("[Notes] bulk type failed for", failed.length, "notes", failed);
-        toast({ title: `Failed to update ${failed.length} of ${ids.length}`, variant: "destructive" });
-      } else {
-        toast({ title: t("notes_bulk_type_applied", { n: ids.length }) || `${ids.length} updated` });
-      }
+      await notesApi.bulkUpdateType(ids, clean);
+      toast({ title: t("notes_bulk_type_applied", { n: ids.length }) || `${ids.length} updated` });
       exitSelectMode();
       void fetchData();
     } catch (e) {
       console.error("[Notes] bulk type error", e);
-      toast({ title: "Error updating type", variant: "destructive" });
+      setNotes(previousNotes);
+      const details = (e as any)?.response?.data?.message || (e as any)?.response?.data?.error || (e as Error)?.message;
+      toast({ title: "Error updating type", description: details || "Please try again.", variant: "destructive" });
       void fetchData();
+    } finally {
+      setBulkTypeApplying(false);
     }
   };
 
@@ -616,10 +615,10 @@ export default function Notes() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        disabled={selectedIds.size === 0}
+                        disabled={selectedIds.size === 0 || bulkTypeApplying}
                         className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-white/40 hover:text-white disabled:opacity-40"
                       >
-                        <Tag className="h-3.5 w-3.5" /> {t("notes_set_type") || "Set type"}
+                        {bulkTypeApplying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Tag className="h-3.5 w-3.5" />} {t("notes_set_type") || "Set type"}
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[180px]">

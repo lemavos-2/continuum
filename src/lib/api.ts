@@ -389,6 +389,8 @@ export const notesApi = {
     }
     return api.put(`/api/notes/${id}`, payload);
   },
+  bulkUpdateType: (ids: string[], type: string) =>
+    api.patch("/api/notes/bulk-type", { ids, type }),
   delete: (id: string) => api.delete(`/api/notes/${id}`),
   toggleFavorite: (id: string) => api.patch(`/api/notes/${id}/favorite`),
   getBacklinks: (id: string) => api.get(`/api/notes/${id}/backlinks`),
