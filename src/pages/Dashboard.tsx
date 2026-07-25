@@ -122,8 +122,9 @@ const DashboardSkeleton = () => (
 );
 
 function SummaryMetric({ label, value, delta, comparison }: { label: string; value: string; delta?: number; comparison: string }) {
-  const isUp = delta > 0;
-  const isDown = delta < 0;
+  const deltaValue = delta ?? 0;
+  const isUp = deltaValue > 0;
+  const isDown = deltaValue < 0;
   const arrow = isDown ? "↓" : isUp ? "↑" : "—";
   return (
     <div className="min-w-0 border-t border-white/[0.08] pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 first:sm:border-l-0 first:sm:pl-0">
@@ -133,7 +134,7 @@ function SummaryMetric({ label, value, delta, comparison }: { label: string; val
       </p>
       <div className="mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.025] px-2.5 py-1 text-[10px] font-mono text-white/45">
         {typeof delta === "number" && (
-          <span className={cn("shrink-0", isDown && "text-red-300/80", isUp && "text-emerald-300/80")}>{arrow} {Math.abs(delta)}</span>
+          <span className={cn("shrink-0", isDown && "text-red-300/80", isUp && "text-emerald-300/80")}>{arrow} {Math.abs(deltaValue)}</span>
         )}
         <span className="truncate text-white/35">{comparison}</span>
       </div>
