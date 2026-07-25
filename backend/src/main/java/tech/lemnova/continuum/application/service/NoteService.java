@@ -316,6 +316,38 @@ public class NoteService {
         return NoteResponse.from(note, newContent);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "note-content", allEntries = true),
+        @CacheEvict(value = "insights:notes", allEntries = true),
+        @CacheEvict(value = "insights:entities", allEntries = true)
+    })
+    public List<Note> updateTypes(List<String> noteIds, String type) {
+        String userId = getCurrentUserId();
+        if (noteIds == null || noteIds.isEmpty()) {
+            throw new IllegalArgumentException("noteIds cannot be empty");
+        }
+        String cleanType = type == null ? "" : type.trim();
+        if (cleanType.isEmpty()) {
+            throw new IllegalArgumentException("type cannot be empty");
+        }
+
+        Set<String> requestedIds = new LinkedHashSet<>(noteIds);
+        List<Note> notes = noteRepo.findAllById(requestedIds).stream()
+                .filter(note -> userId.equals(note.getUserId()))
+                .toList();
+
+        if (notes.size() != requestedIds.size()) {
+            throw new NotFoundException("One or more notes were not found");
+        }
+
+        Instant now = Instant.now();
+        notes.forEach(note -> {
+            note.setType(cleanType);
+            note.setUpdatedAt(now);
+        });
+        return noteRepo.saveAll(notes);
+    }
+
     /**
      * Busca nota por ID e carrega seu conteúdo.
      * 
