@@ -10,6 +10,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import tech.lemnova.continuum.application.exception.BadRequestException;
 import tech.lemnova.continuum.application.exception.NotFoundException;
 import tech.lemnova.continuum.application.exception.PlanLimitException;
 import tech.lemnova.continuum.controller.dto.note.BacklinkMentionDTO;
@@ -324,11 +325,11 @@ public class NoteService {
     public List<Note> updateTypes(List<String> noteIds, String type) {
         String userId = getCurrentUserId();
         if (noteIds == null || noteIds.isEmpty()) {
-            throw new IllegalArgumentException("noteIds cannot be empty");
+            throw new BadRequestException("noteIds cannot be empty");
         }
         String cleanType = type == null ? "" : type.trim();
         if (cleanType.isEmpty()) {
-            throw new IllegalArgumentException("type cannot be empty");
+            throw new BadRequestException("type cannot be empty");
         }
 
         Set<String> requestedIds = new LinkedHashSet<>(noteIds);

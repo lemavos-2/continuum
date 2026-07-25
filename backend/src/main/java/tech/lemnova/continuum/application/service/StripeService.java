@@ -93,6 +93,7 @@ public class StripeService {
                     .setCancelUrl(cancelUrl)
                     .setAllowPromotionCodes(true)
                     .setClientReferenceId(userId)
+                    .putMetadata("user_id", userId)
                     .addLineItem(
                             SessionCreateParams.LineItem.builder()
                                     .setPrice(priceId)
