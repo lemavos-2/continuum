@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.http.HttpClient;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Bot #1 — product/business notifications (new signups).
@@ -57,10 +58,10 @@ public class TelegramNotificationService {
         return bot.sendSync("\u2705 <b>Teste do bot de novos usuarios</b>\n\ud83d\udd52 " + Instant.now());
     }
 
-    public void notifyNewUser(String name, String email) {
+    public CompletableFuture<Boolean> notifyNewUser(String name, String email) {
         if (!bot.isConfigured()) {
             log.warn("Telegram new-user bot not configured (TELEGRAM_NEWUSER_BOT_TOKEN / TELEGRAM_NEWUSER_CHAT_ID). Skipping notification for {} <{}>", name, email);
-            return;
+            return CompletableFuture.completedFuture(false);
         }
 
         String message = "🎉 <b>Novo usuário</b>\n"
@@ -69,7 +70,13 @@ public class TelegramNotificationService {
                 + "🕒 " + Instant.now();
 
         log.info("Enviando notificação Telegram de novo usuário {} <{}>", name, email);
-        bot.sendMessage(message, (status, body) ->
-                log.error("Falha ao enviar notificação Telegram (novo usuário {} <{}>): status={} body={}", name, email, status, body));
+        return bot.sendMessage(message, (status, body) ->
+                log.error("Falha ao enviar notificação Telegram (novo usuário {} <{}>): status={} body={}", name, email, status, body))
+                .thenApply(response -> response != null
+                        && response.statusCode() >= 200
+                        && response.statusCode() < 300
+                        && response.body() != null
+                        && response.body().replaceAll("\\s+", "").contains("\"ok\":true"))
+                .exceptionally(error -> false);
     }
 }
