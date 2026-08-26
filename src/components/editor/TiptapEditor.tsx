@@ -41,11 +41,14 @@ import { VaultPdf } from "./VaultPdf";
 import { VaultAudio } from "./VaultAudio";
 import { AutoPair } from "./extensions/AutoPair";
 import { EditorShortcuts } from "./extensions/EditorShortcuts";
+import { HeadingFold } from "./extensions/HeadingFold";
 import { LinkHover } from "./extensions/LinkHover";
 import { SearchHighlight } from "./extensions/SearchHighlight";
 import { FindReplace } from "./FindReplace";
 import { StatusBar } from "./StatusBar";
 import { MobileCommandBar } from "./MobileCommandBar";
+
+export const EDITOR_UPLOAD_EVENT = "continuum:editor-upload";
 
 const IMAGE_MIME_RE = /^image\//i;
 const IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif|svg)$/i;
@@ -247,10 +250,14 @@ interface Props {
   className?: string;
   currentNoteId?: string;
   onSave?: () => void;
+  foldedHeadings?: number[];
+  onFoldedHeadingsChange?: (indices: number[]) => void;
 }
 
 export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
-  ({ content, onChange, editable = true, className, currentNoteId, onSave }, ref) => {
+  ({ content, onChange, editable = true, className, currentNoteId, onSave, foldedHeadings, onFoldedHeadingsChange }, ref) => {
+    const onFoldChangeRef = useRef(onFoldedHeadingsChange);
+    onFoldChangeRef.current = onFoldedHeadingsChange;
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
     const onSaveRef = useRef(onSave);
@@ -260,7 +267,9 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
     const [isUploading, setIsUploading] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [findOpen, setFindOpen] = useState(false);
+    const [inTable, setInTable] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const updateTimerRef = useRef<number | null>(null);
     const { toast } = useToast();
 
     const uploadFileRef = useRef<(file: File) => Promise<void>>();
@@ -308,8 +317,17 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         VaultPdf,
         VaultAudio,
         TaskList,
-        TaskItem.configure({ nested: true }),
-        Table.configure({ resizable: true }),
+        TaskItem.configure({
+          nested: true,
+          // The current document position is resolved by the change listener
+          // below. Returning true prevents Tiptap from reverting the native
+          // checkbox while the editor is read-only.
+          onReadOnlyChecked: () => true,
+        }),
+        HeadingFold.configure({
+          onFoldChange: (indices) => onFoldChangeRef.current?.(indices),
+        }),
+        Table.configure({ resizable: true, allowTableNodeSelection: true, lastColumnResizable: true }),
         TableRow,
         TableCell,
         TableHeader,
@@ -348,7 +366,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       editable,
       editorProps: {
         attributes: {
-          class: `continuum-editor prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60vh] ${className || ""}`,
+          class: `continuum-editor prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60vh] ${editable ? "" : "is-readonly"} ${className || ""}`,
         },
         handleClickOn: (_view, _pos, node, _nodePos, event) => {
           const name = node.type.name;
@@ -377,7 +395,12 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
         },
       },
       onUpdate: ({ editor }) => {
-        onChangeRef.current?.(editor.getJSON());
+        // Throttled: avoids re-rendering the whole note page on every keystroke.
+        if (updateTimerRef.current) window.clearTimeout(updateTimerRef.current);
+        updateTimerRef.current = window.setTimeout(() => {
+          if (editor.isDestroyed) return;
+          onChangeRef.current?.(editor.getJSON());
+        }, 300);
       },
     });
 
@@ -486,12 +509,102 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
 
     useEffect(() => {
       if (!editor || !content) return;
+      // never overwrite what the user is actively typing
+      if (editor.isFocused) return;
       const a = JSON.stringify(editor.getJSON());
       const b = JSON.stringify(content);
       if (a !== b && typeof content === "object") editor.commands.setContent(content, { emitUpdate: false });
     }, [content, editor]);
 
-    useEffect(() => { if (editor) editor.setEditable(editable); }, [editor, editable]);
+    // Keep table toolbar visibility in sync with the caret (mouse, keyboard and touch).
+    useEffect(() => {
+      if (!editor) return;
+      const sync = () => setInTable(editor.isActive("table"));
+      editor.on("selectionUpdate", sync);
+      editor.on("transaction", sync);
+      editor.on("focus", sync);
+      sync();
+      return () => {
+        editor.off("selectionUpdate", sync);
+        editor.off("transaction", sync);
+        editor.off("focus", sync);
+      };
+    }, [editor]);
+
+    // Restore persisted heading fold state (server-side, per note).
+    const appliedFoldsRef = useRef<string | null>(null);
+    useEffect(() => {
+      if (!editor || !foldedHeadings) return;
+      const sig = `${currentNoteId ?? ""}:${foldedHeadings.join(",")}`;
+      if (appliedFoldsRef.current === sig) return;
+      appliedFoldsRef.current = sig;
+      editor.commands.setFoldedHeadings(foldedHeadings);
+    }, [editor, foldedHeadings, currentNoteId]);
+
+    useEffect(() => {
+      if (!editor) return;
+      editor.setEditable(editable);
+      const dom = editor.view?.dom as HTMLElement | undefined;
+      dom?.classList.toggle("is-readonly", !editable);
+    }, [editor, editable]);
+
+    // Tiptap's read-only callback receives the node captured when its node view
+    // was created. After the first toggle that object is stale, so subsequent
+    // clicks can fail. Resolve the live task node from the clicked DOM element
+    // on every change instead.
+    useEffect(() => {
+      if (!editor || editable) return;
+      const dom = editor.view.dom;
+
+      const toggleReadOnlyTask = (event: Event) => {
+        const checkbox = event.target instanceof HTMLInputElement ? event.target : null;
+        if (!checkbox || checkbox.type !== "checkbox") return;
+        const taskItem = checkbox.closest<HTMLElement>('li[data-type="taskItem"]');
+        if (!taskItem || !dom.contains(taskItem)) return;
+
+        const position = editor.view.posAtDOM(taskItem, 0);
+        const node = editor.state.doc.nodeAt(position);
+        if (!node || node.type.name !== "taskItem") return;
+
+        editor.view.dispatch(
+          editor.state.tr.setNodeMarkup(position, undefined, {
+            ...node.attrs,
+            checked: checkbox.checked,
+          })
+        );
+      };
+
+      dom.addEventListener("change", toggleReadOnlyTask);
+      return () => dom.removeEventListener("change", toggleReadOnlyTask);
+    }, [editor, editable]);
+
+    // "/" command + toolbar upload entry point
+    useEffect(() => {
+      const open = (ev: Event) => {
+        const accept = (ev as CustomEvent)?.detail?.accept as string | undefined;
+        if (fileInputRef.current) {
+          fileInputRef.current.accept = accept || "image/*,application/pdf,audio/*";
+        }
+        fileInputRef.current?.click();
+      };
+      window.addEventListener(EDITOR_UPLOAD_EVENT, open as EventListener);
+      return () => window.removeEventListener(EDITOR_UPLOAD_EVENT, open as EventListener);
+    }, []);
+
+    // flush any pending throttled change so nothing is lost on unmount
+    useEffect(() => {
+      return () => {
+        if (updateTimerRef.current) {
+          window.clearTimeout(updateTimerRef.current);
+          updateTimerRef.current = null;
+          try {
+            if (editor && !editor.isDestroyed) onChangeRef.current?.(editor.getJSON());
+          } catch {
+            /* editor already torn down */
+          }
+        }
+      };
+    }, [editor]);
 
     useEffect(() => {
       resetEditorCaches();
@@ -566,14 +679,23 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
               />
             </BubbleMenu>
 
-            {editor.isActive("table") && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1 bg-black/95 border border-white/10 px-2 py-1.5 rounded-xl shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 font-medium">Table</span>
-                <button type="button" className="text-xs h-7 px-3 rounded hover:bg-white/10 text-neutral-300 transition-colors" onClick={() => editor.chain().focus().addColumnAfter().run()}>+ Col</button>
-                <button type="button" className="text-xs h-7 px-3 rounded hover:bg-white/10 text-neutral-300 transition-colors" onClick={() => editor.chain().focus().addRowAfter().run()}>+ Row</button>
-                <div className="w-[1px] h-4 bg-white/10 mx-1" />
-                <button type="button" className="flex items-center text-xs h-7 px-3 rounded hover:bg-red-500/20 text-red-400 transition-colors" onClick={() => editor.chain().focus().deleteTable().run()}>
-                  <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+            {inTable && editable && (
+              <div className="fixed bottom-28 sm:bottom-6 left-1/2 -translate-x-1/2 z-[70] flex max-w-[94vw] items-center gap-1 overflow-x-auto rounded-xl border border-white/10 bg-black/90 px-2 py-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
+                <span className="px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Table</span>
+                <TableBtn onClick={() => editor.chain().focus().addColumnBefore().run()}>← Col</TableBtn>
+                <TableBtn onClick={() => editor.chain().focus().addColumnAfter().run()}>Col →</TableBtn>
+                <TableBtn onClick={() => editor.chain().focus().addRowBefore().run()}>↑ Row</TableBtn>
+                <TableBtn onClick={() => editor.chain().focus().addRowAfter().run()}>Row ↓</TableBtn>
+                <div className="mx-1 h-4 w-[1px] bg-white/10" />
+                <TableBtn onClick={() => editor.chain().focus().toggleHeaderRow().run()}>Header</TableBtn>
+                <TableBtn onClick={() => resizeCurrentColumn(editor, -40)}>Width −</TableBtn>
+                <TableBtn onClick={() => resizeCurrentColumn(editor, 40)}>Width +</TableBtn>
+                <TableBtn onClick={() => editor.chain().focus().mergeOrSplit().run()}>Merge</TableBtn>
+                <div className="mx-1 h-4 w-[1px] bg-white/10" />
+                <TableBtn onClick={() => editor.chain().focus().deleteColumn().run()}>− Col</TableBtn>
+                <TableBtn onClick={() => editor.chain().focus().deleteRow().run()}>− Row</TableBtn>
+                <button type="button" className="flex items-center rounded px-3 text-xs h-7 text-red-400 transition-colors hover:bg-red-500/20" onPointerDown={(ev) => { ev.preventDefault(); editor.chain().focus().deleteTable().run(); }}>
+                  <Trash2 className="mr-1.5 h-3 w-3" /> Delete
                 </button>
               </div>
             )}
@@ -653,6 +775,27 @@ function ToolbarBtn({
       }`}
     >
       <Icon className="w-3.5 h-3.5" />
+    </button>
+  );
+}
+/** Touch-friendly column resize: nudges the current cell's colwidth. */
+function resizeCurrentColumn(editor: Editor, delta: number) {
+  const attrs = editor.getAttributes("tableCell");
+  const headerAttrs = editor.getAttributes("tableHeader");
+  const current = (attrs?.colwidth ?? headerAttrs?.colwidth) as number[] | null | undefined;
+  const base = Array.isArray(current) && current.length ? current[0] : 160;
+  const next = Math.max(60, Math.min(720, base + delta));
+  editor.chain().focus().setCellAttribute("colwidth", [next]).run();
+}
+
+function TableBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => { e.preventDefault(); onClick(); }}
+      className="h-7 shrink-0 whitespace-nowrap rounded px-2.5 text-xs text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+    >
+      {children}
     </button>
   );
 }

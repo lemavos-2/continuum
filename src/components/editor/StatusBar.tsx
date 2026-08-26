@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   editor: Editor | null;
 }
 
 export function StatusBar({ editor }: Props) {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({ words: 0, chars: 0, line: 1, col: 1, readMin: 0 });
 
   useEffect(() => {
@@ -40,13 +42,13 @@ export function StatusBar({ editor }: Props) {
 
   return (
     <div className="flex items-center gap-3 text-[10px] text-white/40 px-3 py-1.5 border-t border-white/5 bg-black/40 backdrop-blur tabular-nums">
-      <span>{stats.words} words</span>
+      <span>{t("ed_words", { count: stats.words })}</span>
       <span className="text-white/20">·</span>
-      <span>{stats.chars} chars</span>
+      <span>{t("ed_chars", { count: stats.chars })}</span>
       <span className="text-white/20">·</span>
-      <span>Ln {stats.line}, Col {stats.col}</span>
+      <span>{t("ed_line_col", { line: stats.line, col: stats.col })}</span>
       <span className="text-white/20 ml-auto">·</span>
-      <span>{stats.readMin} min read</span>
+      <span>{t("ed_min_read", { count: stats.readMin })}</span>
     </div>
   );
 }

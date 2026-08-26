@@ -11,33 +11,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
-  ArrowLeft, Save, Loader2, Check, PanelRight, 
-  Settings2, ImageIcon, FileText, X, Clock,
-  Link2, AtSign
+  ArrowLeft, Loader2, Check, PanelRight, 
+  FileText, X, Clock,
+  Link2, AtSign, Eye, PenLine
 } from "@/lib/heroicons";
 import { useToast } from "@/hooks/use-toast";
 import { TiptapEditor, type TiptapEditorHandle } from "@/components/TiptapEditor";
 import { BacklinksPanel } from "@/components/BacklinksPanel";
 import { countTiptapMentions, extractMentionIds, extractMentionLabels, parseTiptapContent, sanitizeTiptapMentions, tiptapContentToPlainText } from "@/lib/tiptap-content";
 import {
-  isAllowedWallpaperFile,
   loadWallpaperSettings,
-  removeWallpaper,
-  resolveVaultBlob,
-  saveWallpaperSettings,
+  resolveVaultBlobFast,
   subscribeWallpaper,
-  uploadWallpaper,
   type NoteWallpaperSettings,
 } from "@/lib/note-wallpaper";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getNoteFoldsSync, loadNoteFolds, saveNoteFolds } from "@/lib/note-folds";
+import { getEditorReadOnlySync, loadEditorReadOnly, saveEditorReadOnly } from "@/lib/editor-mode";
 
 interface NoteData {
   id: string;
@@ -63,6 +56,7 @@ export default function NoteEditor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const editorRef = useRef<TiptapEditorHandle>(null);
   const tempId = searchParams.get("tempId");
   const isOptimistic = searchParams.get("optimistic") === "true";
@@ -76,13 +70,28 @@ export default function NoteEditor() {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "creating">("idle");
   const [showBacklinks, setShowBacklinks] = useState(false);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  // The last mode the user left the editor in (view or edit) is restored.
+  const [readOnly, setReadOnly] = useState<boolean>(() => getEditorReadOnlySync());
+
+  useEffect(() => {
+    void loadEditorReadOnly().then((v) => setReadOnly(v));
+  }, []);
+
+  // Close the context sidebar with Escape.
+  useEffect(() => {
+    if (!showBacklinks) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowBacklinks(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showBacklinks]);
+
+
 
   // ── Wallpaper (global to all notes, persisted in localStorage) ──────────
   const [wallpaper, setWallpaper] = useState<NoteWallpaperSettings>(() => loadWallpaperSettings());
   const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
-  const [wallpaperUploading, setWallpaperUploading] = useState(false);
-  const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeWallpaper(setWallpaper);
@@ -92,43 +101,33 @@ export default function NoteEditor() {
   useEffect(() => {
     let cancelled = false;
     if (!wallpaper.fileId) { setWallpaperUrl(null); return; }
-    resolveVaultBlob(wallpaper.fileId)
+    resolveVaultBlobFast(wallpaper.fileId)
       .then((url) => { if (!cancelled) setWallpaperUrl(url); })
       .catch(() => { if (!cancelled) setWallpaperUrl(null); });
     return () => { cancelled = true; };
   }, [wallpaper.fileId]);
 
-  const handleWallpaperFile = async (file: File | undefined | null) => {
-    if (!file) return;
-    if (!isAllowedWallpaperFile(file)) {
-      toast({ title: "Unsupported format", description: "Only .jpg and .png images are allowed.", variant: "destructive" });
-      return;
-    }
-    setWallpaperUploading(true);
-    try {
-      await uploadWallpaper(file);
-      toast({ title: "Wallpaper updated" });
-    } catch (e: any) {
-      toast({ title: "Upload failed", description: e?.message || "Could not upload wallpaper.", variant: "destructive" });
-    } finally {
-      setWallpaperUploading(false);
-      if (wallpaperInputRef.current) wallpaperInputRef.current.value = "";
-    }
-  };
+  // Wallpaper is configured in /profile; the editor only renders it.
 
-  const handleWallpaperRemove = async () => {
-    try {
-      await removeWallpaper();
-      toast({ title: "Wallpaper removed" });
-    } catch {
-      toast({ title: "Could not remove wallpaper", variant: "destructive" });
-    }
-  };
 
-  const updateWallpaperAdjustment = (patch: Partial<NoteWallpaperSettings>) => {
-    const next = { ...wallpaper, ...patch };
-    saveWallpaperSettings(next);
-  };
+
+  // ── Collapsed headings (persisted server-side per note) ────────────────
+  const [foldedHeadings, setFoldedHeadings] = useState<number[] | undefined>(undefined);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setFoldedHeadings(getNoteFoldsSync(id));
+    loadNoteFolds(id).then((indices) => {
+      if (!cancelled) setFoldedHeadings(indices);
+    });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const handleFoldChange = useCallback((indices: number[]) => {
+    if (!id) return;
+    saveNoteFolds(id, indices);
+  }, [id]);
 
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJSON = useRef<string>("");
@@ -307,7 +306,7 @@ export default function NoteEditor() {
         })
         .catch(() => {
           if (cancelled) return;
-          toast({ title: "Note not found", variant: "destructive" });
+          toast({ title: t("ed_note_not_found"), variant: "destructive" });
           navigate("/notes");
         })
         .finally(() => {
@@ -321,24 +320,24 @@ export default function NoteEditor() {
     };
   }, [id, navigate, searchParams, toast]);
 
-  const doSave = useCallback(async (t: string, json: any, newType: string) => {
+  const doSave = useCallback(async (nextTitle: string, json: any, newType: string) => {
     if (!id) return;
     const jsonStr = JSON.stringify(json);
-    if (t === lastSavedTitle.current && jsonStr === lastSavedJSON.current && newType === lastSavedType.current) return;
+    if (nextTitle === lastSavedTitle.current && jsonStr === lastSavedJSON.current && newType === lastSavedType.current) return;
 
     setSaveStatus("saving");
     try {
       const entityIds = extractMentionIds(json);
       await notesApi.update(id, {
-        title: t,
+        title: nextTitle,
         content: json,
         entityIds,
         type: newType,
       });
 
-      setNote((prev) => prev ? { ...prev, title: t, content: json, entityIds, type: newType } : null);
+      setNote((prev) => prev ? { ...prev, title: nextTitle, content: json, entityIds, type: newType } : null);
 
-      lastSavedTitle.current = t;
+      lastSavedTitle.current = nextTitle;
       lastSavedJSON.current = jsonStr;
       lastSavedType.current = newType;
       setSaveStatus("saved");
@@ -346,19 +345,18 @@ export default function NoteEditor() {
     } catch (error: any) {
       setSaveStatus("idle");
       if (error?.response?.status === 401) {
-        toast({ title: "Session expired", variant: "destructive" });
+        toast({ title: t("ed_session_expired"), variant: "destructive" });
       } else {
-        toast({ title: "Error saving note", variant: "destructive" });
+        toast({ title: t("ed_error_saving"), variant: "destructive" });
       }
     }
   }, [id, toast]);
 
   const scheduleAutoSave = useCallback((t: string, json: any, newType: string) => {
     if (isOptimistic) return;
-    if (!autoSaveEnabled) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => doSave(t, json, newType), 1500);
-  }, [doSave, autoSaveEnabled, isOptimistic]);
+    autoSaveTimer.current = setTimeout(() => doSave(t, json, newType), 900);
+  }, [doSave, isOptimistic]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
@@ -392,17 +390,38 @@ export default function NoteEditor() {
     scheduleAutoSave(title, json, type);
   }, [title, type, scheduleAutoSave, isOptimistic]);
 
-  const handleManualSave = async () => {
-    if (isOptimistic) {
-      toast({ title: "Waiting for note creation", description: "Your note is still being created on the server.", variant: "default" });
-      return;
-    }
+  // ── Guaranteed save on exit ────────────────────────────────────────────
+  const latestRef = useRef({ title, type, isOptimistic });
+  latestRef.current = { title, type, isOptimistic };
 
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    const json = editorRef.current?.getJSON() || currentJSON.current;
-    await doSave(title, json, type);
-    toast({ title: "Note saved successfully!" });
-  };
+  const flushSave = useCallback(() => {
+    const { title: t0, type: ty, isOptimistic: opt } = latestRef.current;
+    if (opt || !id) return;
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+    const json = editorRef.current?.getJSON() ?? currentJSON.current;
+    if (!json) return;
+    void doSave(t0, json, ty);
+  }, [doSave, id]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushSave();
+    };
+    const onPageHide = () => flushSave();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("beforeunload", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("beforeunload", onPageHide);
+      flushSave();
+    };
+  }, [flushSave]);
+
 
   if (loading) {
     return (
@@ -416,7 +435,7 @@ export default function NoteEditor() {
 
   return (
     <AppLayout>
-      <div className="flex h-[calc(100vh-3.5rem)] bg-background relative">
+      <div className="relative flex h-dvh min-h-0 overflow-hidden bg-background lg:h-[calc(100vh-3.5rem)]">
         {/* Wallpaper layer (global, per-user) - covers entire editor area including sidebar */}
         {wallpaperUrl && (
           <div
@@ -437,7 +456,7 @@ export default function NoteEditor() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
           {/* Top Toolbar */}
-          <header className="relative z-10 flex items-center justify-between px-4 py-3 border-b border-white/5 bg-background/30 backdrop-blur-md shrink-0">
+          <header className="relative z-10 flex shrink-0 items-center justify-between border-b border-white/5 bg-background/70 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md lg:pt-3">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/notes"))} className="text-muted-foreground hover:text-foreground w-8 h-8">
                 <ArrowLeft className="w-4 h-4" />
@@ -446,171 +465,49 @@ export default function NoteEditor() {
               
               {/* Status Indicator */}
               <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full">
-                {saveStatus === "creating" && <><Loader2 className="w-3 h-3 animate-spin" /> Creating...</>}
-                {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> Saving...</>}
-                {saveStatus === "saved" && <><Check className="w-3 h-3 text-emerald-400" /> Saved</>}
-                {saveStatus === "idle" && <><FileText className="w-3 h-3" /> Ready</>}
+                {saveStatus === "creating" && <><Loader2 className="w-3 h-3 animate-spin" /> {t("ed_creating")}</>}
+                {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> {t("ed_saving")}</>}
+                {saveStatus === "saved" && <><Check className="w-3 h-3 text-emerald-400" /> {t("ed_saved")}</>}
+                {saveStatus === "idle" && <><FileText className="w-3 h-3" /> {t("ed_ready")}</>}
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* Botão Premium de Salvar */}
-              <Button 
-                onClick={handleManualSave}
-                disabled={saveStatus === "saving" || saveStatus === "creating"}
-                className="gap-2 h-9 px-4 rounded-sm text-sm"
+              {/* Read / write mode */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 transition-colors ${readOnly ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => {
+                  if (!readOnly) flushSave();
+                  setReadOnly((v) => {
+                    saveEditorReadOnly(!v);
+                    return !v;
+                  });
+                }}
+                title={readOnly ? t("ed_edit_mode") : t("ed_view_mode")}
+                aria-pressed={readOnly}
               >
-                <Save className="w-3.5 h-3.5" />
-                Save
+                {readOnly ? <Eye className="h-4 w-4" /> : <PenLine className="h-4 w-4" />}
               </Button>
 
-              <div className="h-4 w-[1px] bg-white/10 mx-1" />
 
-              <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground" onClick={() => editorRef.current?.triggerUpload()} title="Attach Media">
-                <ImageIcon className="w-4 h-4" />
-              </Button>
 
-              {/* Note Settings Popover */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground">
-                    <Settings2 className="w-4 h-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-4 border-white/10 bg-black/95 backdrop-blur-xl shadow-2xl rounded-2xl" align="end">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-sm text-foreground mb-1">Properties</h4>
-                      <p className="text-xs text-muted-foreground">Manage note metadata and settings.</p>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Note Type</Label>
-                        <div className="flex gap-2">
-                          {availableTypes.length > 0 && (
-                            <Select value={type} onValueChange={handleTypeChange}>
-                              <SelectTrigger className="flex-1 bg-white/5 border-white/10 h-8 text-xs">
-                                <SelectValue placeholder="Select..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableTypes.map((t) => (
-                                  <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          <Input
-                            value={type}
-                            onChange={(e) => handleTypeChange(e.target.value)}
-                            placeholder="Or new..."
-                            className="flex-1 bg-white/5 border-white/10 h-8 text-xs"
-                            maxLength={50}
-                          />
-                          {type && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive" onClick={() => handleTypeChange("")}>
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                        <Label htmlFor="auto-save" className="text-xs text-foreground cursor-pointer">Auto Save</Label>
-                        <Switch id="auto-save" checked={autoSaveEnabled} onCheckedChange={setAutoSaveEnabled} className="scale-75 origin-right" />
-                      </div>
-
-                      {/* Wallpaper Settings */}
-                      <div className="pt-3 border-t border-white/5 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Wallpaper</Label>
-                          {wallpaper.fileId && (
-                            <button
-                              type="button"
-                              onClick={handleWallpaperRemove}
-                              className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </div>
-
-                        <input
-                          ref={wallpaperInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-                          className="hidden"
-                          onChange={(e) => handleWallpaperFile(e.target.files?.[0])}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={wallpaperUploading}
-                          onClick={() => wallpaperInputRef.current?.click()}
-                          className="w-full h-8 text-xs bg-white/5 border-white/10 hover:bg-white/10"
-                        >
-                          {wallpaperUploading ? (
-                            <><Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Uploading…</>
-                          ) : wallpaper.fileId ? (
-                            <><ImageIcon className="w-3 h-3 mr-1.5" /> Replace image (.jpg/.png)</>
-                          ) : (
-                            <><ImageIcon className="w-3 h-3 mr-1.5" /> Upload image (.jpg/.png)</>
-                          )}
-                        </Button>
-
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Blur</Label>
-                            <span className="text-[10px] text-muted-foreground tabular-nums">{wallpaper.blur}px</span>
-                          </div>
-                          <Slider
-                            min={0}
-                            max={40}
-                            step={1}
-                            value={[wallpaper.blur]}
-                            onValueChange={([v]) => updateWallpaperAdjustment({ blur: v })}
-                            disabled={!wallpaper.fileId}
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Brightness</Label>
-                            <span className="text-[10px] text-muted-foreground tabular-nums">{wallpaper.brightness}%</span>
-                          </div>
-                          <Slider
-                            min={20}
-                            max={150}
-                            step={1}
-                            value={[wallpaper.brightness]}
-                            onValueChange={([v]) => updateWallpaperAdjustment({ brightness: v })}
-                            disabled={!wallpaper.fileId}
-                          />
-                        </div>
-
-                        <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
-                          Applies to every note. Saved in your vault — replacing or removing deletes the old image.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Button variant="ghost" size="icon" className={`w-8 h-8 transition-colors ${showBacklinks ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setShowBacklinks(!showBacklinks)} title="Toggle Side Panel">
+              <Button variant="ghost" size="icon" className={`w-8 h-8 transition-colors ${showBacklinks ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setShowBacklinks(!showBacklinks)} title={t("ed_toggle_side_panel")}>
                 <PanelRight className="w-4 h-4" />
               </Button>
             </div>
           </header>
 
           {/* Editor Canvas */}
-          <div className="relative z-10 flex-1 overflow-y-auto scroll-smooth">
-            <div className="max-w-[750px] mx-auto w-full px-6 py-12 lg:px-12 pb-32">
+          <div className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth">
+            <div className="mx-auto w-full max-w-[750px] px-6 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-12 lg:px-12 lg:pb-32">
               <Input
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder="Untitled Note"
+                readOnly={readOnly}
+                placeholder={t("ed_untitled_note")}
                 className="text-5xl lg:text-6xl font-display font-bold border-0 px-0 focus-visible:ring-0 bg-transparent text-foreground mb-8 h-auto placeholder:text-muted-foreground/30 tracking-tight"
               />
 
@@ -620,12 +517,13 @@ export default function NoteEditor() {
                     ref={editorRef}
                     content={currentJSON.current}
                     onChange={handleEditorChange}
+                    editable={!readOnly}
                     currentNoteId={note?.id}
-                    onSave={() => {
-                      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-                      void doSave(title, currentJSON.current, type);
-                    }}
+                    onSave={flushSave}
+                    foldedHeadings={foldedHeadings}
+                    onFoldedHeadingsChange={handleFoldChange}
                   />
+
 
                 </div>
               )}
@@ -634,21 +532,34 @@ export default function NoteEditor() {
           
           {/* Footer Metadata */}
           {note?.updatedAt && (
-            <div className="absolute bottom-2 left-4 flex items-center gap-1.5 text-[10px] text-muted-foreground bg-background/80 backdrop-blur px-2 py-1 rounded-md border border-white/5">
+            <div className="pointer-events-none absolute bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-4 flex items-center gap-1.5 rounded-md border border-white/5 bg-background/80 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur">
               <Clock className="w-3 h-3" />
-              Edited {new Date(note.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              {t("ed_edited", { date: new Date(note.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })}
             </div>
           )}
         </div>
 
+        {/* Click-outside overlay for the context sidebar */}
+        {showBacklinks && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-20"
+            onPointerDown={() => setShowBacklinks(false)}
+          />
+        )}
+
         {/* Combined Context Sidebar */}
-        <aside className={`shrink-0 border-l border-white/5 backdrop-blur-md transition-all duration-300 ease-in-out overflow-hidden flex flex-col
-          ${showBacklinks ? "w-80 opacity-100" : "w-0 opacity-0 border-none"}`}>
+        <aside
+
+          aria-hidden={!showBacklinks}
+          className={`absolute right-0 top-0 bottom-0 z-30 flex w-full max-w-[20rem] flex-col overflow-hidden border-l border-white/5 bg-black/80 backdrop-blur-2xl transition-transform duration-300 ease-in-out
+          ${showBacklinks ? "translate-x-0" : "pointer-events-none translate-x-full"}`}
+        >
           
           <div className="flex items-center justify-between border-b border-white/5 px-5 py-4 shrink-0">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Context</p>
-              <h3 className="mt-0.5 text-sm font-medium text-foreground">Note Connections</h3>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("ed_context")}</p>
+              <h3 className="mt-0.5 text-sm font-medium text-foreground">{t("ed_note_connections")}</h3>
             </div>
             <Button variant="ghost" size="icon" className="w-6 h-6 text-muted-foreground hover:text-foreground" onClick={() => setShowBacklinks(false)}>
               <X className="w-3 h-3" />
@@ -656,58 +567,94 @@ export default function NoteEditor() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
+            {/* Note type */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                <FileText className="w-3 h-3" />
+                <span>{t("ed_note_type")}</span>
+              </div>
+              <div className="flex gap-2">
+                {availableTypes.length > 0 && (
+                  <Select value={type} onValueChange={handleTypeChange}>
+                    <SelectTrigger className="flex-1 bg-white/5 border-white/10 h-8 text-xs">
+                      <SelectValue placeholder={t("ed_select_ellipsis")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTypes.map((tp) => (
+                        <SelectItem key={tp} value={tp} className="text-xs">{tp}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Input
+                  value={type}
+                  onChange={(e) => handleTypeChange(e.target.value)}
+                  placeholder={t("ed_or_new")}
+                  className="flex-1 bg-white/5 border-white/10 h-8 text-xs"
+                  maxLength={50}
+                />
+                {type && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive" onClick={() => handleTypeChange("")}>
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="space-y-4">
+
               <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
                 <AtSign className="w-3 h-3" />
-                <span>Note Metadata</span>
+                <span>{t("ed_note_metadata")}</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-sm border border-white/5 bg-white/[0.02] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Score</p>
+                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_score")}</p>
                   <p className="mt-2 text-sm font-medium text-white">{noteScore.toFixed(1)}</p>
-                </div>
-                <div className="rounded-sm border border-white/5 bg-white/[0.02] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Mentions</p>
+                </Card>
+                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_mentions")}</p>
                   <p className="mt-2 text-sm font-medium text-white">{mentionCounts.total}</p>
-                </div>
-                <div className="rounded-sm border border-white/5 bg-white/[0.02] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Entities</p>
+                </Card>
+                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_entities")}</p>
                   <p className="mt-2 text-sm font-medium text-white">{note?.entityIds?.length ?? 0}</p>
-                </div>
-                <div className="rounded-sm border border-white/5 bg-white/[0.02] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Characters</p>
+                </Card>
+                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_characters")}</p>
                   <p className="mt-2 text-sm font-medium text-white">{characterCount}</p>
-                </div>
+                </Card>
               </div>
             </div>
 
             <div>
               <div className="flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">
                 <AtSign className="w-3 h-3" />
-                <span>Mentioned Entities</span>
+                <span>{t("ed_mentioned_entities")}</span>
               </div>
               
               {mentionedEntities.length === 0 ? (
                 <p className="text-xs italic text-muted-foreground/60 pl-1">
-                  Type @ inside the editor to link entities.
+                  {t("ed_mention_hint")}
                 </p>
               ) : (
                 <ul className="space-y-2">
                   {mentionedEntities.map((entity) => (
                     <li key={entity.id}>
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => navigate(`/entities/${entity.id}`)}
-                        className="w-full flex flex-col gap-0.5 rounded-sm border border-white/5 bg-white/[0.02] p-2 text-left transition-colors hover:bg-white/[0.06] hover:border-white/10"
+                        className="w-full h-auto flex flex-col items-start gap-1 rounded-md border border-white/5 bg-black/40 p-2.5 text-left normal-case tracking-normal backdrop-blur-xl hover:bg-black/60 hover:border-white/10"
                       >
-                        <span className="text-xs font-medium text-white/90 line-clamp-1">
-                          {entity.title || "Untitled Entity"}
+                        <span className="w-full break-words text-xs font-medium leading-snug text-white/90 line-clamp-2">
+                          {entity.title || t("ed_untitled_entity")}
                         </span>
                         {entity.type && (
-                          <span className="text-[9px] uppercase tracking-wider text-white/35">
+                          <Badge variant="meta" className="px-1.5 py-0 text-[9px]">
                             {typeLabels[entity.type] || entity.type}
-                          </span>
+                          </Badge>
                         )}
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -717,7 +664,7 @@ export default function NoteEditor() {
             <div className="border-t border-white/5 pt-4">
               <div className="flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">
                 <Link2 className="w-3 h-3" />
-                <span>Linked Mentions (Backlinks)</span>
+                <span>{t("ed_linked_mentions")}</span>
               </div>
               {id && <BacklinksPanel noteId={id} />}
             </div>

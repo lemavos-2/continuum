@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { mergeModules } from "@/i18n";
+
 
 export type Language = "en" | "es" | "pt" | "fr";
 
@@ -220,7 +222,7 @@ const en = {
   profile_settings: "Settings",
   profile_subtitle: "Manage your account credentials and application preferences.",
   profile_accountDetails: "Account Details",
-  profile_prefsAppearance: "Preferences & Appearance",
+  profile_prefsAppearance: "Preferences",
   profile_username: "Username",
   profile_usernamePlaceholder: "Your username",
   profile_emailAddress: "Email Address",
@@ -383,7 +385,7 @@ const es: Dict = {
   profile_settings: "Ajustes",
   profile_subtitle: "Gestiona las credenciales de tu cuenta y las preferencias de la aplicación.",
   profile_accountDetails: "Datos de la cuenta",
-  profile_prefsAppearance: "Preferencias y apariencia",
+  profile_prefsAppearance: "Preferencias",
   profile_username: "Nombre de usuario",
   profile_usernamePlaceholder: "Tu nombre de usuario",
   profile_emailAddress: "Correo electrónico",
@@ -623,7 +625,7 @@ const pt: Dict = {
   profile_settings: "Ajustes",
   profile_subtitle: "Gerencie as credenciais da sua conta e as preferências do aplicativo.",
   profile_accountDetails: "Dados da conta",
-  profile_prefsAppearance: "Preferências e aparência",
+  profile_prefsAppearance: "Preferências",
   profile_username: "Nome de usuário",
   profile_usernamePlaceholder: "Seu nome de usuário",
   profile_emailAddress: "Email",
@@ -782,7 +784,7 @@ const fr: Dict = {
   profile_settings: "Paramètres",
   profile_subtitle: "Gérez les identifiants de votre compte et les préférences de l'application.",
   profile_accountDetails: "Détails du compte",
-  profile_prefsAppearance: "Préférences et apparence",
+  profile_prefsAppearance: "Préférences",
   profile_username: "Nom d'utilisateur",
   profile_usernamePlaceholder: "Votre nom d'utilisateur",
   profile_emailAddress: "Adresse e-mail",
@@ -844,6 +846,15 @@ const fr: Dict = {
 
 const translations: Record<Language, Dict> = { en, es, pt, fr };
 
+// Merge modular dictionaries (src/i18n/*) on top of the base ones.
+const mergedTranslations: Record<Language, Record<string, string>> = {
+  en: { ...(en as Record<string, string>), ...mergeModules("en") },
+  es: { ...(es as Record<string, string>), ...mergeModules("es") },
+  pt: { ...(pt as Record<string, string>), ...mergeModules("pt") },
+  fr: { ...(fr as Record<string, string>), ...mergeModules("fr") },
+};
+
+
 const missingWarned = new Set<string>();
 
 function interpolate(str: string, vars?: Record<string, string | number>): string {
@@ -873,8 +884,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const t = (key: string, vars?: Record<string, string | number>): string => {
-    const dict = translations[language] as Record<string, string>;
-    const fallback = translations.en as Record<string, string>;
+    const dict = mergedTranslations[language];
+    const fallback = mergedTranslations.en;
+
     const value = dict[key] ?? fallback[key];
     if (value === undefined) {
       if (import.meta.env.DEV && !missingWarned.has(key)) {

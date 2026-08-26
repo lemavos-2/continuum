@@ -1,14 +1,17 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AppLayout from "@/components/AppLayout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { notesApi, vaultApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useCreateNote } from "@/hooks/useCreateNote";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
   Search,
@@ -32,6 +35,12 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { InsightSignalBadge } from "@/components/InsightSignal";
+import { FilterChips } from "@/components/ui/filter-chips";
+import { FitText } from "@/components/ui/fit-text";
+import { ListRowContent } from "@/components/ui/list-row-content";
+import { StickyNote } from "@/lib/heroicons";
+import { FloatingCreateButton } from "@/components/ui/floating-create-button";
+
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -104,14 +113,14 @@ interface NavItemProps {
 }
 function NavItem({ label, count, active, onClick }: NavItemProps) {
   return (
-    <button
-      onClick={onClick}
+    <Button
+      type="button"
+      variant="ghost"
       className={cn(
-        "group flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors",
-        active
-          ? "text-white"
-          : "text-white/45 hover:text-white/80"
+        "group flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[13px] normal-case transition-colors",
+        active ? "text-white" : "text-white/45 hover:text-white/80"
       )}
+      onClick={onClick}
     >
       <span className="flex items-center gap-2">
         <span
@@ -126,7 +135,7 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
       <span className={cn("font-mono text-[10px] tabular-nums", active ? "text-white/60" : "text-white/30")}>
         {count}
       </span>
-    </button>
+    </Button>
   );
 }
 
@@ -227,7 +236,7 @@ export default function Notes() {
       setNotes(Array.isArray(notesRes.data) ? notesRes.data : []);
       setTypes(Array.isArray(typesRes.data) ? typesRes.data : []);
     } catch {
-      toast({ title: "Error loading archive", variant: "destructive" });
+      toast({ title: t("ls_notes_error_loading_archive"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -248,7 +257,7 @@ export default function Notes() {
       );
     } catch {
       setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, favorite: !n.favorite } : n)));
-      toast({ title: "Could not update favorite", variant: "destructive" });
+      toast({ title: t("ls_notes_error_favorite"), variant: "destructive" });
     }
   };
 
@@ -265,7 +274,7 @@ export default function Notes() {
       applyUsageDelta({ notesCount: -1 });
       void refresh();
     } catch {
-      toast({ title: "Error deleting", variant: "destructive" });
+      toast({ title: t("ls_notes_error_deleting"), variant: "destructive" });
     } finally {
       setPendingDelete(null);
     }
@@ -280,6 +289,12 @@ export default function Notes() {
       return next;
     });
   };
+
+  useEffect(() => {
+    if (selectMode && selectedIds.size === 0) {
+      setSelectMode(false);
+    }
+  }, [selectMode, selectedIds]);
 
   const exitSelectMode = () => {
     setSelectMode(false);
@@ -298,7 +313,7 @@ export default function Notes() {
       toast({ title: t(ids.length === 1 ? "notes_bulk_removed_one" : "notes_bulk_removed", { n: ids.length }) || `${ids.length} removed` });
       exitSelectMode();
     } catch {
-      toast({ title: "Error deleting entries", variant: "destructive" });
+      toast({ title: t("ls_notes_error_deleting_entries"), variant: "destructive" });
     } finally {
       setBulkDeleting(false);
       setBulkDeleteOpen(false);
@@ -323,7 +338,7 @@ export default function Notes() {
       console.error("[Notes] bulk type error", e);
       setNotes(previousNotes);
       const details = (e as any)?.response?.data?.message || (e as any)?.response?.data?.error || (e as Error)?.message;
-      toast({ title: "Error updating type", description: details || "Please try again.", variant: "destructive" });
+      toast({ title: t("ls_notes_error_updating_type"), description: details || t("ls_notes_error_updating_type_desc"), variant: "destructive" });
       void fetchData();
     } finally {
       setBulkTypeApplying(false);
@@ -402,9 +417,9 @@ export default function Notes() {
       const form = new FormData();
       form.append("file", file);
       await vaultApi.upload(form);
-      toast({ title: "Sent to Vault", description: file.name });
+      toast({ title: t("ls_notes_sent_to_vault"), description: file.name });
     } catch {
-      toast({ title: "Upload failed", variant: "destructive" });
+      toast({ title: t("ls_notes_upload_failed"), variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -423,8 +438,14 @@ export default function Notes() {
   if (authLoading) {
     return (
       <AppLayout>
-        <div className="flex h-full items-center justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-white/40" />
+        <div className="mx-auto w-full max-w-5xl animate-fade-in px-4 py-8 sm:px-6">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="mt-4 h-9 w-56" />
+          <div className="mt-8 space-y-3">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <Skeleton key={index} className="h-14 w-full" />
+            ))}
+          </div>
         </div>
       </AppLayout>
     );
@@ -516,7 +537,7 @@ export default function Notes() {
           </SheetContent>
         </Sheet>
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-10 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
           {/* ─── Sidebar (desktop only) ──────────────────────────── */}
           <aside className="hidden lg:sticky lg:top-16 lg:block lg:w-52 lg:shrink-0 lg:self-start">
             {SidebarContent}
@@ -524,23 +545,14 @@ export default function Notes() {
 
           {/* ─── Main ────────────────────────────────────────────── */}
           <main className="min-w-0 flex-1">
-            {/* Header */}
-            <header className="mb-8">
+            {/* Header (desktop) */}
+            <header className="mb-8 hidden lg:block">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{viewLabel}</p>
                   <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("notes_title")}</h1>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setFilterDrawerOpen(true)}
-                    className="lg:hidden h-9 w-9 p-0 text-white/80"
-                    aria-label={t("notes_filters")}
-                  >
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </Button>
                   {selectMode && (
                     <Button size="sm" className="gap-2" onClick={exitSelectMode}>
                       <X className="h-3.5 w-3.5" /> {t("select_done")}
@@ -555,11 +567,41 @@ export default function Notes() {
               {limitMsg && <p className="mt-3 text-xs text-white/40">{limitMsg}</p>}
             </header>
 
-            {/* Sticky search */}
-            <div className="sticky top-14 z-10 -mx-4 border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">
+            {/* Mobile: search + view chips */}
+            <div className="mb-5 space-y-3 lg:hidden">
+              {selectMode && (
+                <Button size="sm" className="gap-2" onClick={exitSelectMode}>
+                  <X className="h-3.5 w-3.5" /> {t("select_done")}
+                </Button>
+              )}
+              <div className="relative z-0">
+
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("notes_searchAmong", { n: counts.all }) || `Search among ${counts.all} notes…`}
+                  className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
+                />
+              </div>
+              <FilterChips
+                value={view}
+                onChange={(v) => setView(v as View)}
+                options={[
+                  { value: "all", label: t("notes_archive") },
+                  { value: "recent", label: t("notes_recent") },
+                  { value: "favorites", label: t("notes_favorites") },
+                  { value: "archived", label: t("notes_dormant") },
+                ]}
+              />
+            </div>
+
+            {/* Sticky search (desktop) */}
+            <div className="sticky top-14 z-10 -mx-4 hidden border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl lg:block">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
-                <input
+                <Input
+                  variant="ghost"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("notes_searchPlaceholder")}
@@ -567,6 +609,7 @@ export default function Notes() {
                 />
               </div>
             </div>
+
 
             {/* Toolbar de Contagem e Controles de Ordenação */}
             <div className="flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-6 text-[11px] text-white/40">
@@ -576,22 +619,28 @@ export default function Notes() {
               <div className="flex items-center gap-4 font-mono">
                 <div className="flex items-center gap-1.5">
                   <span>{t("list_sortBy")}</span>
-                  <button
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="normal-case text-white/70 hover:text-white transition-colors"
                     onClick={() => setSortBy(sortBy === "createdAt" ? "updatedAt" : "createdAt")}
-                    className="text-white/70 hover:text-white transition-colors"
                   >
                     [{sortBy === "createdAt" ? t("list_sort_creation") : t("list_sort_modification")}]
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="normal-case flex items-center gap-1.5 text-white/70 hover:text-white transition-colors"
                   onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-                  className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors"
                 >
                   <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
                   </svg>
                   {sortOrder === "desc" ? t("list_sort_recent") : t("list_sort_oldest")}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -602,24 +651,30 @@ export default function Notes() {
                   {t("select_selected", { n: selectedIds.size })}
                 </span>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="normal-case px-3 py-1.5 text-xs text-white/70 hover:border-white/40 hover:text-white"
                     onClick={() => {
                       const allIds = filtered.map((n) => n.id);
                       const allSelected = allIds.every((id) => selectedIds.has(id));
                       setSelectedIds(allSelected ? new Set() : new Set(allIds));
                     }}
-                    className="rounded-sm border border-white/15 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/40 hover:text-white"
                   >
                     {filtered.length > 0 && filtered.every((n) => selectedIds.has(n.id)) ? t("select_clearAll") : t("select_all")}
-                  </button>
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         disabled={selectedIds.size === 0 || bulkTypeApplying}
-                        className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-white/40 hover:text-white disabled:opacity-40"
+                        className="normal-case inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/80"
                       >
                         {bulkTypeApplying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Tag className="h-3.5 w-3.5" />} {t("notes_set_type") || "Set type"}
-                      </button>
+                      </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[180px]">
                       {types.map((tp) => (
@@ -638,13 +693,16 @@ export default function Notes() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <button
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="normal-case inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                     onClick={() => setBulkDeleteOpen(true)}
                     disabled={selectedIds.size === 0}
-                    className="inline-flex items-center gap-1.5 rounded-sm border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-40"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> {t("common_delete")}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -652,8 +710,10 @@ export default function Notes() {
             {/* Content */}
 
             {loading ? (
-              <div className="flex justify-center py-24">
-                <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+              <div className="space-y-3 py-6">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <Skeleton key={index} className="h-14 w-full" />
+                ))}
               </div>
             ) : grouped.length === 0 ? (
               <div className="py-24 text-center">
@@ -675,9 +735,12 @@ export default function Notes() {
                   const collapsed = collapsedMonths.has(key);
                   return (
                     <section key={key}>
-                      <button
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="group mb-5 flex w-full items-center justify-between border-b border-white/10 pb-2 text-left normal-case"
                         onClick={() => toggleMonth(key)}
-                        className="group mb-5 flex w-full items-center justify-between border-b border-white/10 pb-2 text-left"
                       >
                         <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-white/40 group-hover:text-white/70">
                           {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -686,7 +749,7 @@ export default function Notes() {
                         <span className="font-mono text-[10px] text-white/30 tabular-nums">
                           {t(items.length === 1 ? "list_showing_entries_one" : "list_showing_entries", { n: items.length })}
                         </span>
-                      </button>
+                      </Button>
 
                       {!collapsed && (
                         <ul className="divide-y divide-white/[0.06]">
@@ -719,73 +782,62 @@ export default function Notes() {
                                     </span>
                                   )}
 
-
-                                  <div className="hidden w-20 shrink-0 pt-1 sm:block">
-                                    <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
-                                      {relativeDate(targetDate)}
-                                    </p>
-                                  </div>
-
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <h3 className="font-serif text-xl leading-snug text-white/90 transition-colors group-hover:text-white">
-                                        {note.title || "Untitled"}
-                                      </h3>
-                                      <InsightSignalBadge kind="note" id={note.id} />
-                                    </div>
-                                    {preview && (
-                                      <p className="mt-1 line-clamp-1 text-sm text-white/45">{preview}</p>
-                                    )}
-                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/35">
-                                      {note.type && (
-                                        <span className="uppercase tracking-[0.18em]">{note.type}</span>
-                                      )}
-                                      <span className="sm:hidden">{relativeDate(targetDate)}</span>
-                                    </div>
-                                  </div>
-
+                                  <ListRowContent
+                                    icon={<StickyNote className="h-5 w-5" />}
+                                    title={note.title || t("notes_untitled")}
+                                    meta={
+                                      <>
+                                        {note.type ? `${note.type} · ` : ""}
+                                        {relativeDate(targetDate)}
+                                        {preview ? ` · ${preview}` : ""}
+                                      </>
+                                    }
+                                  />
 
                                   {!selectMode && (
-                                  <div className="flex shrink-0 items-center gap-1 pt-1">
-
-                                    <span
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={(e) => toggleFavorite(note.id, e)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === " ") {
-                                          e.preventDefault();
-                                          toggleFavorite(note.id, e as unknown as React.MouseEvent);
-                                        }
-                                      }}
-                                      className={cn(
-                                        "cursor-pointer rounded-sm p-1.5 transition-colors",
-                                        note.favorite
-                                          ? "text-white"
-                                          : "text-white/20 opacity-0 hover:text-white/70 group-hover:opacity-100"
-                                      )}
-                                      aria-label={note.favorite ? t("notes_unfavorite") : t("notes_favorite")}
-                                    >
-                                      {note.favorite ? (
-                                        <BookmarkCheck className="h-3.5 w-3.5 fill-current" />
-                                      ) : (
-                                        <Bookmark className="h-3.5 w-3.5" />
-                                      )}
-                                    </span>
-                                    <span
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        setPendingDelete(note);
-                                      }}
-                                      className="cursor-pointer rounded-sm p-1.5 text-white/20 opacity-0 transition hover:text-white/70 group-hover:opacity-100"
-                                      aria-label={t("common_delete")}
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </span>
-                                  </div>
+                                    <div className="flex shrink-0 items-center gap-2 pt-1">
+                                      <span className="flex h-5 w-5 items-center justify-center">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="iconSm"
+                                          className={cn(
+                                            "h-5 w-5 rounded-full p-0 opacity-70 transition-colors hover:opacity-100",
+                                            note.favorite ? "text-white" : "text-white"
+                                          )}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleFavorite(note.id, e);
+                                          }}
+                                          aria-label={note.favorite ? t("notes_unfavorite") : t("notes_favorite")}
+                                        >
+                                          {note.favorite ? (
+                                            <BookmarkCheck className="h-3 w-3 fill-current" />
+                                          ) : (
+                                            <Bookmark className="h-3 w-3" />
+                                          )}
+                                        </Button>
+                                      </span>
+                                      <span className="flex h-5 w-5 items-center justify-center">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="iconSm"
+                                          className="h-5 w-5 rounded-full p-0 text-white opacity-70 transition hover:opacity-100"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            setPendingDelete(note);
+                                          }}
+                                          aria-label={t("common_delete")}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </span>
+                                      <span className="flex h-5 w-5 items-center justify-center">
+                                        <InsightSignalBadge kind="note" id={note.id} className="h-5 w-5" />
+                                      </span>
+                                    </div>
                                   )}
                               </NoteRow>
                             );
@@ -801,26 +853,34 @@ export default function Notes() {
         </div>
       </div>
 
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="You've reached the notes limit for your plan." />
+      <FloatingCreateButton
+        label={creating ? t("notes_creating") : t("notes_new")}
+        disabled={creating}
+        onClick={handleCreate}
+        icon={<Plus className="h-4 w-4" />}
+      />
+
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason={t("notes_limit")} />
+
       <ConfirmDialog
         open={!!pendingDelete}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title="Remove this entry?"
+        title={t("notes_remove_one_title")}
         description={
           pendingDelete
-            ? `"${pendingDelete.title || "Untitled"}" will be permanently removed from your archive.`
-            : "This action cannot be undone."
+            ? t("notes_remove_one_desc", { title: pendingDelete.title || t("notes_untitled") })
+            : t("ls_notes_action_cannot_be_undone")
         }
-        confirmText="Remove"
+        confirmText={t("notes_remove")}
         destructive
         onConfirm={confirmDelete}
       />
       <ConfirmDialog
         open={bulkDeleteOpen}
         onOpenChange={(open) => !open && !bulkDeleting && setBulkDeleteOpen(false)}
-        title={`Remove ${selectedIds.size} ${selectedIds.size === 1 ? "entry" : "entries"}?`}
-        description="The selected entries will be permanently removed from your archive."
-        confirmText={bulkDeleting ? "Removing…" : "Remove"}
+        title={t(selectedIds.size === 1 ? "notes_remove_many_title_one" : "notes_remove_many_title", { n: selectedIds.size })}
+        description={t("notes_remove_many_desc")}
+        confirmText={bulkDeleting ? t("notes_removing") : t("notes_remove")}
         destructive
         onConfirm={confirmBulkDelete}
       />
