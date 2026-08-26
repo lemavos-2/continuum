@@ -7,6 +7,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 
 /**
@@ -67,20 +68,23 @@ public class TelegramBotClient {
                 .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
                 .build();
 
-        CompletableFuture<HttpResponse<String>> future =
-                httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        CompletableFuture<HttpResponse<String>> future = httpClient.sendAsync(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-        if (onFailure != null) {
-            future.whenComplete((response, throwable) -> {
-                if (throwable != null) {
-                    onFailure.accept(-1, throwable.getMessage());
-                } else if (response != null && (response.statusCode() < 200 || response.statusCode() >= 300)) {
-                    onFailure.accept(response.statusCode(), response.body());
-                }
-            });
-        }
-
-        return future;
+        return future.whenComplete((response, throwable) -> {
+            if (onFailure == null) {
+                return;
+            }
+            if (throwable != null) {
+                onFailure.accept(-1, rootMessage(throwable));
+                return;
+            }
+            if (!isSuccessful(response)) {
+                onFailure.accept(response == null ? -1 : response.statusCode(),
+                        response == null ? "no response" : response.body());
+            }
+        });
     }
 
     /** Blocking send used by diagnostics so the caller sees Telegram's answer. */
@@ -92,11 +96,28 @@ public class TelegramBotClient {
             HttpResponse<String> response = sendMessage(text).join();
             int status = response == null ? -1 : response.statusCode();
             String body = response == null ? "no response" : response.body();
-            boolean ok = status >= 200 && status < 300 && body != null && body.contains("\"ok\":true");
+            boolean ok = isSuccessful(response);
             return new SendResult(ok, status, body);
         } catch (Exception e) {
-            return new SendResult(false, -1, String.valueOf(e.getMessage()));
+            return new SendResult(false, -1, rootMessage(e));
         }
+    }
+
+    private static boolean isSuccessful(HttpResponse<String> response) {
+        if (response == null || response.statusCode() < 200 || response.statusCode() >= 300) {
+            return false;
+        }
+        String body = response.body();
+        return body != null && body.replaceAll("\\s+", "").contains("\"ok\":true");
+    }
+
+    private static String rootMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while ((current instanceof CompletionException || current.getCause() != null)
+                && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
     }
 
     /** Non-sensitive description of this bot's configuration. */
@@ -105,7 +126,7 @@ public class TelegramBotClient {
             return "token=missing chatId=missing";
         }
         return "token=" + (botToken.isBlank() ? "missing" : "set(len=" + botToken.length() + ")")
-                + " chatId=" + (chatId.isBlank() ? "missing" : chatId);
+                + " chatId=" + (chatId.isBlank() ? "missing" : "set");
     }
 
     public record SendResult(boolean ok, int status, String body) {}

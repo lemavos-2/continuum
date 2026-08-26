@@ -89,7 +89,12 @@ public class TelegramLogService {
             return;
         }
         // Sent synchronously: the JVM may exit before an async send completes.
-        bot.sendMessage("🔴 <b>" + esc(appName) + " offline</b>\n🕒 " + Instant.now()).join();
+        TelegramBotClient.SendResult result = bot.sendSync(
+                "🔴 <b>" + esc(appName) + " offline</b>\n🕒 " + Instant.now());
+        if (!result.ok()) {
+            System.err.println("[telegram-logs] shutdown notification failed: status="
+                    + result.status() + " body=" + result.body());
+        }
     }
 
     /** Manual hook for ad-hoc server notifications from application code. */
@@ -127,13 +132,11 @@ public class TelegramLogService {
                 if (first == null) {
                     continue;
                 }
-                StringBuilder batch = new StringBuilder(first);
-                String next;
-                // Batch whatever is already queued to stay under Telegram rate limits.
-                while (batch.length() < 3000 && (next = queue.poll()) != null) {
-                    batch.append("\n\n").append(next);
+                TelegramBotClient.SendResult result = bot.sendSync(first);
+                if (!result.ok()) {
+                    System.err.println("[telegram-logs] send failed: status="
+                            + result.status() + " body=" + result.body());
                 }
-                bot.sendMessage(batch.toString()).join();
                 // Telegram allows ~1 msg/sec per chat.
                 Thread.sleep(1200);
             } catch (InterruptedException e) {
@@ -147,7 +150,9 @@ public class TelegramLogService {
     }
 
     private void enqueue(String message) {
-        queue.offer(message);
+        if (!queue.offer(message)) {
+            System.err.println("[telegram-logs] queue full; dropping notification");
+        }
     }
 
     @PreDestroy
