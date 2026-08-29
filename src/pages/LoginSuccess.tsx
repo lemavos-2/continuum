@@ -35,7 +35,7 @@ const LoginSuccess = () => {
         localStorage.setItem("vaultId", vaultId);
       }
 
-      window.history.replaceState({}, "", "/");
+      
 
       refreshUser()
         .then(() => navigate("/", { replace: true }))

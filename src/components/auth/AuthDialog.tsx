@@ -88,9 +88,9 @@ export default function AuthDialog({ open, onOpenChange, initialTab = "login" }:
             {/* Footer */}
             <p className="text-[10px] text-center text-[hsl(var(--popup-muted))] opacity-70 pt-1">
               {t("au_terms_agree_prefix")}{" "}
-              <a href="#/terms" className="underline underline-offset-2 hover:text-white">{t("au_terms")}</a>
+              <a href="/terms" className="underline underline-offset-2 hover:text-white">{t("au_terms")}</a>
               {" "}{t("au_and")}{" "}
-              <a href="#/privacy" className="underline underline-offset-2 hover:text-white">{t("au_privacy")}</a>.
+              <a href="/privacy" className="underline underline-offset-2 hover:text-white">{t("au_privacy")}</a>.
             </p>
           </div>
         </div>

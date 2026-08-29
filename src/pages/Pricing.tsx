@@ -38,7 +38,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-black text-white px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <Button asChild variant="link" className="mb-8 inline-flex text-sm font-semibold uppercase tracking-[0.28em] text-zinc-400 transition hover:text-white">
-          <a href="#/">{t("bill_back_to_home")}</a>
+          <a href="/">{t("bill_back_to_home")}</a>
         </Button>
 
         <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{t("bill_pricing_plans")}</p>

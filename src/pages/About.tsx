@@ -7,7 +7,7 @@ export default function About() {
     <div className="min-h-screen bg-black text-white px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         <a
-          href="#/"
+          href="/"
           className="mb-8 inline-flex text-sm font-semibold uppercase tracking-[0.28em] text-zinc-400 transition hover:text-white"
         >
           {t("lp_about_back_to_home")}
@@ -38,13 +38,13 @@ export default function About() {
 
         <div className="mt-16 flex flex-wrap gap-4">
           <a
-            href="#/support"
+            href="/support"
             className="inline-flex items-center gap-2 border border-white/15 bg-white/[0.02] px-5 py-3 text-xs font-medium uppercase tracking-[0.22em] text-white/80 rounded-sm transition hover:border-white/40 hover:text-white"
           >
             {t("lp_about_support_cta")}
           </a>
           <a
-            href="#/pricing"
+            href="/pricing"
             className="inline-flex items-center gap-2 border border-white/15 bg-white/[0.02] px-5 py-3 text-xs font-medium uppercase tracking-[0.22em] text-white/80 rounded-sm transition hover:border-white/40 hover:text-white"
           >
             {t("lp_about_pricing_cta")}
