@@ -12,16 +12,16 @@ export default function Footer() {
     {
       title: t("lp_footer_product"),
       links: [
-        { label: t("lp_footer_pricing"), href: "#/pricing" },
-        { label: t("lp_footer_about"), href: "#/about" },
-        { label: t("lp_footer_support"), href: "#/support" },
+        { label: t("lp_footer_pricing"), href: "/pricing" },
+        { label: t("lp_footer_about"), href: "/about" },
+        { label: t("lp_footer_support"), href: "/support" },
       ],
     },
     {
       title: t("lp_footer_legal"),
       links: [
-        { label: t("lp_footer_terms"), href: "#/terms" },
-        { label: t("lp_footer_privacy"), href: "#/privacy" },
+        { label: t("lp_footer_terms"), href: "/terms" },
+        { label: t("lp_footer_privacy"), href: "/privacy" },
       ],
     },
     {
