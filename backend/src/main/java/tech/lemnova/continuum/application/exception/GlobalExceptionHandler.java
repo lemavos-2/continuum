@@ -89,6 +89,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(message, "INVALID_JSON"));
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException e) {
+        // Requisições para rotas de frontend/assets inexistentes no backend — não é erro de servidor.
+        log.debug("Static resource not found: {}", e.getResourcePath());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("Resource not found", "NOT_FOUND"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
         log.error("Unhandled exception: {}", e.getMessage(), e);
