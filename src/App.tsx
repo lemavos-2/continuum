@@ -61,7 +61,7 @@ function RouteFallback() {
 function HomeRoute() {
   const { user, loading } = useAuth();
   // Read tokens once per mount so we don't recompute on every render.
-  const [hasIncomingToken] = React.useState(() => {
+  const [hasIncomingToken, setHasIncomingToken] = React.useState(() => {
     const t = extractAuthTokensFromLocation();
     return !!t?.accessToken;
   });
@@ -70,7 +70,7 @@ function HomeRoute() {
     if (!hasIncomingToken) sanitizeAuthRedirectUrl();
   }, [hasIncomingToken]);
 
-  if (hasIncomingToken) return <LoginSuccess />;
+  if (hasIncomingToken) return <LoginSuccess onDone={() => setHasIncomingToken(false)} />;
 
   if (loading) return <RouteFallback />;
   if (user) return <Dashboard />;
