@@ -66,8 +66,7 @@ public class MetricsService {
 
     public EntityTimeline getEntityTimeline(String userId, String entityId) {
         User user = getUser(userId);
-        if (!planConfig.canAccessAdvancedMetrics(user.getPlan()))
-            throw new PlanLimitException("Advanced metrics require a higher plan.");
+        // Entity timeline/metrics are available on all plans (FREE and VISION).
 
         List<NoteReference> refs = vaultData.readRefs(user.getVaultId()).stream()
                 .filter(r -> r.getEntityId().equals(entityId))
