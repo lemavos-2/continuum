@@ -2,7 +2,7 @@ package tech.lemnova.continuum.application.service;
 
 import org.springframework.stereotype.Service;
 import tech.lemnova.continuum.application.exception.NotFoundException;
-import tech.lemnova.continuum.application.exception.PlanLimitException;
+
 import tech.lemnova.continuum.controller.dto.metrics.DashboardMetrics;
 import tech.lemnova.continuum.controller.dto.metrics.EntityTimeline;
 import tech.lemnova.continuum.controller.dto.metrics.MentionEntry;
