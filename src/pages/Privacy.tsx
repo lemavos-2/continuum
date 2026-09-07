@@ -6,7 +6,7 @@ const Privacy = () => {
   return (
     <div className="min-h-screen bg-black text-white px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <a href="#/" className="mb-8 inline-flex text-sm font-semibold uppercase tracking-[0.28em] text-zinc-400 transition hover:text-white">
+        <a href="/" className="mb-8 inline-flex text-sm font-semibold uppercase tracking-[0.28em] text-zinc-400 transition hover:text-white">
           {t("lp_privacy_back_to_home")}
         </a>
 

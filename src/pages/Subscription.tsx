@@ -56,7 +56,7 @@ export default function Subscription() {
   // Returning from Stripe Checkout: force a sync with Stripe instead of trusting
   // the webhook to have already landed (removes the checkout/webhook race).
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.split("?")[1] || window.location.search);
+    const params = new URLSearchParams(window.location.search);
     if (params.get("status") !== "success") return;
 
     let cancelled = false;

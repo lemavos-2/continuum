@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   X,
+  ArrowLeft,
 } from "@/lib/heroicons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -931,9 +932,20 @@ export default function KnowledgeGraph() {
                 type="button"
                 variant="canvasIcon"
                 size="icon"
+                onClick={() => navigate(-1)}
+                className="absolute left-4 top-4 z-30 rounded-md border-0 bg-white/5 hover:bg-white/10"
+                aria-label={t("gr_back")}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="canvasIcon"
+                size="icon"
                 onClick={() => setOptionsOpen(true)}
                 className="absolute right-4 top-4 z-30 hidden rounded-md border-0 bg-white/5 hover:bg-white/10 sm:grid"
-                aria-label={t("gr_open_options")}
+                aria-label={t("gr_back")}
               >
                 <Settings className="h-5 w-5" />
               </Button>

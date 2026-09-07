@@ -8,6 +8,7 @@ import { SummaryMetric, SummaryMetricRow } from "@/components/ui/summary-metric"
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
 import { TodayHabitsCard } from "@/components/dashboard/TodayHabitsCard";
 import { ScoreEvolutionCard } from "@/components/dashboard/ScoreEvolutionCard";
+import { ActiveProjectsCard } from "@/components/dashboard/ActiveProjectsCard";
 
 import { dashboardApi, graphApi, notesApi } from "@/lib/api";
 import { useCreateNote } from "@/hooks/useCreateNote";
@@ -41,16 +42,14 @@ const formatNoteDate = (timestamp?: number) => {
 // --- SUB-COMPONENTS ---
 const DashboardSkeleton = () => (
   <AppLayout>
-    <div className="px-4 sm:px-6 lg:px-12 py-6 sm:py-10 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 lg:px-12 py-6 sm:py-10 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <Skeleton className="h-20 rounded-2xl" />
       <Skeleton className="h-16 rounded-2xl" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-2xl" style={{ animationDelay: `${i * 80}ms` }} />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Skeleton className="lg:col-span-8 h-[360px] rounded-2xl" />
-        <Skeleton className="lg:col-span-4 h-[360px] rounded-2xl" style={{ animationDelay: "120ms" }} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+        <Skeleton className="lg:col-span-4 h-[220px] rounded-2xl" />
+        <Skeleton className="lg:col-span-8 h-[360px] rounded-2xl" style={{ animationDelay: "80ms" }} />
+        <Skeleton className="lg:col-span-4 h-[220px] rounded-2xl" style={{ animationDelay: "160ms" }} />
+        <Skeleton className="lg:col-span-8 h-[300px] rounded-2xl" style={{ animationDelay: "240ms" }} />
       </div>
     </div>
   </AppLayout>
@@ -212,8 +211,8 @@ export default function Dashboard() {
 
 
         {/* CORPO DO DASHBOARD */}
-        <StaggerItem className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+        <StaggerItem className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+
           {/* BLOCO 1: SCORE — evolução, explicabilidade e marcos */}
           <ScoreEvolutionCard
             onScoreChange={setCurrentScore}
@@ -223,22 +222,25 @@ export default function Dashboard() {
           {/* HABITS TO COMPLETE TODAY */}
           <TodayHabitsCard />
 
+          {/* ACTIVE PROJECTS */}
+          <ActiveProjectsCard className="order-3 lg:order-4 lg:col-span-4" />
+
           {/* RECENT NOTES CARD */}
-          <Card variant="faint" className="lg:col-span-8 flex flex-col">
+          <Card variant="faint" className="order-4 lg:order-3 lg:col-span-8 flex flex-col">
 
             <CardContent className="p-4 sm:p-6 flex flex-col flex-1">
             <div className="flex flex-col gap-3 mb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30 font-mono">{t("db_stream")}</p>
-                  <h2 className="mt-1 font-serif text-xl text-white">{t("db_recentNotes")}</h2>
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground font-mono">{t("db_stream")}</p>
+                  <h2 className="mt-1 font-serif text-lg sm:text-xl text-foreground">{t("db_recentNotes")}</h2>
                 </div>
-                <Button type="button" variant="ghost" onClick={() => navigate("/notes")} className="h-auto p-0 bg-transparent hover:bg-transparent normal-case text-[11px] font-mono uppercase tracking-widest text-white/40 hover:text-white transition-colors">
+                <Button type="button" variant="ghost" onClick={() => navigate("/notes")} className="h-auto p-0 bg-transparent hover:bg-transparent normal-case text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
                   {t("db_viewAll")}
                 </Button>
               </div>
             </div>
-            <div className="space-y-1 flex-1 overflow-y-auto max-h-[280px] sm:max-h-[310px] pr-1 scrollbar-thin">
+            <div className="space-y-1 flex-1 lg:overflow-y-auto lg:max-h-[310px] lg:pr-1 scrollbar-thin">
               {recentNotes.length > 0 ? (
                 recentNotes.map((note) => (
                   <Button
@@ -246,17 +248,17 @@ export default function Dashboard() {
                     type="button"
                     variant="ghost"
                     onClick={() => navigate(`/notes/${note.id}`)}
-                    className="group w-full h-auto flex-col items-stretch normal-case rounded-xl border border-transparent px-2.5 py-2 text-left bg-transparent transition-all hover:bg-neutral-900/50 hover:border-white/5"
+                    className="group w-full h-auto min-h-[44px] flex-col items-stretch normal-case rounded-xl border border-transparent px-2.5 py-2 text-left bg-transparent transition-all hover:bg-accent/40 hover:border-border"
                   >
                     <div className="flex items-center justify-between gap-3 w-full">
-                      <p className="text-xs sm:text-sm font-medium text-white/80 group-hover:text-white truncate">{note.title || t("db_untitled")}</p>
-                      <ArrowRight className="h-3.5 w-3.5 text-white/30 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-white/50" />
+                      <p className="text-xs sm:text-sm font-medium text-foreground/80 group-hover:text-foreground truncate">{note.title || t("db_untitled")}</p>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground/60" />
                     </div>
-                    <p className="mt-0.5 text-[9px] font-mono text-white/40 w-full text-left">{formatNoteDate(note.createdAtTimestamp)}</p>
+                    <p className="mt-0.5 text-[9px] font-mono text-muted-foreground w-full text-left">{formatNoteDate(note.createdAtTimestamp)}</p>
                   </Button>
                 ))
               ) : (
-                <div className="rounded-xl border border-dashed border-white/5 bg-white/[0.01] p-6 text-center text-xs text-white/30 h-full flex items-center justify-center">
+                <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground h-full flex items-center justify-center">
                   {t("db_noRecentNotes")}
                 </div>
               )}
@@ -265,6 +267,7 @@ export default function Dashboard() {
           </Card>
 
         </StaggerItem>
+
       </Stagger>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason={t("db_notesLimitReason")} />
       

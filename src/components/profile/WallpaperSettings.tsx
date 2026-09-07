@@ -15,18 +15,24 @@ import {
   uploadWallpaper,
   type NoteWallpaperSettings,
 } from "@/lib/note-wallpaper";
+import { loadNoteFontSize, subscribeNoteFontSize } from "@/lib/note-font-size";
 
 export default function WallpaperSettings() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [wallpaper, setWallpaper] = useState<NoteWallpaperSettings>(() => loadWallpaperSettings());
+  const [noteFontSize, setNoteFontSize] = useState(() => loadNoteFontSize());
   const [url, setUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeWallpaper(setWallpaper);
-    return () => { unsubscribe(); };
+    const unsubscribeWallpaper = subscribeWallpaper(setWallpaper);
+    const unsubscribeFont = subscribeNoteFontSize(setNoteFontSize);
+    return () => {
+      unsubscribeWallpaper();
+      unsubscribeFont();
+    };
   }, []);
 
   useEffect(() => {
@@ -106,8 +112,16 @@ export default function WallpaperSettings() {
           </>
         ) : null}
         <div className="relative flex h-full flex-col justify-center gap-2 px-5">
-          <p className="font-serif text-lg text-foreground">Lorem ipsum</p>
-          <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+          <p
+            className="font-serif text-foreground"
+            style={{ fontSize: `${Math.max(1.15, 1.5 * (noteFontSize.titleScale / 100))}rem` }}
+          >
+            Lorem ipsum
+          </p>
+          <p
+            className="max-w-sm leading-relaxed text-muted-foreground"
+            style={{ fontSize: `${Math.max(0.7, 0.88 * (noteFontSize.bodyScale / 100))}rem` }}
+          >
             {url ? t("ed_wallpaper_note") : t("ed_upload_image")}
           </p>
         </div>

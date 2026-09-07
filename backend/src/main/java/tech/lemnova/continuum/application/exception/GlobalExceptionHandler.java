@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tech.lemnova.continuum.controller.dto.error.ErrorResponse;
 
 import java.util.HashMap;
@@ -86,6 +87,14 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse(message, "INVALID_JSON"));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException e) {
+        // Requisições para rotas de frontend/assets inexistentes no backend — não é erro de servidor.
+        log.debug("Static resource not found: {}", e.getResourcePath());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("Resource not found", "NOT_FOUND"));
     }
 
     @ExceptionHandler(Exception.class)

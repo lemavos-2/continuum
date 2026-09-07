@@ -2,7 +2,7 @@ package tech.lemnova.continuum.application.service;
 
 import org.springframework.stereotype.Service;
 import tech.lemnova.continuum.application.exception.NotFoundException;
-import tech.lemnova.continuum.application.exception.PlanLimitException;
+
 import tech.lemnova.continuum.controller.dto.metrics.DashboardMetrics;
 import tech.lemnova.continuum.controller.dto.metrics.EntityTimeline;
 import tech.lemnova.continuum.controller.dto.metrics.MentionEntry;
@@ -66,8 +66,7 @@ public class MetricsService {
 
     public EntityTimeline getEntityTimeline(String userId, String entityId) {
         User user = getUser(userId);
-        if (!planConfig.canAccessAdvancedMetrics(user.getPlan()))
-            throw new PlanLimitException("Advanced metrics require a higher plan.");
+        // Entity timeline/metrics are available on all plans (FREE and VISION).
 
         List<NoteReference> refs = vaultData.readRefs(user.getVaultId()).stream()
                 .filter(r -> r.getEntityId().equals(entityId))

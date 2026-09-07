@@ -22,6 +22,7 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { StickyNote } from "@/lib/heroicons";
 import { SummaryMetric, SummaryMetricRow } from "@/components/ui/summary-metric";
+import { ScoreEvolutionCard } from "@/components/dashboard/ScoreEvolutionCard";
 
 import { cn } from "@/lib/utils";
 import { insightsApi } from "@/lib/api";
@@ -229,15 +230,18 @@ export default function Insights() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const [hotNotes, setHotNotes] = useState<NoteInsight[]>([]);
   const [forgottenNotes, setForgottenNotes] = useState<NoteInsight[]>([]);
   const [hotEntities, setHotEntities] = useState<EntityInsight[]>([]);
   const [forgottenEntities, setForgottenEntities] = useState<EntityInsight[]>([]);
-  
+
   const [view, setView] = useState<View>("all");
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+
+  // Score vindo do gráfico de evolução (mesmo componente do Dashboard)
+  const [currentScore, setCurrentScore] = useState(0);
 
   // Edge swipe to open mobile filter drawer
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -452,6 +456,13 @@ export default function Insights() {
               />
             </SummaryMetricRow>
 
+            {/* GRÁFICO DE EVOLUÇÃO DO SCORE — mesmo componente do Dashboard */}
+            <div className="mb-6 lg:mb-8">
+              <ScoreEvolutionCard
+                onScoreChange={setCurrentScore}
+                onOpenInsights={() => {}}
+              />
+            </div>
 
             {/* Mobile: search + category chips */}
             <div className="mb-5 space-y-3 lg:hidden">

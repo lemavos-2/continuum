@@ -24,6 +24,7 @@ import { Mathematics } from "@tiptap/extension-mathematics";
 import "katex/dist/katex.min.css";
 import { common, createLowlight } from "lowlight";
 import tippy, { type Instance as TippyInstance } from "tippy.js";
+import "tippy.js/dist/tippy.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback } from "react";
 import type { ChangeEvent } from "react";
 import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion";
@@ -103,10 +104,24 @@ const getToken = () => {
   return window.sessionStorage.getItem("access_token") ?? window.localStorage.getItem("access_token");
 };
 
+/** Tracks every open mention popup so we can always clean up stragglers. */
+const activeMentionPopups = new Set<TippyInstance>();
+
+/** True while a mention suggestion session is open (prevents blur from killing it). */
+let mentionSuggestionActive = false;
+
+export const destroyAllMentionPopups = () => {
+  activeMentionPopups.forEach((instance) => {
+    try { instance.destroy(); } catch { /* already destroyed */ }
+  });
+  activeMentionPopups.clear();
+};
+
 export const resetEditorCaches = () => {
   Object.assign(entityCache, { token: null, at: 0, data: [], pending: null });
   Object.assign(noteCache, { token: null, at: 0, data: [], pending: null });
 };
+
 
 const loadEntities = async (): Promise<Entity[]> => {
   const token = getToken();
@@ -203,14 +218,35 @@ const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => 
   },
   render: () => {
     let component: ReactRenderer<MentionListRef> | null = null;
-    let popup: TippyInstance[] | null = null;
+    let popup: TippyInstance | null = null;
+
+    const teardown = () => {
+      mentionSuggestionActive = false;
+      if (popup) {
+        activeMentionPopups.delete(popup);
+        try { popup.destroy(); } catch { /* already destroyed */ }
+        popup = null;
+      }
+      if (component) {
+        try { component.destroy(); } catch { /* noop */ }
+        component = null;
+      }
+    };
+
     return {
       onStart: (props: SuggestionProps<MentionItem>) => {
+        // Any leftover popup (from an interrupted session) must go first.
+        destroyAllMentionPopups();
+        teardown();
+        mentionSuggestionActive = true;
         component = new ReactRenderer(MentionList, {
           props: { ...props, query: props.query, variant },
           editor: props.editor,
         });
-        if (!props.clientRect) return;
+        if (!props.clientRect) {
+          teardown();
+          return;
+        }
         popup = tippy("body", {
           getReferenceClientRect: props.clientRect as () => DOMRect,
           appendTo: () => document.body,
@@ -219,20 +255,23 @@ const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => 
           interactive: true,
           trigger: "manual",
           placement: "bottom-start",
-        });
+          onHidden: () => teardown(),
+        })[0] ?? null;
+        if (popup) activeMentionPopups.add(popup);
       },
       onUpdate(props: SuggestionProps<MentionItem>) {
         component?.updateProps({ ...props, query: props.query, variant });
-        if (props.clientRect) popup?.[0]?.setProps({ getReferenceClientRect: props.clientRect as () => DOMRect });
+        if (props.clientRect) popup?.setProps({ getReferenceClientRect: props.clientRect as () => DOMRect });
       },
       onKeyDown(props: SuggestionKeyDownProps) {
-        if (props.event.key === "Escape") { popup?.[0]?.hide(); return true; }
+        if (props.event.key === "Escape") { teardown(); return true; }
         return component?.ref?.onKeyDown(props) ?? false;
       },
-      onExit() { popup?.[0]?.destroy(); component?.destroy(); },
+      onExit() { teardown(); },
     };
   },
 });
+
 
 /* ── Component API ── */
 export interface TiptapEditorHandle {
@@ -366,7 +405,7 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
       editable,
       editorProps: {
         attributes: {
-          class: `continuum-editor prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[60vh] ${editable ? "" : "is-readonly"} ${className || ""}`,
+          class: `continuum-editor max-w-none focus:outline-none min-h-[60vh] ${editable ? "" : "is-readonly"} ${className || ""}`,
         },
         handleClickOn: (_view, _pos, node, _nodePos, event) => {
           const name = node.type.name;
@@ -394,6 +433,16 @@ export const TiptapEditor = forwardRef<TiptapEditorHandle, Props>(
           return false;
         },
       },
+      onBlur: () => {
+        // Leaving the editor must never leave a mention dropdown floating around.
+        window.setTimeout(() => {
+          // Touch devices have no :hover, so rely on the session flag instead.
+          if (mentionSuggestionActive) return;
+          destroyAllMentionPopups();
+        }, 200);
+      },
+      onDestroy: () => destroyAllMentionPopups(),
+
       onUpdate: ({ editor }) => {
         // Throttled: avoids re-rendering the whole note page on every keystroke.
         if (updateTimerRef.current) window.clearTimeout(updateTimerRef.current);

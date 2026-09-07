@@ -55,9 +55,7 @@ export const parseTokensFromUrl = () => {
   if (typeof window === "undefined") return null;
 
   const searchParams = new URLSearchParams(window.location.search);
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-
-  const getValue = (key: string) => searchParams.get(key) ?? hashParams.get(key);
+  const getValue = (key: string) => searchParams.get(key);
   const accessToken = getValue("access_token") ?? getValue("token") ?? getValue("jwt");
   const refreshToken = getValue("refresh_token");
 

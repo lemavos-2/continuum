@@ -165,7 +165,7 @@ export function ScoreEvolutionCard({
   };
 
   return (
-    <Card variant="faint" className="lg:col-span-12 flex flex-col justify-between">
+    <Card variant="faint" className="order-2 lg:order-1 lg:col-span-8 flex flex-col justify-between">
       <CardContent className="p-4 sm:p-6 flex flex-col justify-between h-full">
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex items-start justify-between gap-3">

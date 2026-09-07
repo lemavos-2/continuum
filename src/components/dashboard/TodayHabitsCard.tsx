@@ -64,7 +64,7 @@ export function TodayHabitsCard() {
   const total = entities?.length ?? 0;
 
   return (
-    <Card variant="faint" className="lg:col-span-4 flex flex-col">
+    <Card variant="faint" className="order-1 lg:order-2 lg:col-span-4 flex flex-col">
       <CardContent className="flex flex-1 flex-col p-4 sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">

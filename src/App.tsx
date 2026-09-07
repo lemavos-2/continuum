@@ -1,6 +1,6 @@
 import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,6 +18,10 @@ import { EMAIL_AUTH_ENABLED } from "@/lib/dev-mode";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+
+// Capacitor: aplica cor da status bar só quando rodando dentro do APK nativo
+import { Capacitor } from "@capacitor/core";
+import { StatusBar, Style } from "@capacitor/status-bar";
 
 // Auth-critical screens stay eager (they gate the first paint); everything else
 // is code-split and streamed in behind a skeleton.
@@ -61,7 +65,7 @@ function RouteFallback() {
 function HomeRoute() {
   const { user, loading } = useAuth();
   // Read tokens once per mount so we don't recompute on every render.
-  const [hasIncomingToken] = React.useState(() => {
+  const [hasIncomingToken, setHasIncomingToken] = React.useState(() => {
     const t = extractAuthTokensFromLocation();
     return !!t?.accessToken;
   });
@@ -70,7 +74,7 @@ function HomeRoute() {
     if (!hasIncomingToken) sanitizeAuthRedirectUrl();
   }, [hasIncomingToken]);
 
-  if (hasIncomingToken) return <LoginSuccess />;
+  if (hasIncomingToken) return <LoginSuccess onDone={() => setHasIncomingToken(false)} />;
 
   if (loading) return <RouteFallback />;
   if (user) return <Dashboard />;
@@ -142,29 +146,38 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <GlobalProgress />
-        <Toaster />
-        <Sonner />
-        <HashRouter>
-          <LanguageProvider>
-            <AuthProvider>
-              <UsageProvider>
-                <EntityProvider>
-                  <AppRoutes />
-                </EntityProvider>
-              </UsageProvider>
-            </AuthProvider>
-          </LanguageProvider>
-        </HashRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-    <Analytics />
-    <SpeedInsights />
-  </QueryClientProvider>
-);
+const App = () => {
+  React.useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setBackgroundColor({ color: "#000000" });
+      StatusBar.setStyle({ style: Style.Dark });
+    }
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <GlobalProgress />
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <LanguageProvider>
+              <AuthProvider>
+                <UsageProvider>
+                  <EntityProvider>
+                    <AppRoutes />
+                  </EntityProvider>
+                </UsageProvider>
+              </AuthProvider>
+            </LanguageProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+      <Analytics />
+      <SpeedInsights />
+    </QueryClientProvider>
+  );
+};
 
 export default App;

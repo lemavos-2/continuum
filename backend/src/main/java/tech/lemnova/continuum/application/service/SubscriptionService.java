@@ -327,16 +327,29 @@ public class SubscriptionService {
         return stripe.iterateLiveSubscriptions();
     }
 
+    /** Statuses that actually grant (or may still grant) access. */
+    private static boolean isLiveStatus(SubscriptionStatus s) {
+        return s == SubscriptionStatus.ACTIVE
+                || s == SubscriptionStatus.TRIALING
+                || s == SubscriptionStatus.PAST_DUE;
+    }
+
     /**
      * Compares one Stripe subscription against local state and repairs it when they
      * diverge. Returns true when a repair was applied (used for job reporting).
+     *
+     * <p>A user can own several dead Stripe subscriptions (canceled, incomplete…).
+     * Since we keep a single local record per user, adopting each dead remote in turn
+     * made two dead subscriptions ping-pong forever on every sweep. We therefore only
+     * take over the local record for a <i>different</i> subscription id when the remote
+     * one is live; dead ones are ignored (they can't change the effective plan).</p>
      */
     public boolean reconcileRemoteSubscription(com.stripe.model.Subscription remote) {
         if (remote == null) return false;
         String userId = metadataUserId(remote);
         if (userId == null) userId = resolveUserIdFromCustomer(remote.getCustomer());
         if (userId == null) {
-            log.warn("[Stripe][reconcile] sub={} customer={} has no matching local user — skipping",
+            log.debug("[Stripe][reconcile] sub={} customer={} has no matching local user — skipping",
                     remote.getId(), remote.getCustomer());
             return false;
         }
@@ -347,24 +360,38 @@ public class SubscriptionService {
 
         SubscriptionStatus remoteStatus = mapStatus(remote.getStatus());
         PlanType remotePlan = determinePlan(firstPriceId(remote));
+
+        boolean sameSubscription = local != null && remote.getId().equals(local.getStripeSubscriptionId());
+
+        // Never let a dead remote subscription steal the local record from another one.
+        if (!sameSubscription && !isLiveStatus(remoteStatus)) {
+            if (local != null) {
+                log.debug("[Stripe][reconcile] ignoring dead sub={} ({}) for user={} — local record tracks sub={}",
+                        remote.getId(), remoteStatus, uid, local.getStripeSubscriptionId());
+                return false;
+            }
+            // No local record at all: adopt it once so the user has a (FREE) baseline.
+        }
+
         boolean diverged = local == null
-                || !remote.getId().equals(local.getStripeSubscriptionId())
+                || !sameSubscription
                 || local.getStatus() != remoteStatus
                 || local.getPlanType() != remotePlan;
 
         PlanType userPlan = userRepo.findById(uid).map(User::getPlan).orElse(null);
-        if (!diverged && local != null && userPlan != local.getEffectivePlan()) {
+        if (!diverged && userPlan != local.getEffectivePlan()) {
             diverged = true;
         }
         if (!diverged) return false;
 
-        log.warn("[Stripe][reconcile] repairing user={} sub={} local={}/{} remote={}/{}",
+        log.info("[Stripe][reconcile] repairing user={} sub={} local={}/{} remote={}/{}",
                 uid, remote.getId(),
                 local == null ? "none" : local.getPlanType(), local == null ? "none" : local.getStatus(),
                 remotePlan, remoteStatus);
         applyStripeSubscription(uid, remote);
         return true;
     }
+
 
     private static String firstPriceId(com.stripe.model.Subscription sSub) {
         if (sSub.getItems() == null || sSub.getItems().getData().isEmpty()) return null;

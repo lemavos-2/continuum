@@ -52,7 +52,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 user.getVaultId()
         );
 
-        String redirectUrl = frontendUrl + "/#/?access_token=" + URLEncoder.encode(tokenPair.accessToken(), StandardCharsets.UTF_8) +
+        String redirectUrl = frontendUrl + "/?access_token=" + URLEncoder.encode(tokenPair.accessToken(), StandardCharsets.UTF_8) +
                 "&vault_id=" + URLEncoder.encode(user.getVaultId(), StandardCharsets.UTF_8);
 
         response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");

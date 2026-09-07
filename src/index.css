@@ -650,7 +650,37 @@
 
 /* Continuum editor */
 @layer components {
-  .continuum-editor { @apply text-foreground leading-relaxed; font-family: 'Inter', system-ui, sans-serif; font-size: 16px; }
+  :root {
+    --note-title-font-scale: 100;
+    --note-body-font-scale: 100;
+  }
+
+  .continuum-editor {
+    @apply text-foreground leading-relaxed;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: calc(16px * var(--note-body-font-scale) / 100) !important;
+    line-height: 1.7;
+  }
+  .continuum-editor,
+  .continuum-editor .ProseMirror {
+    font-size: calc(16px * var(--note-body-font-scale) / 100) !important;
+    line-height: 1.7;
+  }
+  .continuum-editor .ProseMirror > * {
+    font-size: inherit !important;
+  }
+  .continuum-editor .ProseMirror p,
+  .continuum-editor .ProseMirror li,
+  .continuum-editor .ProseMirror blockquote,
+  .continuum-editor .ProseMirror td,
+  .continuum-editor .ProseMirror th,
+  .continuum-editor .ProseMirror table,
+  .continuum-editor .ProseMirror code,
+  .continuum-editor .ProseMirror pre,
+  .continuum-editor .ProseMirror a,
+  .continuum-editor .ProseMirror span {
+    font-size: calc(1em * var(--note-body-font-scale) / 100) !important;
+  }
   .continuum-editor p { @apply my-2; }
   .continuum-editor h1 { @apply text-3xl font-serif mt-8 mb-3 tracking-tight; }
   .continuum-editor h2 { @apply text-2xl font-serif mt-7 mb-2 tracking-tight; }

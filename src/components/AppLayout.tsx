@@ -4,20 +4,16 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
   StickyNote,
   Tag,
   User as UserIcon,
   Menu,
   GlobeAlt,
-  Timer,
   Clock,
   Lock,
   BarChart3,
-  X,
   FolderOpen,
   Squares2x2,
-  ArrowLeft,
 } from "@/lib/heroicons";
 import {
   Squares2X2Icon as Squares2x2Solid,
@@ -57,77 +53,25 @@ const mobileTabs = [
   { to: "/insights", icon: BarChart3, iconSolid: BarChart3Solid, key: "nav_insights" },
 ];
 
-// Mobile top bar shows the page title instead of the app logo on list screens.
-const MOBILE_TITLES: [string, string][] = [
-  ["/notes", "notes_title"],
-  ["/entities", "entities_title"],
-  ["/insights", "ins_title"],
-  ["/projects", "projects_title"],
-  ["/activities", "activities_title"],
-  ["/vault", "vault_title"],
-];
-
-
-
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const isGraphPage = location.pathname.startsWith("/graph");
-  // The note editor owns the top area on mobile — it renders its own header.
-  const hideMobileTopBar = /^\/notes\/[^/]+$/.test(location.pathname);
-  const isNoteEditor = hideMobileTopBar;
-  const mobileTitleKey = MOBILE_TITLES.find(([p]) => location.pathname === p)?.[1];
-
-  const initial = (user?.username || user?.email || "U").trim().charAt(0).toUpperCase();
-  const display = user?.username || user?.email?.split("@")[0] || "Guest";
+  const isNoteEditor = /^\/notes\/[^/]+$/.test(location.pathname);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <CommandPalette />
 
-      {/* Mobile top bar */}
-      {!hideMobileTopBar && (
-      <div className="fixed left-0 right-0 top-0 z-40 flex items-center gap-3 border-b border-white/5 bg-background/80 px-4 py-3 backdrop-blur-md lg:hidden">
-        {mobileTitleKey ? (
-          <h1 className="min-w-0 truncate font-serif text-xl tracking-tight text-foreground">
-            {t(mobileTitleKey)}
-          </h1>
-        ) : (
-          <div className="flex items-center gap-2">
-            <img src="/favicon.ico" alt="Continuum" className="h-7 w-7 rounded-lg object-contain" />
-            <span className="text-base font-serif tracking-tight">Continuum</span>
-          </div>
-        )}
-
-
-        <div className="flex-1" />
-
-        <OfflineStatus compact />
-
-        {isGraphPage && (
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t("common_back") || "Back"}
-          </button>
-        )}
-      </div>
-      )}
-
-
       {/* Desktop hover-expand sidebar */}
       <SessionNavBar />
 
       <main className="min-w-0 flex-1 overflow-auto bg-background lg:ml-[3.25rem]">
-        {!hideMobileTopBar && <div className="h-14 lg:hidden" />}
         {children}
         {/* Spacer so content isn't hidden behind the floating mobile bottom nav */}
-        {!hideMobileTopBar && <div className="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" />}
+        {!isNoteEditor && <div className="h-[calc(5.5rem+env(safe-area-inset-bottom))] lg:hidden" />}
       </main>
 
 

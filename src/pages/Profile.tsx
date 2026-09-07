@@ -38,6 +38,7 @@ import { toast as sonnerToast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import WallpaperSettings from "@/components/profile/WallpaperSettings";
+import { DEFAULT_NOTE_FONT_SIZE, loadNoteFontSize, resetNoteFontSize, saveNoteFontSize, subscribeNoteFontSize } from "@/lib/note-font-size";
 
 /* ── Shared building blocks ──────────────────────────────────────────── */
 
@@ -146,6 +147,34 @@ export default function Profile() {
 
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [noteTitleScale, setNoteTitleScale] = useState<number>(() => loadNoteFontSize().titleScale);
+  const [noteBodyScale, setNoteBodyScale] = useState<number>(() => loadNoteFontSize().bodyScale);
+
+  useEffect(() => {
+    const unsubscribe = subscribeNoteFontSize((settings) => {
+      setNoteTitleScale(settings.titleScale);
+      setNoteBodyScale(settings.bodyScale);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const updateNoteTitleScale = (value: number) => {
+    const nextValue = Math.round(value);
+    setNoteTitleScale(nextValue);
+    saveNoteFontSize({ titleScale: nextValue, bodyScale: noteBodyScale });
+  };
+
+  const updateNoteBodyScale = (value: number) => {
+    const nextValue = Math.round(value);
+    setNoteBodyScale(nextValue);
+    saveNoteFontSize({ titleScale: noteTitleScale, bodyScale: nextValue });
+  };
+
+  const resetNoteFontScale = () => {
+    setNoteTitleScale(DEFAULT_NOTE_FONT_SIZE.titleScale);
+    setNoteBodyScale(DEFAULT_NOTE_FONT_SIZE.bodyScale);
+    resetNoteFontSize();
+  };
 
   const handleExportData = async () => {
     if (exporting) return;
@@ -346,7 +375,59 @@ export default function Profile() {
                 subtitle={t("profile_secureAuthDesc")}
               />
               <OfflineSyncRow />
-              <div className="p-4 sm:p-5">
+              <div className="space-y-4 p-4 sm:p-5">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground/80">Note font size</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Adjust title and body text in every note.</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetNoteFontScale}
+                      disabled={noteTitleScale === DEFAULT_NOTE_FONT_SIZE.titleScale && noteBodyScale === DEFAULT_NOTE_FONT_SIZE.bodyScale}
+                      className="h-7 px-2 text-[10px] normal-case"
+                    >
+                      Reset
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Title</Label>
+                      <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{noteTitleScale}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={80}
+                      max={180}
+                      step={5}
+                      value={noteTitleScale}
+                      onChange={(e) => updateNoteTitleScale(Number(e.target.value))}
+                      className="w-full accent-primary"
+                      aria-label="Note title font size"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Body</Label>
+                      <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{noteBodyScale}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={80}
+                      max={180}
+                      step={5}
+                      value={noteBodyScale}
+                      onChange={(e) => updateNoteBodyScale(Number(e.target.value))}
+                      className="w-full accent-primary"
+                      aria-label="Note body font size"
+                    />
+                  </div>
+                </div>
                 <WallpaperSettings />
               </div>
             </CardContent>
@@ -456,7 +537,7 @@ export default function Profile() {
 
           <Card variant="faint" className="w-full">
             <CardContent className="divide-y divide-border p-0">
-              <a href="#/support" className="flex items-center gap-4 px-4 py-3.5 w-full">
+              <a href="/support" className="flex items-center gap-4 px-4 py-3.5 w-full">
                 <LifebuoyIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-foreground/80">{t("profile_supportCenter")}</p>

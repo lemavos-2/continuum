@@ -20,10 +20,8 @@ public class OAuthStateService {
     private static final long STATE_EXPIRATION_MS = 5 * 60 * 1000L;
     private static final String STATE_TYPE = "oauth_state";
     
-    // O Google exige esta sem o #
     private static final String GOOGLE_CALLBACK_PATH = "/google-callback"; 
-    // O seu React com HashRouter exige esta
-    private static final String REACT_HASH_PATH = "/#/google-callback";
+    private static final String REACT_CALLBACK_PATH = "/google-callback";
 
     private final Key stateKey;
     private final String googleRedirectUrl;
@@ -38,7 +36,7 @@ public class OAuthStateService {
                 : frontendUrl;
 
         this.googleRedirectUrl = baseUrl + GOOGLE_CALLBACK_PATH;
-        this.finalFrontendUrl = baseUrl + REACT_HASH_PATH;
+        this.finalFrontendUrl = baseUrl + REACT_CALLBACK_PATH;
     }
 
     public OAuthState createState() {
