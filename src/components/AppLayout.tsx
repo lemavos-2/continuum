@@ -19,8 +19,8 @@ import {
   Squares2X2Icon as Squares2x2Solid,
   DocumentTextIcon as StickyNoteSolid,
   TagIcon as TagSolid,
+  ClockIcon as ClockSolid,
   ChartBarIcon as BarChart3Solid,
-  GlobeAltIcon as GlobeAltSolid,
 } from "@heroicons/react/24/solid";
 import {
   DropdownMenu,
@@ -50,7 +50,7 @@ const mobileTabs = [
   { to: "/notes", icon: StickyNote, iconSolid: StickyNoteSolid, key: "nav_notes" },
   { to: "/entities", icon: Tag, iconSolid: TagSolid, key: "nav_entities" },
   { to: "/insights", icon: BarChart3, iconSolid: BarChart3Solid, key: "nav_insights" },
-  { to: "/graph", icon: GlobeAlt, iconSolid: GlobeAltSolid, key: "nav_graph" },
+  { to: "/activities", icon: Clock, iconSolid: ClockSolid, key: "nav_activities" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {

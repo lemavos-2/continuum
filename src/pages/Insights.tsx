@@ -444,13 +444,29 @@ export default function Insights() {
             </header>
 
             {/* Métricas superiores */}
-            <SummaryMetricRow className="mb-6 lg:mb-8">
-              <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
-              <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
-            </SummaryMetricRow>
+            <Card className="mb-6 border-white/10 bg-white/[0.02] p-4 sm:p-6 lg:mb-8">
+              <SummaryMetricRow>
+                <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
+                <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
+              </SummaryMetricRow>
+
+              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
+                {categoryOrder.map((cat) => (
+                  <div
+                    key={cat}
+                    className="flex items-center gap-1.5 rounded-sm border border-white/10 bg-white/[0.02] px-2.5 py-1"
+                  >
+                    <span className="text-[9px] uppercase tracking-wide text-white/40">
+                      {t(CATEGORY_META[cat].labelKey)}
+                    </span>
+                    <span className="font-mono text-[11px] text-white/80">{counts[cat]}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
 
             {/* Evolução do score */}
-            <div className="mb-6 lg:mb-8">
+            <div className="-mx-6 mb-6 sm:mx-0 lg:mb-8">
               <ScoreEvolutionSection />
             </div>
 

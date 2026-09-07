@@ -46,6 +46,7 @@ export function ScoreEvolutionSection({
 }) {
   const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
+  const [forceHideTooltip, setForceHideTooltip] = useState(false);
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["metrics", "scoreInsights"],
@@ -78,6 +79,9 @@ export function ScoreEvolutionSection({
   const bestWeekText = null;
 
   const milestoneBadges = [];
+
+  const handleTouchStart = () => setForceHideTooltip(false);
+  const handleTouchEnd = () => setForceHideTooltip(true);
 
   const renderTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -166,7 +170,13 @@ export function ScoreEvolutionSection({
                 </div>
               )}
               <ChartContainer config={{}} className="h-full w-full">
-                <AreaChart data={chartData} margin={{ top: 14, right: 12, left: 0, bottom: 0 }}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 14, right: 12, left: 0, bottom: 0 }}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchCancel={handleTouchEnd}
+                >
                   <defs>
                     <linearGradient id="scoreFillMinimal" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
@@ -193,6 +203,7 @@ export function ScoreEvolutionSection({
                     tickCount={4}
                   />
                   <Tooltip
+                    active={forceHideTooltip ? false : undefined}
                     cursor={{ stroke: "hsl(var(--foreground) / 0.2)", strokeWidth: 1, strokeDasharray: "3 3" }}
                     content={renderTooltip}
                   />
