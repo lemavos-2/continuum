@@ -313,6 +313,10 @@ public class EntityService {
         return EntityContextResponse.from(entity, summaries);
     }
 
+    @Caching(evict = {
+        @CacheEvict(value = "insights:notes", allEntries = true),
+        @CacheEvict(value = "insights:entities", allEntries = true)
+    })
     public Entity trackActivity(String userId, String entityId) {
         User user = getUser(userId);
         
