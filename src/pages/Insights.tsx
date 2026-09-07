@@ -450,10 +450,6 @@ export default function Insights() {
               <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
               <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
               <SummaryMetric label={t("sc_current")} value={currentScore.toFixed(2)} />
-              <SummaryMetric
-                label={t("ins_archived_gems")}
-                value={String(counts.worthRevisiting + counts.forgottenGems)}
-              />
             </SummaryMetricRow>
 
             {/* Evolução do score */}
