@@ -442,15 +442,22 @@ export default function Insights() {
               </div>
             </header>
 
-            {/* Métricas superiores — mesmo padrão do Dashboard */}
+            {/* Métricas superiores */}
             <SummaryMetricRow className="mb-6 lg:mb-8">
               <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
               <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
+              <SummaryMetric label={t("sc_current")} value={currentScore.toFixed(2)} />
               <SummaryMetric
                 label={t("ins_archived_gems")}
                 value={String(counts.worthRevisiting + counts.forgottenGems)}
               />
             </SummaryMetricRow>
+
+            {/* Evolução do score */}
+            <div className="mb-6 lg:mb-8">
+              <ScoreEvolutionSection onScoreChange={setCurrentScore} />
+            </div>
+
 
 
             {/* Mobile: search + category chips */}
