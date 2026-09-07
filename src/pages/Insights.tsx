@@ -206,8 +206,12 @@ function InsightRow({ item }: { item: InsightItem }) {
           }
           trailing={
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={cn("rounded-sm px-1.5 py-0 text-[9px] font-mono tracking-wider uppercase", badgeStyle(item.badge))}>
-                {translateBadge(item.badge, t)}
+              <Badge
+                variant="outline"
+                className="rounded-sm border-white/10 bg-transparent px-1.5 py-0 font-mono text-[10px] text-white/60"
+                aria-label={t("ins_mentions", { count: item.metaDetails.mentions ?? 0 })}
+              >
+                {item.metaDetails.mentions ?? 0}
               </Badge>
               <span className="hidden font-mono text-xs text-white/40 sm:inline">{item.score.toFixed(1)}</span>
             </div>
@@ -417,7 +421,7 @@ export default function Insights() {
           {/* Conteúdo Principal */}
           <main className="min-w-0 flex-1">
             {/* Evolução do score */}
-            <div className="-mx-6 mb-6 sm:mx-0 lg:mb-8">
+            <div className="-mx-6 mb-6 sm:-mx-2 lg:-mx-4 lg:mb-8">
               <ScoreEvolutionSection />
             </div>
 
