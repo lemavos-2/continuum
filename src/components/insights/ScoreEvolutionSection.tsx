@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 import { metricsApi } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -157,10 +157,10 @@ export function ScoreEvolutionSection({
                 </div>
               )}
               <ChartContainer config={{}} className="h-full w-full">
-                <LineChart data={chartData} margin={{ top: 14, right: 12, left: -16, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 14, right: 12, left: -16, bottom: 0 }}>
                   <defs>
                     <linearGradient id="scoreFillMinimal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.30)" />
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
                       <stop offset="100%" stopColor="rgba(255,255,255,0)" />
                     </linearGradient>
                   </defs>
@@ -187,18 +187,18 @@ export function ScoreEvolutionSection({
                     cursor={{ stroke: "hsl(var(--foreground) / 0.2)", strokeWidth: 1, strokeDasharray: "3 3" }}
                     content={renderTooltip}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="score"
                     stroke="hsl(var(--foreground))"
                     strokeWidth={1.75}
-                    dot={false}
                     fill="url(#scoreFillMinimal)"
+                    dot={false}
                     activeDot={{ r: 4, fill: "hsl(var(--foreground))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                     isAnimationActive
                     animationDuration={500}
                   />
-                </LineChart>
+                </AreaChart>
               </ChartContainer>
             </>
           )}
