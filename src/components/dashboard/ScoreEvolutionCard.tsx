@@ -180,7 +180,7 @@ export function ScoreEvolutionCard({
     <div
       className={cn(
         "flex items-center gap-1 rounded-sm border border-white/5 bg-white/[0.01] p-1",
-        minimal ? "w-full" : "-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-none border-y sm:border"
+        minimal ? "w-full overflow-x-auto scrollbar-none sm:w-fit" : "-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-none border-y sm:border"
       )}
     >
       {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => (
@@ -192,7 +192,7 @@ export function ScoreEvolutionCard({
           className={cn(
             "h-auto normal-case font-mono uppercase tracking-wider rounded-sm transition-colors whitespace-nowrap",
             minimal
-              ? "flex-1 text-[12px] sm:text-[13px] px-2.5 sm:px-4 py-2.5"
+              ? "shrink-0 px-3 py-2.5 text-[11px] sm:px-4 sm:text-xs"
               : "shrink-0 text-[10px] px-3 py-1.5",
             timeRange === range
               ? "bg-white/[0.06] text-white hover:bg-white/[0.06] hover:text-white"
@@ -206,7 +206,7 @@ export function ScoreEvolutionCard({
   );
 
   const chart = (
-    <div className={cn("w-full -mx-2 relative", minimal ? "h-[260px] sm:h-[380px]" : "h-[200px] sm:h-[250px]")}>
+    <div className={cn("relative w-full", minimal ? "h-[300px] sm:h-[440px] lg:h-[520px]" : "-mx-2 h-[200px] sm:h-[250px]")}>
       {isLoading && !hasData ? (
         <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
           {t("sc_loading")}
@@ -275,10 +275,10 @@ export function ScoreEvolutionCard({
 
   if (minimal) {
     return (
-      <Card variant="faint" className="flex flex-col">
-        <CardContent className="p-4 sm:p-6 flex flex-col gap-5">
+      <Card variant="faint" className="flex min-h-[390px] flex-col sm:min-h-[520px] lg:min-h-[620px]">
+        <CardContent className="flex h-full flex-col gap-6 p-4 sm:p-7 lg:p-9">
           {rangeSelector}
-          {chart}
+          <div className="min-h-0 flex-1">{chart}</div>
         </CardContent>
       </Card>
     );

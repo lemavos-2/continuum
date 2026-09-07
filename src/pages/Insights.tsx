@@ -230,18 +230,15 @@ export default function Insights() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
+  
   const [hotNotes, setHotNotes] = useState<NoteInsight[]>([]);
   const [forgottenNotes, setForgottenNotes] = useState<NoteInsight[]>([]);
   const [hotEntities, setHotEntities] = useState<EntityInsight[]>([]);
   const [forgottenEntities, setForgottenEntities] = useState<EntityInsight[]>([]);
-
+  
   const [view, setView] = useState<View>("all");
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-
-  // Score vindo do gráfico de evolução (mesmo componente do Dashboard)
-  const [currentScore, setCurrentScore] = useState(0);
 
   // Edge swipe to open mobile filter drawer
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -423,7 +420,7 @@ export default function Insights() {
 
           {/* Conteúdo Principal */}
           <main className="min-w-0 flex-1">
-            <header className="mb-8 hidden lg:block">
+            <header className="mb-8 hidden">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{t("ins_intelligence")}</p>
@@ -447,7 +444,7 @@ export default function Insights() {
             </header>
 
             {/* Métricas superiores — mesmo padrão do Dashboard */}
-            <SummaryMetricRow className="mb-6 lg:mb-8">
+            <SummaryMetricRow className="hidden mb-6 lg:mb-8">
               <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
               <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
               <SummaryMetric
@@ -456,16 +453,11 @@ export default function Insights() {
               />
             </SummaryMetricRow>
 
-            {/* GRÁFICO DE EVOLUÇÃO DO SCORE — mesmo componente do Dashboard */}
-            <div className="mb-6 lg:mb-8">
-              <ScoreEvolutionCard
-                onScoreChange={setCurrentScore}
-                onOpenInsights={() => {}}
-              />
-            </div>
+            <ScoreEvolutionCard minimal />
+
 
             {/* Mobile: search + category chips */}
-            <div className="mb-5 space-y-3 lg:hidden">
+            <div className="mb-5 hidden space-y-3 lg:hidden">
               <div className="flex items-center gap-2">
                 <div className="relative z-0 flex-1">
                   <MagnifyingGlassIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -499,7 +491,7 @@ export default function Insights() {
             </div>
 
             {/* Input de Busca Sticky (desktop) */}
-            <div className="sticky top-14 z-10 -mx-4 hidden border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl lg:block">
+            <div className="hidden sticky top-14 z-10 -mx-4 border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl lg:block">
               <div className="relative">
                 <MagnifyingGlassIcon className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                 <Input
@@ -512,7 +504,7 @@ export default function Insights() {
             </div>
 
 
-            <div className="flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-4 text-[11px] text-white/40">
+            <div className="hidden flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-4 text-[11px] text-white/40">
               <div>
                 {filteredInsights.length === 1
                   ? t("ins_showing_signal", { count: filteredInsights.length })
@@ -523,7 +515,7 @@ export default function Insights() {
               </div>
             </div>
 
-            <div className="mt-2">
+            <div className="hidden mt-2">
               {loading ? (
                 <div className="space-y-3 py-6">
                   {Array.from({ length: 7 }).map((_, index) => (
