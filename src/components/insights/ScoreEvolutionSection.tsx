@@ -41,10 +41,8 @@ const fmtDate = (iso: string) =>
 
 export function ScoreEvolutionSection({
   onScoreChange,
-  onOpenInsights,
 }: {
   onScoreChange?: (score: number) => void;
-  onOpenInsights?: () => void;
 }) {
   const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
@@ -187,16 +185,6 @@ export function ScoreEvolutionSection({
               >
                 <RefreshCw className={cn("h-3 w-3", isFetching && "animate-spin")} />
               </Button>
-              {onOpenInsights && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onOpenInsights}
-                  className="h-auto p-0 bg-transparent hover:bg-transparent normal-case text-xs text-white/50 hover:text-white hidden sm:flex items-center gap-1 transition-colors"
-                >
-                  {t("db_insightsArrow")}
-                </Button>
-              )}
             </div>
           </div>
 
