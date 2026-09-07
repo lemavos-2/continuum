@@ -76,7 +76,7 @@ function HomeRoute() {
   if (hasIncomingToken) return <LoginSuccess onDone={() => setHasIncomingToken(false)} />;
 
   if (loading) return <RouteFallback />;
-  if (user) return <Dashboard />;
+  if (user) return <Notes />;
   return <LandingPage />;
 }
 
@@ -103,7 +103,7 @@ const AppRoutes = () => {
           <Routes location={location}>
     <Route path="/" element={<HomeRoute />} />
     <Route path="/index" element={<HomeRoute />} />
-    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/dashboard" element={<Navigate to="/notes" replace />} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
     <Route
