@@ -39,12 +39,10 @@ const COMPONENT_KEYS = ["notes", "entities", "connections", "freshness", "contin
 const fmtDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short" });
 
-export function ScoreEvolutionCard({
+export function ScoreEvolutionSection({
   onScoreChange,
-  onOpenInsights,
 }: {
   onScoreChange?: (score: number) => void;
-  onOpenInsights?: () => void;
 }) {
   const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
@@ -165,7 +163,7 @@ export function ScoreEvolutionCard({
   };
 
   return (
-    <Card variant="faint" className="order-2 lg:order-1 lg:col-span-8 flex flex-col justify-between">
+    <Card variant="faint" className="flex flex-col justify-between">
       <CardContent className="p-4 sm:p-6 flex flex-col justify-between h-full">
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex items-start justify-between gap-3">
@@ -187,16 +185,6 @@ export function ScoreEvolutionCard({
               >
                 <RefreshCw className={cn("h-3 w-3", isFetching && "animate-spin")} />
               </Button>
-              {onOpenInsights && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onOpenInsights}
-                  className="h-auto p-0 bg-transparent hover:bg-transparent normal-case text-xs text-white/50 hover:text-white hidden sm:flex items-center gap-1 transition-colors"
-                >
-                  {t("db_insightsArrow")}
-                </Button>
-              )}
             </div>
           </div>
 
@@ -352,4 +340,4 @@ export function ScoreEvolutionCard({
   );
 }
 
-export default ScoreEvolutionCard;
+export default ScoreEvolutionSection;

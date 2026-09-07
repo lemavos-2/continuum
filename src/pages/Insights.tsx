@@ -22,6 +22,7 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { StickyNote } from "@/lib/heroicons";
 import { SummaryMetric, SummaryMetricRow } from "@/components/ui/summary-metric";
+import { ScoreEvolutionSection } from "@/components/insights/ScoreEvolutionSection";
 
 import { cn } from "@/lib/utils";
 import { insightsApi } from "@/lib/api";
@@ -238,6 +239,8 @@ export default function Insights() {
   const [view, setView] = useState<View>("all");
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [currentScore, setCurrentScore] = useState(0);
+
 
   // Edge swipe to open mobile filter drawer
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -442,15 +445,22 @@ export default function Insights() {
               </div>
             </header>
 
-            {/* Métricas superiores — mesmo padrão do Dashboard */}
+            {/* Métricas superiores */}
             <SummaryMetricRow className="mb-6 lg:mb-8">
               <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
               <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
+              <SummaryMetric label={t("sc_current")} value={currentScore.toFixed(2)} />
               <SummaryMetric
                 label={t("ins_archived_gems")}
                 value={String(counts.worthRevisiting + counts.forgottenGems)}
               />
             </SummaryMetricRow>
+
+            {/* Evolução do score */}
+            <div className="mb-6 lg:mb-8">
+              <ScoreEvolutionSection onScoreChange={setCurrentScore} />
+            </div>
+
 
 
             {/* Mobile: search + category chips */}

@@ -20,6 +20,7 @@ import {
   DocumentTextIcon as StickyNoteSolid,
   TagIcon as TagSolid,
   ChartBarIcon as BarChart3Solid,
+  GlobeAltIcon as GlobeAltSolid,
 } from "@heroicons/react/24/solid";
 import {
   DropdownMenu,
@@ -35,7 +36,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { OfflineStatus } from "@/components/offline/OfflineStatus";
 
 const mobileItems = [
-  { to: "/", icon: Squares2x2, key: "nav_dashboard", end: true },
   { to: "/notes", icon: StickyNote, key: "nav_notes" },
   { to: "/entities", icon: Tag, key: "nav_entities" },
   { to: "/insights", icon: BarChart3, key: "nav_insights" },
@@ -47,10 +47,10 @@ const mobileItems = [
 
 // Primary tabs shown in the bottom navigation bar on mobile.
 const mobileTabs = [
-  { to: "/", icon: Squares2x2, iconSolid: Squares2x2Solid, key: "nav_dashboard", end: true },
   { to: "/notes", icon: StickyNote, iconSolid: StickyNoteSolid, key: "nav_notes" },
   { to: "/entities", icon: Tag, iconSolid: TagSolid, key: "nav_entities" },
   { to: "/insights", icon: BarChart3, iconSolid: BarChart3Solid, key: "nav_insights" },
+  { to: "/graph", icon: GlobeAlt, iconSolid: GlobeAltSolid, key: "nav_graph" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -93,7 +93,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <NavLink
                 key={it.to}
                 to={it.to}
-                end={it.end}
+                
                 className={({ isActive }) =>
                   cn(
                     "flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors active:scale-95",

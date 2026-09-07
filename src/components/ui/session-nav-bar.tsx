@@ -62,7 +62,6 @@ interface NavItem {
 }
 
 const primaryNav: NavItem[] = [
-  { to: "/", label: "nav_dashboard", icon: Squares2x2, iconSolid: Squares2x2Solid, end: true },
   { to: "/notes", label: "nav_notes", icon: StickyNote, iconSolid: StickyNoteSolid },
   { to: "/entities", label: "nav_entities", icon: Tag, iconSolid: TagSolid },
   { to: "/vault", label: "nav_vault", icon: Lock, iconSolid: LockSolid },
