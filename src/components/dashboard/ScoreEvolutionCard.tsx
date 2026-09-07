@@ -42,12 +42,9 @@ const fmtDate = (iso: string) =>
 export function ScoreEvolutionCard({
   onScoreChange,
   onOpenInsights,
-  minimal = false,
 }: {
   onScoreChange?: (score: number) => void;
   onOpenInsights?: () => void;
-  /** Renders only the period selector + chart — no title, comparison, milestones or "why it moved" section. */
-  minimal?: boolean;
 }) {
   const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
@@ -167,123 +164,6 @@ export function ScoreEvolutionCard({
     );
   };
 
-  const rangeLabels: Record<TimeRange, string> = {
-    "14d": t("db_range14d"),
-    "1mo": t("db_range1mo"),
-    "3mo": t("db_range3mo"),
-    "6mo": t("db_range6mo"),
-    "1y": t("db_range1y"),
-    total: t("db_rangeTotal"),
-  };
-
-  const rangeSelector = (
-    <div
-      className={cn(
-        "flex items-center gap-1 rounded-sm border border-white/5 bg-white/[0.01] p-1",
-        minimal ? "w-full overflow-x-auto scrollbar-none sm:w-fit" : "-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-none border-y sm:border"
-      )}
-    >
-      {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => (
-        <Button
-          key={range}
-          type="button"
-          variant="ghost"
-          onClick={() => setTimeRange(range)}
-          className={cn(
-            "h-auto normal-case font-mono uppercase tracking-wider rounded-sm transition-colors whitespace-nowrap",
-            minimal
-              ? "shrink-0 px-3 py-2.5 text-[11px] sm:px-4 sm:text-xs"
-              : "shrink-0 text-[10px] px-3 py-1.5",
-            timeRange === range
-              ? "bg-white/[0.06] text-white hover:bg-white/[0.06] hover:text-white"
-              : "bg-transparent text-white/40 hover:bg-transparent hover:text-white/70"
-          )}
-        >
-          {rangeLabels[range]}
-        </Button>
-      ))}
-    </div>
-  );
-
-  const chart = (
-    <div className={cn("relative w-full", minimal ? "h-[300px] sm:h-[440px] lg:h-[520px]" : "-mx-2 h-[200px] sm:h-[250px]")}>
-      {isLoading && !hasData ? (
-        <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
-          {t("sc_loading")}
-        </div>
-      ) : !hasData ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center px-4">
-          <p className="text-xs text-white/40">{t("sc_empty")}</p>
-          <p className="text-[11px] text-white/30">{t("sc_emptyHint")}</p>
-        </div>
-      ) : (
-        <>
-          {isError && (
-            <div className="absolute right-2 top-1 z-10 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
-              {t("sc_failed")}
-            </div>
-          )}
-          <ChartContainer config={{}} className="h-full w-full">
-            <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-              <defs>
-                <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.22} />
-                  <stop offset="60%" stopColor="hsl(var(--foreground))" stopOpacity={0.06} />
-                  <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="hsl(var(--foreground) / 0.04)" strokeDasharray="2 6" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: minimal ? 11 : 10 }}
-                tickMargin={8}
-                minTickGap={32}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: minimal ? 11 : 10 }}
-                domain={[0, (dataMax: number) => Math.max(dataMax * 1.2, 1)]}
-                tickFormatter={(value) => Number(value).toFixed(0)}
-                width={32}
-                tickCount={4}
-              />
-              <Tooltip
-                cursor={{ stroke: "hsl(var(--foreground) / 0.2)", strokeWidth: 1, strokeDasharray: "3 3" }}
-                content={renderTooltip}
-              />
-              <Area
-                type="monotone"
-                dataKey="score"
-                stroke="hsl(var(--foreground))"
-                strokeWidth={1.75}
-                fill="url(#scoreFill)"
-                dot={false}
-                activeDot={{ r: 4, fill: "hsl(var(--foreground))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
-                isAnimationActive
-                animationDuration={500}
-              />
-            </AreaChart>
-          </ChartContainer>
-        </>
-      )}
-    </div>
-  );
-
-  if (minimal) {
-    return (
-      <Card variant="faint" className="flex min-h-[390px] flex-col sm:min-h-[520px] lg:min-h-[620px]">
-        <CardContent className="flex h-full flex-col gap-6 p-4 sm:p-7 lg:p-9">
-          {rangeSelector}
-          <div className="min-h-0 flex-1">{chart}</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card variant="faint" className="order-2 lg:order-1 lg:col-span-8 flex flex-col justify-between">
       <CardContent className="p-4 sm:p-6 flex flex-col justify-between h-full">
@@ -344,10 +224,102 @@ export function ScoreEvolutionCard({
             </div>
           )}
 
-          {rangeSelector}
+          {/* RANGE SELECTOR */}
+          <div className="flex items-center -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-none gap-1 border-y sm:border border-white/5 sm:rounded-sm bg-white/[0.01] p-1">
+            {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => {
+              const labels: Record<TimeRange, string> = {
+                "14d": t("db_range14d"),
+                "1mo": t("db_range1mo"),
+                "3mo": t("db_range3mo"),
+                "6mo": t("db_range6mo"),
+                "1y": t("db_range1y"),
+                total: t("db_rangeTotal"),
+              };
+              return (
+                <Button
+                  key={range}
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setTimeRange(range)}
+                  className={cn(
+                    "h-auto normal-case text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 rounded-sm transition-colors shrink-0",
+                    timeRange === range
+                      ? "bg-white/[0.06] text-white hover:bg-white/[0.06] hover:text-white"
+                      : "bg-transparent text-white/40 hover:bg-transparent hover:text-white/70"
+                  )}
+                >
+                  {labels[range]}
+                </Button>
+              );
+            })}
+          </div>
         </div>
 
-        {chart}
+        <div className="h-[200px] sm:h-[250px] w-full -mx-2 relative">
+          {isLoading && !hasData ? (
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
+              {t("sc_loading")}
+            </div>
+          ) : !hasData ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center px-4">
+              <p className="text-xs text-white/40">{t("sc_empty")}</p>
+              <p className="text-[11px] text-white/30">{t("sc_emptyHint")}</p>
+            </div>
+          ) : (
+            <>
+              {isError && (
+                <div className="absolute right-2 top-1 z-10 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
+                  {t("sc_failed")}
+                </div>
+              )}
+              <ChartContainer config={{}} className="h-full w-full">
+                <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.22} />
+                      <stop offset="60%" stopColor="hsl(var(--foreground))" stopOpacity={0.06} />
+                      <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="hsl(var(--foreground) / 0.04)" strokeDasharray="2 6" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                    tickMargin={8}
+                    minTickGap={32}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                    domain={[0, (dataMax: number) => Math.max(dataMax * 1.2, 1)]}
+                    tickFormatter={(value) => Number(value).toFixed(0)}
+                    width={32}
+                    tickCount={4}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: "hsl(var(--foreground) / 0.2)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                    content={renderTooltip}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="score"
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1.75}
+                    fill="url(#scoreFill)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: "hsl(var(--foreground))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                    isAnimationActive
+                    animationDuration={500}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </>
+          )}
+        </div>
 
         {/* WHY IT MOVED TODAY */}
         {hasData && (

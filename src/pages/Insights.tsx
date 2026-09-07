@@ -22,7 +22,6 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { StickyNote } from "@/lib/heroicons";
 import { SummaryMetric, SummaryMetricRow } from "@/components/ui/summary-metric";
-import { ScoreEvolutionCard } from "@/components/dashboard/ScoreEvolutionCard";
 
 import { cn } from "@/lib/utils";
 import { insightsApi } from "@/lib/api";
@@ -412,15 +411,15 @@ export default function Insights() {
           </SheetContent>
         </Sheet>
 
-        <div className="mx-auto w-full px-4 py-5 sm:px-6 lg:px-12 lg:py-12 xl:px-16">
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
           {/* Sidebar Desktop */}
-          <aside className="hidden">
+          <aside className="hidden lg:sticky lg:top-16 lg:block lg:w-52 lg:shrink-0 lg:self-start">
             {SidebarContent}
           </aside>
 
           {/* Conteúdo Principal */}
-          <main className="mx-auto min-w-0 w-full max-w-[1180px]">
-            <header className="mb-8 hidden">
+          <main className="min-w-0 flex-1">
+            <header className="mb-8 hidden lg:block">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{t("ins_intelligence")}</p>
@@ -444,7 +443,7 @@ export default function Insights() {
             </header>
 
             {/* Métricas superiores — mesmo padrão do Dashboard */}
-            <SummaryMetricRow className="hidden mb-6 lg:mb-8">
+            <SummaryMetricRow className="mb-6 lg:mb-8">
               <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
               <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
               <SummaryMetric
@@ -453,11 +452,9 @@ export default function Insights() {
               />
             </SummaryMetricRow>
 
-            <ScoreEvolutionCard minimal />
-
 
             {/* Mobile: search + category chips */}
-            <div className="mb-5 hidden space-y-3 lg:hidden">
+            <div className="mb-5 space-y-3 lg:hidden">
               <div className="flex items-center gap-2">
                 <div className="relative z-0 flex-1">
                   <MagnifyingGlassIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -491,7 +488,7 @@ export default function Insights() {
             </div>
 
             {/* Input de Busca Sticky (desktop) */}
-            <div className="hidden sticky top-14 z-10 -mx-4 border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl lg:block">
+            <div className="sticky top-14 z-10 -mx-4 hidden border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl lg:block">
               <div className="relative">
                 <MagnifyingGlassIcon className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                 <Input
@@ -504,7 +501,7 @@ export default function Insights() {
             </div>
 
 
-            <div className="hidden flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-4 text-[11px] text-white/40">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-4 text-[11px] text-white/40">
               <div>
                 {filteredInsights.length === 1
                   ? t("ins_showing_signal", { count: filteredInsights.length })
@@ -515,7 +512,7 @@ export default function Insights() {
               </div>
             </div>
 
-            <div className="hidden mt-2">
+            <div className="mt-2">
               {loading ? (
                 <div className="space-y-3 py-6">
                   {Array.from({ length: 7 }).map((_, index) => (
