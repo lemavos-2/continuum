@@ -26,7 +26,6 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 // Auth-critical screens stay eager (they gate the first paint); everything else
 // is code-split and streamed in behind a skeleton.
 import LoginSuccess from "./pages/LoginSuccess";
-import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 
 const Login = React.lazy(() => import("./pages/Login"));
