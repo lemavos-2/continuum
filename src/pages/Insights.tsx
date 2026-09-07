@@ -135,10 +135,7 @@ const badgeStyle = (badge: string) => {
 
 function StatChip({ children }: { children: ReactNode }) {
   return (
-    <Badge
-      variant="outline"
-      className="rounded-sm border-white/5 bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] text-white/40"
-    >
+    <Badge variant="outline" className="rounded-sm border-white/5 bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] text-white/40">
       {children}
     </Badge>
   );
@@ -174,12 +171,7 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
         />
         {label}
       </span>
-      <span
-        className={cn(
-          "font-mono text-[10px] tabular-nums",
-          active ? "text-white/60" : "text-white/30"
-        )}
-      >
+      <span className={cn("font-mono text-[10px] tabular-nums", active ? "text-white/60" : "text-white/30")}>
         {count}
       </span>
     </Button>
@@ -190,7 +182,6 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
 
 function InsightRow({ item }: { item: InsightItem }) {
   const { t } = useLanguage();
-
   return (
     <li>
       <button
@@ -211,37 +202,21 @@ function InsightRow({ item }: { item: InsightItem }) {
               {item.subtitle}
               {" · "}
               {formatDays(item.metaDetails.daysAgo, t)}
-              {item.metaDetails.mentions
-                ? ` · ${t("ins_mentions", {
-                    count: item.metaDetails.mentions,
-                  })}`
-                : ""}
-              {item.metaDetails.hours
-                ? ` · ${t("ins_hours_tracked", {
-                    hours: formatHours(item.metaDetails.hours),
-                  })}`
-                : ""}
+              {item.metaDetails.mentions ? ` · ${t("ins_mentions", { count: item.metaDetails.mentions })}` : ""}
+              {item.metaDetails.hours ? ` · ${t("ins_hours_tracked", { hours: formatHours(item.metaDetails.hours) })}` : ""}
             </>
           }
           trailing={
             <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "rounded-sm px-1.5 py-0 text-[9px] font-mono tracking-wider uppercase",
-                  badgeStyle(item.badge)
-                )}
-              >
+              <Badge variant="outline" className={cn("rounded-sm px-1.5 py-0 text-[9px] font-mono tracking-wider uppercase", badgeStyle(item.badge))}>
                 {translateBadge(item.badge, t)}
               </Badge>
-
-              <span className="hidden font-mono text-xs text-white/40 sm:inline">
-                {item.score.toFixed(1)}
-              </span>
+              <span className="hidden font-mono text-xs text-white/40 sm:inline">{item.score.toFixed(1)}</span>
             </div>
           }
         />
       </button>
+
     </li>
   );
 }
@@ -255,49 +230,36 @@ export default function Insights() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
+  
   const [hotNotes, setHotNotes] = useState<NoteInsight[]>([]);
   const [forgottenNotes, setForgottenNotes] = useState<NoteInsight[]>([]);
   const [hotEntities, setHotEntities] = useState<EntityInsight[]>([]);
   const [forgottenEntities, setForgottenEntities] = useState<EntityInsight[]>([]);
-
+  
   const [view, setView] = useState<View>("all");
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-  const [currentScore, setCurrentScore] = useState(0);
 
   // Edge swipe to open mobile filter drawer
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
 
   const onSwipeStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
-    if (t.clientX > 160) return;
-
-    swipeRef.current = {
-      x: t.clientX,
-      y: t.clientY,
-      t: Date.now(),
-    };
+    if (t.clientX > 160) return; // Wider edge zone for easier grab
+    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
   };
 
   const onSwipeEnd = (e: React.TouchEvent) => {
     const s = swipeRef.current;
     if (!s) return;
-
     const t = e.changedTouches[0];
     const dx = t.clientX - s.x;
     const dy = Math.abs(t.clientY - s.y);
-
-    if (
-      dx > 28 &&
-      dy < 100 &&
-      Date.now() - s.t < 1000
-    ) {
-      setFilterDrawerOpen(true);
-    }
-
+    // More sensitive: shorter horizontal distance, longer time window
+    if (dx > 28 && dy < 100 && Date.now() - s.t < 1000) setFilterDrawerOpen(true);
     swipeRef.current = null;
   };
+
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -316,10 +278,7 @@ export default function Insights() {
       setHotEntities(he.data || []);
       setForgottenEntities(fe.data || []);
     } catch {
-      toast({
-        title: t("ins_could_not_load"),
-        variant: "destructive",
-      });
+      toast({ title: t("ins_could_not_load"), variant: "destructive" });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -342,12 +301,7 @@ export default function Insights() {
         badge: item.badge,
         title: item.note.title || t("ins_untitled"),
         subtitle: t("ins_note"),
-        metaDetails: {
-          mentions: item.mentionCount,
-          links: item.entityConnections,
-          hours: item.hoursTracked,
-          daysAgo: item.daysSinceLastInteraction,
-        },
+        metaDetails: { mentions: item.mentionCount, links: item.entityConnections, hours: item.hoursTracked, daysAgo: item.daysSinceLastInteraction },
         onOpen: () => navigate(`/notes/${item.note.id}`),
       });
     });
@@ -361,12 +315,7 @@ export default function Insights() {
         badge: item.badge,
         title: item.entity.title || t("ins_untitled"),
         subtitle: item.entity.type || t("ins_atom"),
-        metaDetails: {
-          mentions: item.mentionCount,
-          links: item.relationsCount,
-          hours: item.hoursTracked,
-          daysAgo: item.daysSinceLastMention,
-        },
+        metaDetails: { mentions: item.mentionCount, links: item.relationsCount, hours: item.hoursTracked, daysAgo: item.daysSinceLastMention },
         onOpen: () => navigate(`/entities/${item.entity.id}`),
       });
     });
@@ -380,12 +329,7 @@ export default function Insights() {
         badge: item.badge,
         title: item.note.title || t("ins_untitled"),
         subtitle: t("ins_note"),
-        metaDetails: {
-          mentions: item.mentionCount,
-          links: item.entityConnections,
-          hours: item.hoursTracked,
-          daysAgo: item.daysSinceLastInteraction,
-        },
+        metaDetails: { mentions: item.mentionCount, links: item.entityConnections, hours: item.hoursTracked, daysAgo: item.daysSinceLastInteraction },
         onOpen: () => navigate(`/notes/${item.note.id}`),
       });
     });
@@ -399,38 +343,20 @@ export default function Insights() {
         badge: item.badge,
         title: item.entity.title || t("ins_untitled"),
         subtitle: item.entity.type || t("ins_atom"),
-        metaDetails: {
-          mentions: item.mentionCount,
-          links: item.relationsCount,
-          hours: item.hoursTracked,
-          daysAgo: item.daysSinceLastMention,
-        },
+        metaDetails: { mentions: item.mentionCount, links: item.relationsCount, hours: item.hoursTracked, daysAgo: item.daysSinceLastMention },
         onOpen: () => navigate(`/entities/${item.entity.id}`),
       });
     });
 
     return items.sort((a, b) => b.score - a.score);
-  }, [
-    hotNotes,
-    hotEntities,
-    forgottenNotes,
-    forgottenEntities,
-    navigate,
-  ]);
+  }, [hotNotes, hotEntities, forgottenNotes, forgottenEntities, navigate]);
 
   const filteredInsights = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return insights.filter((item) => {
-      if (view !== "all" && item.category !== view) {
-        return false;
-      }
-
+      if (view !== "all" && item.category !== view) return false;
       if (!query) return true;
-
-      return `${item.title} ${item.subtitle} ${item.badge}`
-        .toLowerCase()
-        .includes(query);
+      return `${item.title} ${item.subtitle} ${item.badge}`.toLowerCase().includes(query);
     });
   }, [insights, search, view]);
 
@@ -442,34 +368,16 @@ export default function Insights() {
     forgottenGems: forgottenEntities.length,
   };
 
-  const topScore = Math.max(
-    0,
-    ...insights.map((item) => item.score)
-  );
+  const topScore = Math.max(0, ...insights.map((item) => item.score));
 
   const SidebarContent = (
     <div className="space-y-7">
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">
-          {t("ins_index")}
-        </p>
-
-        <NavItem
-          label={t("ins_all_insights")}
-          count={counts.all}
-          active={view === "all"}
-          onClick={() => {
-            setView("all");
-            setFilterDrawerOpen(false);
-          }}
-        />
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("ins_index")}</p>
+        <NavItem label={t("ins_all_insights")} count={counts.all} active={view === "all"} onClick={() => { setView("all"); setFilterDrawerOpen(false); }} />
       </div>
-
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">
-          {t("ins_signals")}
-        </p>
-
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-white/30">{t("ins_signals")}</p>
         <div className="space-y-0.5">
           {categoryOrder.map((cat) => (
             <NavItem
@@ -477,10 +385,7 @@ export default function Insights() {
               label={t(CATEGORY_META[cat].labelKey)}
               count={counts[cat]}
               active={view === cat}
-              onClick={() => {
-                setView(cat);
-                setFilterDrawerOpen(false);
-              }}
+              onClick={() => { setView(cat); setFilterDrawerOpen(false); }}
             />
           ))}
         </div>
@@ -490,7 +395,9 @@ export default function Insights() {
 
   return (
     <AppLayout>
-      <div className="relative min-h-full">
+      <div
+        className="relative min-h-full"
+      >
         {/* Edge swipe hint (mobile only) */}
         <div
           aria-hidden
@@ -498,18 +405,9 @@ export default function Insights() {
         />
 
         {/* Menu Lateral Mobile */}
-        <Sheet
-          open={filterDrawerOpen}
-          onOpenChange={setFilterDrawerOpen}
-        >
-          <SheetContent
-            side="left"
-            className="w-[280px] border-white/10 bg-black/95 p-6"
-          >
-            <p className="mb-6 font-serif text-2xl text-white">
-              {t("ins_filters")}
-            </p>
-
+        <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+          <SheetContent side="left" className="w-[280px] border-white/10 bg-black/95 p-6">
+            <p className="mb-6 font-serif text-2xl text-white">{t("ins_filters")}</p>
             {SidebarContent}
           </SheetContent>
         </Sheet>
@@ -525,19 +423,12 @@ export default function Insights() {
             <header className="mb-8 hidden lg:block">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">
-                    {t("ins_intelligence")}
-                  </p>
-
-                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">
-                    {t("ins_title")}
-                  </h1>
-
+                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{t("ins_intelligence")}</p>
+                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("ins_title")}</h1>
                   <p className="mt-2 text-sm text-white/50">
                     {t("ins_subtitle")}
                   </p>
                 </div>
-
                 <div className="flex shrink-0 items-center gap-2">
                   <Button
                     onClick={() => load(true)}
@@ -545,12 +436,7 @@ export default function Insights() {
                     size="sm"
                     className="gap-2"
                   >
-                    <ArrowPathIcon
-                      className={cn(
-                        "h-3.5 w-3.5",
-                        refreshing && "animate-spin"
-                      )}
-                    />
+                    <ArrowPathIcon className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
                     {t("ins_refresh")}
                   </Button>
                 </div>
@@ -559,48 +445,29 @@ export default function Insights() {
 
             {/* Métricas superiores */}
             <SummaryMetricRow className="mb-6 lg:mb-8">
-              <SummaryMetric
-                label={t("ins_signals_found")}
-                value={String(counts.all)}
-              />
-
-              <SummaryMetric
-                label={t("ins_top_strength")}
-                value={topScore.toFixed(1)}
-              />
-
-              <SummaryMetric
-                label={t("sc_current")}
-                value={currentScore.toFixed(2)}
-              />
+              <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
+              <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
             </SummaryMetricRow>
 
             {/* Evolução do score */}
-            <div className="mb-6 -mx-4 sm:-mx-6 lg:mb-8 lg:mx-0">
-              <ScoreEvolutionSection
-                onScoreChange={setCurrentScore}
-              />
+            <div className="mb-6 lg:mb-8">
+              <ScoreEvolutionSection />
             </div>
+
+
 
             {/* Mobile: search + category chips */}
             <div className="mb-5 space-y-3 lg:hidden">
               <div className="flex items-center gap-2">
                 <div className="relative z-0 flex-1">
                   <MagnifyingGlassIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder={
-                      t("ins_searchAmong", {
-                        n: counts.all,
-                      }) ||
-                      `Search among ${counts.all} signals…`
-                    }
+                    placeholder={t("ins_searchAmong", { n: counts.all }) || `Search among ${counts.all} signals…`}
                     className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
                   />
                 </div>
-
                 <Button
                   type="button"
                   variant="ghost"
@@ -610,29 +477,15 @@ export default function Insights() {
                   disabled={refreshing}
                   aria-label={t("ins_refresh")}
                 >
-                  <ArrowPathIcon
-                    className={cn(
-                      "h-4 w-4",
-                      refreshing && "animate-spin"
-                    )}
-                  />
+                  <ArrowPathIcon className={cn("h-4 w-4", refreshing && "animate-spin")} />
                 </Button>
               </div>
-
               <FilterChips
                 value={view}
                 onChange={(v) => setView(v as View)}
                 options={[
-                  {
-                    value: "all",
-                    label: t("ins_all_insights"),
-                  },
-                  ...categoryOrder.map((cat) => ({
-                    value: cat,
-                    label: t(
-                      CATEGORY_META[cat].labelKey
-                    ),
-                  })),
+                  { value: "all", label: t("ins_all_insights") },
+                  ...categoryOrder.map((cat) => ({ value: cat, label: t(CATEGORY_META[cat].labelKey) })),
                 ]}
               />
             </div>
@@ -641,7 +494,6 @@ export default function Insights() {
             <div className="sticky top-14 z-10 -mx-4 hidden border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl lg:block">
               <div className="relative">
                 <MagnifyingGlassIcon className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
-
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -651,4 +503,42 @@ export default function Insights() {
               </div>
             </div>
 
-            <div className="mb-4 flex items-cent
+
+            <div className="flex items-center justify-between border-b border-white/5 pb-3 pt-4 mb-4 text-[11px] text-white/40">
+              <div>
+                {filteredInsights.length === 1
+                  ? t("ins_showing_signal", { count: filteredInsights.length })
+                  : t("ins_showing_signals", { count: filteredInsights.length })}
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-wider text-white/30">
+                {t("ins_sorted_by_score")}
+              </div>
+            </div>
+
+            <div className="mt-2">
+              {loading ? (
+                <div className="space-y-3 py-6">
+                  {Array.from({ length: 7 }).map((_, index) => (
+                    <Skeleton key={index} className="h-14 w-full" />
+                  ))}
+                </div>
+              ) : filteredInsights.length === 0 ? (
+                <div className="py-24 text-center">
+                  <p className="font-serif text-2xl italic text-white/40">
+                    {t("ins_no_matching")}
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-white/[0.06]">
+                  {filteredInsights.map((item) => (
+                    <InsightRow key={`${item.kind}-${item.id}-${item.category}`} item={item} />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

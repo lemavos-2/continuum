@@ -110,36 +110,45 @@ export function ScoreEvolutionSection({
   return (
     <div className="flex flex-col justify-between bg-black">
       <div className="flex h-full flex-col justify-between p-4 sm:p-6">
-        <div className="mb-4 flex items-center -mx-4 overflow-x-auto border-y border-white/5 bg-white/[0.01] px-4 py-1 sm:mx-0 sm:px-0 sm:rounded-sm">
-          {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => {
-            const labels: Record<TimeRange, string> = {
-              "14d": t("db_range14d"),
-              "1mo": t("db_range1mo"),
-              "3mo": t("db_range3mo"),
-              "6mo": t("db_range6mo"),
-              "1y": t("db_range1y"),
-              total: t("db_rangeTotal"),
-            };
-            return (
-              <Button
-                key={range}
-                type="button"
-                variant="ghost"
-                onClick={() => setTimeRange(range)}
-                className={cn(
-                  "h-auto shrink-0 rounded-sm px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest normal-case transition-colors",
-                  timeRange === range
-                    ? "bg-white/[0.06] text-white hover:bg-white/[0.06] hover:text-white"
-                    : "bg-transparent text-white/40 hover:bg-transparent hover:text-white/70"
-                )}
-              >
-                {labels[range]}
-              </Button>
-            );
-          })}
+        <div className="mb-3 flex items-baseline justify-between">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">{t("sc_current")}</p>
+          <p className="font-mono text-sm text-white">{current.toFixed(2)}</p>
         </div>
 
-        <div className="relative h-[200px] w-full sm:h-[250px]">
+        <div className="relative mb-4 -mx-4 sm:mx-0">
+          <div className="flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:px-0">
+            {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => {
+              const labels: Record<TimeRange, string> = {
+                "14d": t("db_range14d"),
+                "1mo": t("db_range1mo"),
+                "3mo": t("db_range3mo"),
+                "6mo": t("db_range6mo"),
+                "1y": t("db_range1y"),
+                total: t("db_rangeTotal"),
+              };
+              const active = timeRange === range;
+              return (
+                <Button
+                  key={range}
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setTimeRange(range)}
+                  className={cn(
+                    "h-auto shrink-0 rounded-full border px-3.5 py-1.5 text-[11px] normal-case transition-colors",
+                    active
+                      ? "border-white/70 text-white hover:bg-transparent hover:text-white"
+                      : "border-white/15 text-white/40 hover:border-white/30 hover:bg-transparent hover:text-white/70"
+                  )}
+                >
+                  {labels[range]}
+                </Button>
+              );
+            })}
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-black to-transparent sm:hidden" />
+        </div>
+
+        <div className="relative h-[260px] w-full sm:h-[320px]">
           {isLoading && !hasData ? (
             <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
               {t("sc_loading")}
@@ -157,7 +166,7 @@ export function ScoreEvolutionSection({
                 </div>
               )}
               <ChartContainer config={{}} className="h-full w-full">
-                <AreaChart data={chartData} margin={{ top: 14, right: 12, left: -16, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 14, right: 12, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="scoreFillMinimal" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
