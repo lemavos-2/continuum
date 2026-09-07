@@ -47,7 +47,7 @@ export function ScoreEvolutionSection({
   const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["metrics", "scoreInsights"],
     queryFn: () => metricsApi.scoreInsights().then((r) => r.data as Insights),
     retry: 1,
@@ -72,25 +72,45 @@ export function ScoreEvolutionSection({
 
   const hasData = points.length > 0;
 
+  const comparison = data?.comparison;
+  const comparisonText = null;
+
+  const bestWeekText = null;
+
+  const milestoneBadges = [];
+
   const renderTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const p = payload[0].payload as Point & { label: string };
     return (
       <div className="rounded-lg border border-white/10 bg-black/90 px-3 py-2 text-[11px] shadow-xl backdrop-blur-md">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-white/40">
-          {fmtDate(p.date)}
+        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-white/40">
+          {fmtDate(p.date)} · {p.score.toFixed(2)}
+          {p.delta !== 0 && (
+            <span className={cn("ml-1", p.delta > 0 ? "text-emerald-400" : "text-red-400")}>
+              {p.delta > 0 ? "+" : ""}
+              {p.delta.toFixed(2)}
+            </span>
+          )}
         </p>
-        <p className="mt-1 font-mono text-sm text-white tabular-nums">
-          {p.score.toFixed(2)}
-        </p>
+        <div className="space-y-0.5">
+          {COMPONENT_KEYS.map((k) => (
+            <div key={k} className="flex items-center justify-between gap-4 text-white/70">
+              <span>{t(`sc_bd_${k}`)}</span>
+              <span className="font-mono tabular-nums text-white">
+                {(p.components?.[k] ?? 0).toFixed(1)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
 
   return (
-    <Card variant="faint" className="flex flex-col justify-between bg-black">
-      <CardContent className="flex h-full flex-col justify-between bg-black p-4 sm:p-6">
-        <div className="mb-4 flex items-center -mx-4 overflow-x-auto border-y border-white/5 bg-black px-4 py-1 sm:mx-0 sm:px-0 sm:rounded-sm">
+    <div className="flex flex-col justify-between bg-black">
+      <div className="flex h-full flex-col justify-between p-4 sm:p-6">
+        <div className="mb-4 flex items-center -mx-4 overflow-x-auto border-y border-white/5 bg-white/[0.01] px-4 py-1 sm:mx-0 sm:px-0 sm:rounded-sm">
           {(Object.keys(rangeDaysMap) as TimeRange[]).map((range) => {
             const labels: Record<TimeRange, string> = {
               "14d": t("db_range14d"),
@@ -139,9 +159,9 @@ export function ScoreEvolutionSection({
               <ChartContainer config={{}} className="h-full w-full">
                 <LineChart data={chartData} margin={{ top: 14, right: 12, left: -16, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.18} />
-                      <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
+                    <linearGradient id="scoreFillMinimal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.30)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="hsl(var(--foreground) / 0.04)" strokeDasharray="2 6" vertical={false} />
@@ -172,8 +192,8 @@ export function ScoreEvolutionSection({
                     dataKey="score"
                     stroke="hsl(var(--foreground))"
                     strokeWidth={1.75}
-                    fill="url(#scoreFill)"
                     dot={false}
+                    fill="url(#scoreFillMinimal)"
                     activeDot={{ r: 4, fill: "hsl(var(--foreground))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                     isAnimationActive
                     animationDuration={500}
@@ -183,8 +203,8 @@ export function ScoreEvolutionSection({
             </>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
