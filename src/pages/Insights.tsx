@@ -412,14 +412,14 @@ export default function Insights() {
           </SheetContent>
         </Sheet>
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
+        <div className="mx-auto w-full px-4 py-5 sm:px-6 lg:px-12 lg:py-12 xl:px-16">
           {/* Sidebar Desktop */}
-          <aside className="hidden lg:sticky lg:top-16 lg:block lg:w-52 lg:shrink-0 lg:self-start">
+          <aside className="hidden">
             {SidebarContent}
           </aside>
 
           {/* Conteúdo Principal */}
-          <main className="min-w-0 flex-1">
+          <main className="mx-auto min-w-0 w-full max-w-[1180px]">
             <header className="mb-8 hidden">
               <div className="flex items-end justify-between gap-4">
                 <div className="min-w-0">
