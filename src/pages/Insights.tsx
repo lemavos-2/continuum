@@ -209,11 +209,10 @@ function InsightRow({ item }: { item: InsightItem }) {
               <Badge
                 variant="outline"
                 className="rounded-sm border-white/10 bg-transparent px-1.5 py-0 font-mono text-[10px] text-white/60"
-                aria-label={t("ins_mentions", { count: item.metaDetails.mentions ?? 0 })}
+                aria-label={`Score ${item.score.toFixed(1)}`}
               >
-                {item.metaDetails.mentions ?? 0}
+                {item.score.toFixed(1)}
               </Badge>
-              <span className="hidden font-mono text-xs text-white/40 sm:inline">{item.score.toFixed(1)}</span>
             </div>
           }
         />
