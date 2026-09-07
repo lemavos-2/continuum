@@ -20,6 +20,7 @@ import {
   DocumentTextIcon as StickyNoteSolid,
   TagIcon as TagSolid,
   ChartBarIcon as BarChart3Solid,
+  GlobeAltIcon as GlobeAltSolid,
 } from "@heroicons/react/24/solid";
 import {
   DropdownMenu,
@@ -92,7 +93,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <NavLink
                 key={it.to}
                 to={it.to}
-                end={it.end}
+                
                 className={({ isActive }) =>
                   cn(
                     "flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors active:scale-95",
