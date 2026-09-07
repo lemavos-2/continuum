@@ -22,6 +22,7 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { StickyNote } from "@/lib/heroicons";
 import { SummaryMetric, SummaryMetricRow } from "@/components/ui/summary-metric";
+import { ScoreEvolutionSection } from "@/components/insights/ScoreEvolutionSection";
 
 import { cn } from "@/lib/utils";
 import { insightsApi } from "@/lib/api";
@@ -238,6 +239,8 @@ export default function Insights() {
   const [view, setView] = useState<View>("all");
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [currentScore, setCurrentScore] = useState(0);
+
 
   // Edge swipe to open mobile filter drawer
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
