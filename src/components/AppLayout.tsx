@@ -19,7 +19,6 @@ import {
   Squares2X2Icon as Squares2x2Solid,
   DocumentTextIcon as StickyNoteSolid,
   TagIcon as TagSolid,
-  ClockIcon as ClockSolid,
   ChartBarIcon as BarChart3Solid,
 } from "@heroicons/react/24/solid";
 import {
@@ -50,7 +49,6 @@ const mobileTabs = [
   { to: "/notes", icon: StickyNote, iconSolid: StickyNoteSolid, key: "nav_notes" },
   { to: "/entities", icon: Tag, iconSolid: TagSolid, key: "nav_entities" },
   { to: "/insights", icon: BarChart3, iconSolid: BarChart3Solid, key: "nav_insights" },
-  { to: "/activities", icon: Clock, iconSolid: ClockSolid, key: "nav_activities" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {

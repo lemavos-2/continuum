@@ -12,7 +12,6 @@ import {
 import AppLayout from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -21,7 +20,6 @@ import { FitText } from "@/components/ui/fit-text";
 import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { StickyNote } from "@/lib/heroicons";
-import { SummaryMetric, SummaryMetricRow } from "@/components/ui/summary-metric";
 import { ScoreEvolutionSection } from "@/components/insights/ScoreEvolutionSection";
 
 import { cn } from "@/lib/utils";
@@ -368,8 +366,6 @@ export default function Insights() {
     forgottenGems: forgottenEntities.length,
   };
 
-  const topScore = Math.max(0, ...insights.map((item) => item.score));
-
   const SidebarContent = (
     <div className="space-y-7">
       <div>
@@ -420,51 +416,6 @@ export default function Insights() {
 
           {/* Conteúdo Principal */}
           <main className="min-w-0 flex-1">
-            <header className="mb-8 hidden lg:block">
-              <div className="flex items-end justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/30">{t("ins_intelligence")}</p>
-                  <h1 className="mt-2 font-serif text-5xl tracking-tight text-white">{t("ins_title")}</h1>
-                  <p className="mt-2 text-sm text-white/50">
-                    {t("ins_subtitle")}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Button
-                    onClick={() => load(true)}
-                    disabled={refreshing}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <ArrowPathIcon className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-                    {t("ins_refresh")}
-                  </Button>
-                </div>
-              </div>
-            </header>
-
-            {/* Métricas superiores */}
-            <Card className="mb-6 border-white/10 bg-white/[0.02] p-4 sm:p-6 lg:mb-8">
-              <SummaryMetricRow>
-                <SummaryMetric label={t("ins_signals_found")} value={String(counts.all)} />
-                <SummaryMetric label={t("ins_top_strength")} value={topScore.toFixed(1)} />
-              </SummaryMetricRow>
-
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
-                {categoryOrder.map((cat) => (
-                  <div
-                    key={cat}
-                    className="flex items-center gap-1.5 rounded-sm border border-white/10 bg-white/[0.02] px-2.5 py-1"
-                  >
-                    <span className="text-[9px] uppercase tracking-wide text-white/40">
-                      {t(CATEGORY_META[cat].labelKey)}
-                    </span>
-                    <span className="font-mono text-[11px] text-white/80">{counts[cat]}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
             {/* Evolução do score */}
             <div className="-mx-6 mb-6 sm:mx-0 lg:mb-8">
               <ScoreEvolutionSection />
