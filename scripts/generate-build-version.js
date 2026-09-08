@@ -12,6 +12,18 @@ const writeBuildEnv = (version) => {
   fs.writeFileSync(buildEnvPath, content, "utf-8");
 };
 
+const getGitTag = () => {
+  try {
+    const output = execSync("git describe --tags --abbrev=0", {
+      cwd: path.join(__dirname, ".."),
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return output.toString("utf-8").trim() || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const getGitCommitSha = () => {
   try {
     const output = execSync("git rev-parse --short HEAD", {
