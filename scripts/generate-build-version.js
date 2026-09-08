@@ -48,6 +48,12 @@ const run = async () => {
     || process.env.COMMIT_SHA
     || process.env.CI_COMMIT_SHA;
 
+  const tag = getGitTag();
+  if (tag) {
+    writeBuildEnv(tag);
+    return;
+  }
+
   const sha = envSha?.trim() || getGitCommitSha();
   const date = new Date();
   const dateString = `${date.getUTCFullYear()}.${String(date.getUTCMonth() + 1).padStart(2, "0")}.${String(date.getUTCDate()).padStart(2, "0")}`;
