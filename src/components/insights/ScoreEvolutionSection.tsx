@@ -169,13 +169,16 @@ export function ScoreEvolutionSection({
                   {t("sc_failed")}
                 </div>
               )}
-              <ChartContainer config={{}} className="h-full w-full">
+              <ChartContainer
+                config={{}}
+                className="h-full w-full"
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+              >
                 <AreaChart
                   data={chartData}
                   margin={{ top: 14, right: 12, left: 0, bottom: 0 }}
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                  onTouchCancel={handleTouchEnd}
                 >
                   <defs>
                     <linearGradient id="scoreFillMinimal" x1="0" y1="0" x2="0" y2="1">
