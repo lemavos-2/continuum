@@ -15,6 +15,7 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { GlobalProgress } from "@/components/motion/GlobalProgress";
 import { extractAuthTokensFromLocation, sanitizeAuthRedirectUrl } from "@/lib/auth-redirect";
 import { EMAIL_AUTH_ENABLED } from "@/lib/dev-mode";
+import UpdateDialog from "@/components/updater/UpdateDialog";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -166,6 +167,7 @@ const App = () => {
                 <UsageProvider>
                   <EntityProvider>
                     <AppRoutes />
+                    <UpdateDialog />
                   </EntityProvider>
                 </UsageProvider>
               </AuthProvider>
