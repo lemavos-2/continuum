@@ -16,6 +16,7 @@ export default function Footer() {
         { label: t("lp_footer_about"), href: "/about" },
         { label: t("lp_footer_opensource"), href: "https://github.com/continuumnodes/continuum" },
         { label: t("lp_footer_support"), href: "/support" },
+        { label: "Versions", href: "/versions" },
       ],
     },
 

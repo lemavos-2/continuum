@@ -47,6 +47,7 @@ const Privacy = React.lazy(() => import("./pages/Privacy"));
 const Support = React.lazy(() => import("./pages/Support"));
 const About = React.lazy(() => import("./pages/About"));
 const Pricing = React.lazy(() => import("./pages/Pricing"));
+const Versions = React.lazy(() => import("./pages/Versions"));
 const Subscription = React.lazy(() => import("./pages/Subscription"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
@@ -120,6 +121,7 @@ const AppRoutes = () => {
     <Route path="/support" element={<Support />} />
     <Route path="/about" element={<About />} />
     <Route path="/pricing" element={<Pricing />} />
+    <Route path="/versions" element={<Versions />} />
     <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
     <Route path="/notes/:id" element={<ProtectedRoute><NoteEditor /></ProtectedRoute>} />
     <Route path="/entities" element={<ProtectedRoute><Entities /></ProtectedRoute>} />
