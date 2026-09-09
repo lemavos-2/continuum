@@ -53,7 +53,7 @@ export default function Footer() {
               <AppLogo />
               <span
                 className="text-white font-semibold tracking-tight text-[1.05rem]"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700 }}
               >
                 Continuum
               </span>
