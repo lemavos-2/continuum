@@ -24,6 +24,7 @@ export default function Footer() {
       links: [
         { label: t("lp_footer_terms"), href: "/terms" },
         { label: t("lp_footer_privacy"), href: "/privacy" },
+        { label: t("lp_footer_privac"), href: "google.com" },
       ],
     },
     {
