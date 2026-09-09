@@ -11,7 +11,7 @@ export const updaterConfig = {
   /** APK file name published on the release — VITE_GITHUB_APK_ASSET. */
   apkAssetName: rawAsset,
   /** Minimum interval between GitHub API checks. */
-  checkIntervalMs: 6 * 60 * 60 * 1000,
+  checkIntervalMs: 5 * 60 * 1000,
   /** Request timeout for the GitHub API. */
   requestTimeoutMs: 10_000,
   /** How many releases to inspect when looking for the latest stable one. */
