@@ -74,6 +74,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/", "/health", "/error", "/actuator/**").permitAll()
+                // Public app version policy (clients query it before authenticating)
+                .requestMatchers(HttpMethod.GET, "/api/app-version").permitAll()
                 // Public authentication endpoints
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
@@ -118,7 +120,13 @@ public class SecurityConfig {
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
-        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
+        config.setExposedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Disposition",
+            "X-App-Latest-Version",
+            "X-App-Minimum-Version",
+            "X-App-Update-Url"
+        ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
