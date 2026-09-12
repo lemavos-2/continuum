@@ -2,6 +2,8 @@ import type { Module } from "./index";
 
 export const dict: Module = {
   en: {
+    upd_requiredTitle: "Update required",
+    upd_requiredDesc: "This version is no longer supported. Update to {version} to keep using Continuum.",
     upd_title: "Update available",
     upd_desc: "Continuum {version} is available.",
     upd_current: "Current version",
@@ -15,6 +17,8 @@ export const dict: Module = {
     upd_failed: "The update could not be downloaded. Try again later.",
   },
   pt: {
+    upd_requiredTitle: "Atualização obrigatória",
+    upd_requiredDesc: "Esta versão não é mais suportada. Atualize para a {version} para continuar usando o Continuum.",
     upd_title: "Atualização disponível",
     upd_desc: "O Continuum {version} está disponível.",
     upd_current: "Versão atual",
@@ -28,6 +32,8 @@ export const dict: Module = {
     upd_failed: "Não foi possível baixar a atualização. Tente mais tarde.",
   },
   es: {
+    upd_requiredTitle: "Actualización obligatoria",
+    upd_requiredDesc: "Esta versión ya no es compatible. Actualiza a la {version} para seguir usando Continuum.",
     upd_title: "Actualización disponible",
     upd_desc: "Continuum {version} está disponible.",
     upd_current: "Versión actual",
@@ -41,6 +47,8 @@ export const dict: Module = {
     upd_failed: "No se pudo descargar la actualización. Inténtalo más tarde.",
   },
   fr: {
+    upd_requiredTitle: "Mise à jour obligatoire",
+    upd_requiredDesc: "Cette version n'est plus prise en charge. Passez à la {version} pour continuer à utiliser Continuum.",
     upd_title: "Mise à jour disponible",
     upd_desc: "Continuum {version} est disponible.",
     upd_current: "Version actuelle",
