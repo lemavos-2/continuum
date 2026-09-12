@@ -1,43 +1,105 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import ApkInstaller, { isInstallerAvailable, type DownloadProgressEvent } from "@/lib/updater/native";
-import { updaterConfig } from "@/config/updater";
-import { checkForUpdate, dismissVersion, isDismissed, markChecked, shouldCheckNow } from "@/lib/updater/manager";
-import type { StableRelease } from "@/lib/updater/github";
+import ApkInstaller, { isInstallerAvailable, getInstalledVersionName, type DownloadProgressEvent } from "@/lib/updater/native";
+import { updaterConfig, isUpdaterConfigured } from "@/config/updater";
+import { dismissVersion, isDismissed } from "@/lib/updater/manager";
+import { fetchLatestStableRelease, type StableRelease } from "@/lib/updater/github";
+import { fetchVersionPolicy, policyFrom426, type VersionPolicy } from "@/lib/updater/policy";
+import { getClientPlatform, setClientVersion } from "@/lib/updater/client-version";
+import { UPGRADE_REQUIRED_EVENT } from "@/lib/api";
 
 export type UpdaterPhase = "idle" | "available" | "downloading" | "installing" | "permission" | "failed";
+
+/** Optional checks are throttled; mandatory ones always come from the server. */
+const RECHECK_INTERVAL_MS = 60_000;
 
 export function useAppUpdater() {
   const [phase, setPhase] = useState<UpdaterPhase>("idle");
   const [progress, setProgress] = useState(0);
   const [installed, setInstalled] = useState("");
+  const [policy, setPolicy] = useState<VersionPolicy | null>(null);
+  const [mandatory, setMandatory] = useState(false);
   const [release, setRelease] = useState<StableRelease | null>(null);
   const listenerRef = useRef<{ remove: () => void } | null>(null);
+  const lastCheckRef = useRef(0);
+  const busyRef = useRef(false);
+
+  const applyPolicy = useCallback((next: VersionPolicy | null) => {
+    if (!next) return;
+    setPolicy(next);
+    if (next.clientVersion) setInstalled(next.clientVersion);
+
+    if (next.mandatory) {
+      setMandatory(true);
+      setPhase((current) => (current === "idle" ? "available" : current));
+      return;
+    }
+    if (next.outdated && !isDismissed(next.latestVersion)) {
+      setMandatory(false);
+      setPhase((current) => (current === "idle" ? "available" : current));
+    }
+  }, []);
+
+  const check = useCallback(async (signal?: AbortSignal) => {
+    if (busyRef.current) return;
+    const now = Date.now();
+    if (now - lastCheckRef.current < RECHECK_INTERVAL_MS) return;
+    lastCheckRef.current = now;
+
+    const next = await fetchVersionPolicy(signal);
+    if (signal?.aborted) return;
+    applyPolicy(next);
+
+    // Native clients also need the APK asset to install in place.
+    if (next && (next.mandatory || next.outdated) && isInstallerAvailable() && isUpdaterConfigured()) {
+      const stable = await fetchLatestStableRelease(signal);
+      if (!signal?.aborted) setRelease(stable);
+    }
+  }, [applyPolicy]);
 
   useEffect(() => {
-    if (!isInstallerAvailable()) return;
     const controller = new AbortController();
 
     (async () => {
-      if (!shouldCheckNow()) return;
-      markChecked();
-      const decision = await checkForUpdate(controller.signal);
-      if (controller.signal.aborted) return;
-      if (decision.status !== "update") return;
-      if (isDismissed(decision.latest)) return;
-      setInstalled(decision.installed);
-      setRelease(decision.release);
-      setPhase("available");
+      // Tell the server which version is actually running.
+      const versionName = await getInstalledVersionName();
+      setClientVersion(versionName);
+      setInstalled((current) => current || versionName);
+      await check(controller.signal);
     })();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    const onUpgradeRequired = (event: Event) => {
+      applyPolicy(policyFrom426((event as CustomEvent).detail));
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener(UPGRADE_REQUIRED_EVENT, onUpgradeRequired);
 
     return () => {
       controller.abort();
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener(UPGRADE_REQUIRED_EVENT, onUpgradeRequired);
       listenerRef.current?.remove();
       listenerRef.current = null;
     };
-  }, []);
+  }, [check, applyPolicy]);
 
   const startUpdate = useCallback(async () => {
-    if (!release || !isInstallerAvailable()) return;
+    // Web (and native without the installer plugin): send people to the download page.
+    if (!isInstallerAvailable() || !release) {
+      const url = policy?.updateUrl;
+      if (getClientPlatform() === "web") {
+        window.location.reload();
+        return;
+      }
+      if (url) window.open(url, "_blank", "noopener");
+      return;
+    }
+
     try {
       const { granted } = await ApkInstaller.canRequestInstall();
       if (!granted) {
@@ -45,6 +107,7 @@ export function useAppUpdater() {
         return;
       }
 
+      busyRef.current = true;
       setProgress(0);
       setPhase("downloading");
       listenerRef.current?.remove();
@@ -61,8 +124,10 @@ export function useAppUpdater() {
       setPhase("installing");
     } catch {
       setPhase("failed");
+    } finally {
+      busyRef.current = false;
     }
-  }, [release]);
+  }, [release, policy]);
 
   const openSettings = useCallback(async () => {
     try {
@@ -73,19 +138,21 @@ export function useAppUpdater() {
   }, []);
 
   const dismiss = useCallback(() => {
-    if (release) dismissVersion(release.version.raw);
+    if (mandatory) return; // mandatory updates cannot be skipped
+    if (policy?.latestVersion) dismissVersion(policy.latestVersion);
     listenerRef.current?.remove();
     listenerRef.current = null;
     setPhase("idle");
-  }, [release]);
+  }, [mandatory, policy]);
 
   return {
     open: phase !== "idle",
     phase,
+    mandatory,
     progress,
     installed,
-    latest: release?.version.raw ?? "",
-    notes: release?.notes ?? "",
+    latest: policy?.latestVersion ?? release?.version.raw ?? "",
+    notes: policy?.notes ?? release?.notes ?? "",
     startUpdate,
     openSettings,
     dismiss,
