@@ -3,32 +3,37 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAppUpdater } from "@/hooks/useAppUpdater";
 
-/** Android-only update invitation. Renders nothing on the web build. */
+/** Server-driven update invitation. Mandatory updates cannot be dismissed. */
 export default function UpdateDialog() {
   const { t } = useLanguage();
-  const { open, phase, progress, installed, latest, startUpdate, openSettings, dismiss } = useAppUpdater();
+  const { open, phase, mandatory, progress, installed, latest, notes, startUpdate, openSettings, dismiss } =
+    useAppUpdater();
 
   if (!open) return null;
 
   const busy = phase === "downloading" || phase === "installing";
+  const locked = mandatory || busy;
 
   return (
-    <Dialog open onOpenChange={(next) => !next && !busy && dismiss()}>
-      <DialogContent className="max-w-sm">
+    <Dialog open onOpenChange={(next) => !next && !locked && dismiss()}>
+      <DialogContent className="max-w-sm" hideClose={locked}>
         <DialogHeader>
-          <DialogTitle>{t("upd_title")}</DialogTitle>
-          <DialogDescription>{t("upd_desc", { version: latest })}</DialogDescription>
+          <DialogTitle>{mandatory ? t("upd_requiredTitle") : t("upd_title")}</DialogTitle>
+          <DialogDescription>
+            {mandatory ? t("upd_requiredDesc", { version: latest }) : t("upd_desc", { version: latest })}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center justify-between">
             <span>{t("upd_current")}</span>
-            <span className="font-mono text-foreground">{installed}</span>
+            <span className="font-mono text-foreground">{installed || "—"}</span>
           </div>
           <div className="flex items-center justify-between">
             <span>{t("upd_new")}</span>
-            <span className="font-mono text-foreground">{latest}</span>
+            <span className="font-mono text-foreground">{latest || "—"}</span>
           </div>
+          {notes && <p className="pt-1">{notes}</p>}
         </div>
 
         {phase === "downloading" && (
@@ -45,7 +50,7 @@ export default function UpdateDialog() {
         {phase === "failed" && <p className="text-sm text-destructive">{t("upd_failed")}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
-          {!busy && (
+          {!locked && (
             <Button variant="ghost" onClick={dismiss}>
               {t("upd_later")}
             </Button>
