@@ -299,6 +299,14 @@ api.interceptors.response.use(
       url.startsWith("/api/auth/refresh") ||
       url.startsWith("/api/auth/google");
 
+    // 426 Upgrade Required — the client is below the server's minimum version.
+    if (status === 426) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(UPGRADE_REQUIRED_EVENT, { detail: error.response?.data }));
+      }
+      return Promise.reject(error);
+    }
+
     if (status === 401 && !original?._retry && !isAuthEndpoint) {
       original._retry = true;
 
