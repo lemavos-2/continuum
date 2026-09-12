@@ -114,6 +114,12 @@ api.interceptors.request.use((config) => {
     if (tz) config.headers["X-Timezone"] = tz;
     config.headers["X-TZ-Offset"] = String(-new Date().getTimezoneOffset());
   } catch { /* ignore */ }
+  // Version policy: the server decides what is current and what is blocked.
+  try {
+    const appVersion = getClientVersion();
+    if (appVersion) config.headers["X-App-Version"] = appVersion;
+    config.headers["X-App-Platform"] = getClientPlatform();
+  } catch { /* ignore */ }
   const skipAuth =
     url === "/api/auth/login" ||
     url === "/api/auth/register" ||
