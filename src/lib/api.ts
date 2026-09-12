@@ -1,5 +1,8 @@
 import axios from "axios";
 import { parseTiptapContent } from "@/lib/tiptap-content";
+import { getClientPlatform, getClientVersion } from "@/lib/updater/client-version";
+
+export const UPGRADE_REQUIRED_EVENT = "app:upgrade-required";
 
 // Lê em tempo de execução, não de build
 const getAPIBaseURL = () => {
