@@ -1,5 +1,8 @@
 import axios from "axios";
 import { parseTiptapContent } from "@/lib/tiptap-content";
+import { getClientPlatform, getClientVersion } from "@/lib/updater/client-version";
+
+export const UPGRADE_REQUIRED_EVENT = "app:upgrade-required";
 
 // Lê em tempo de execução, não de build
 const getAPIBaseURL = () => {
@@ -113,6 +116,12 @@ api.interceptors.request.use((config) => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (tz) config.headers["X-Timezone"] = tz;
     config.headers["X-TZ-Offset"] = String(-new Date().getTimezoneOffset());
+  } catch { /* ignore */ }
+  // Version policy: the server decides what is current and what is blocked.
+  try {
+    const appVersion = getClientVersion();
+    if (appVersion) config.headers["X-App-Version"] = appVersion;
+    config.headers["X-App-Platform"] = getClientPlatform();
   } catch { /* ignore */ }
   const skipAuth =
     url === "/api/auth/login" ||
@@ -289,6 +298,14 @@ api.interceptors.response.use(
       url.startsWith("/api/auth/register") ||
       url.startsWith("/api/auth/refresh") ||
       url.startsWith("/api/auth/google");
+
+    // 426 Upgrade Required — the client is below the server's minimum version.
+    if (status === 426) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(UPGRADE_REQUIRED_EVENT, { detail: error.response?.data }));
+      }
+      return Promise.reject(error);
+    }
 
     if (status === 401 && !original?._retry && !isAuthEndpoint) {
       original._retry = true;

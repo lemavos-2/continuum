@@ -57,3 +57,29 @@ O diretório `android/` não existe no repositório — é criado por
 - `versionName` = semver da tag; `versionCode` = major*10000 + minor*100 + patch
 
 `applicationId`, keystore e assinatura permanecem inalterados.
+
+## Política de versão pelo servidor (atual)
+
+O servidor é a fonte da verdade. Configure por variáveis de ambiente:
+
+| Variável | Para que serve | Valor publicado agora |
+| --- | --- | --- |
+| `APP_LATEST_VERSION` | versão mais recente | `2.0.100` |
+| `APP_MINIMUM_VERSION` | versão mínima permitida (abaixo dela o app é bloqueado) | `2.0.0` |
+| `APP_UPDATE_URL` | link de download mostrado a quem está bloqueado | release mais recente no GitHub |
+| `APP_UPDATE_NOTES` | recado curto opcional na janela de atualização | vazio |
+
+Esses são os padrões em `application.properties`; qualquer variável definida no servidor
+(por exemplo no Render) tem prioridade e vale imediatamente após reiniciar.
+
+### Como funciona
+- Toda requisição do app envia `X-App-Version` e `X-App-Platform`.
+- `GET /api/app-version` (público) responde a cada abertura/retomada do app: versão atual,
+  mínima, link, `mandatory` e `outdated`.
+- Versões do Android abaixo da mínima recebem `426 Upgrade Required` em qualquer rota `/api/`,
+  e o app abre a janela obrigatória — sem botão "Depois" e sem fechar.
+- Atualizações opcionais (versão nova, mas acima da mínima) podem ser adiadas.
+- Na web nunca há bloqueio: recarregar a página já traz a versão nova.
+
+### Tornar uma atualização obrigatória
+Suba `APP_MINIMUM_VERSION` para a versão lançada e reinicie o servidor.
