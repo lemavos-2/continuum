@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { mergeModules } from "@/i18n";
 
-
 export type Language = "en" | "es" | "pt" | "fr";
 
 export const AVAILABLE_LANGUAGES: { code: Language; label: string; nativeLabel: string }[] = [
