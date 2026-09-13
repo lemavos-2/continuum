@@ -12,6 +12,7 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import UpgradeModal from "@/components/UpgradeModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
 import {
   Plus,
   Search,
@@ -189,6 +190,7 @@ export default function Notes() {
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<NoteSummary | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Multiselect
@@ -542,7 +544,7 @@ export default function Notes() {
           <aside className="hidden lg:sticky lg:top-16 lg:block lg:w-52 lg:shrink-0 lg:self-start">
             {SidebarContent}
           </aside>
-
+  
           {/* ─── Main ────────────────────────────────────────────── */}
           <main className="min-w-0 flex-1">
             {/* Header (desktop) */}
@@ -728,6 +730,30 @@ export default function Notes() {
                           ? t("notes_empty_archived")
                           : t("notes_empty_all")}
                 </p>
+                {!search && view === "all" && (
+                  <div className="mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-sm">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="gap-1.5 normal-case text-white/70 hover:text-white"
+                      onClick={handleCreate}
+                      disabled={creating}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {creating ? t("notes_creating") : t("notes_createFirst")}
+                    </Button>
+                    <span className="text-white/25">{t("notes_empty_or")}</span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="gap-1.5 normal-case text-white/70 hover:text-white"
+                      onClick={() => setImportOpen(true)}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      {t("notes_importBtn")}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-12">
@@ -861,6 +887,12 @@ export default function Notes() {
       />
 
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} reason={t("notes_limit")} />
+
+      <MarkdownImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => { void fetchData(); }}
+      />
 
       <ConfirmDialog
         open={!!pendingDelete}
