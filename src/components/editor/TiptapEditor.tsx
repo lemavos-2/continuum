@@ -258,7 +258,6 @@ const buildSuggestion = (variant: "entity" | "note", currentNoteId?: string) => 
           theme: "transparent",
           maxWidth: 360,
           offset: [0, 10],
-          distance: 8,
           duration: 0,
           hideOnClick: false,
           zIndex: 80,
