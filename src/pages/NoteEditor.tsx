@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useIsRestoring } from "@tanstack/react-query";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { entitiesApi, notesApi } from "@/lib/api";
@@ -62,18 +63,20 @@ export default function NoteEditor() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const isRestoring = useIsRestoring();
   const editorRef = useRef<TiptapEditorHandle>(null);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const tempId = searchParams.get("tempId");
   const isOptimistic = searchParams.get("optimistic") === "true";
   const optimisticKey = tempId ? `optimistic-note:${tempId}` : null;
+  const cachedNote = id ? queryClient.getQueryData<NoteData>(qk.note(id)) ?? null : null;
 
-  const [note, setNote] = useState<NoteData | null>(null);
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<string>("");
+  const [note, setNote] = useState<NoteData | null>(cachedNote);
+  const [title, setTitle] = useState(cachedNote?.title ?? "");
+  const [type, setType] = useState<string>(cachedNote?.type ?? "");
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [allEntities, setAllEntities] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedNote);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "creating">("idle");
   const [showBacklinks, setShowBacklinks] = useState(false);
   // The last mode the user left the editor in (view or edit) is restored.
@@ -179,10 +182,10 @@ export default function NoteEditor() {
   }, [id]);
 
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedJSON = useRef<string>("");
-  const lastSavedTitle = useRef<string>("");
-  const lastSavedType = useRef<string>("");
-  const currentJSON = useRef<any>(null);
+  const lastSavedJSON = useRef<string>(cachedNote ? JSON.stringify(parseTiptapContent(cachedNote.content)) : "");
+  const lastSavedTitle = useRef<string>(cachedNote?.title ?? "");
+  const lastSavedType = useRef<string>(cachedNote?.type ?? "");
+  const currentJSON = useRef<any>(cachedNote ? parseTiptapContent(cachedNote.content) : null);
 
   const saveOptimisticDraft = (draft: { title: string; type: string; content: any }) => {
     if (!optimisticKey) return;
@@ -247,12 +250,13 @@ export default function NoteEditor() {
   }, [mentionCounts, characterCount]);
 
   useEffect(() => {
+    if (isRestoring) return;
     if (!id) return;
     let cancelled = false;
     const optimistic = searchParams.get("optimistic") === "true";
-    setLoading(true);
 
     if (optimistic) {
+      setLoading(true);
       const placeholderContent = { type: "doc", content: [{ type: "paragraph" }] };
       setNote({
         id,
@@ -291,11 +295,33 @@ export default function NoteEditor() {
           /* ignore fetch details for optimistic placeholder */
         });
     } else {
+      const cached = queryClient.getQueryData<NoteData>(qk.note(id));
+      if (cached) {
+        const parsedContent = parseTiptapContent(cached.content);
+        const cachedNoteData = { ...cached, content: parsedContent };
+        setNote(cachedNoteData);
+        setTitle(cached.title);
+        setType(cached.type ?? "");
+        currentJSON.current = parsedContent;
+        lastSavedTitle.current = cached.title;
+        lastSavedType.current = cached.type ?? "";
+        lastSavedJSON.current = JSON.stringify(parsedContent);
+        setLoading(false);
+      } else {
+        setNote(null);
+        setTitle("");
+        setType("");
+        currentJSON.current = null;
+        setLoading(true);
+      }
+
       // Paint from cache instantly (even if stale); revalidate in the background.
       const swr = <T,>(queryKey: readonly unknown[], queryFn: () => Promise<T>, staleTime: number) => {
         const cached = queryClient.getQueryData<T>(queryKey);
         if (cached !== undefined) {
-          void queryClient.prefetchQuery({ queryKey, queryFn, staleTime });
+          void queryClient.fetchQuery({ queryKey, queryFn, staleTime }).catch((error) => {
+            console.warn("[note editor] Cached data refresh failed", error);
+          });
           return Promise.resolve(cached);
         }
         return queryClient.fetchQuery({ queryKey, queryFn, staleTime });
@@ -371,8 +397,12 @@ export default function NoteEditor() {
         })
         .catch(() => {
           if (cancelled) return;
-          toast({ title: t("ed_note_not_found"), variant: "destructive" });
-          navigate("/notes");
+          if (cached) {
+            console.warn(`[note editor] Could not refresh note ${id}; retaining cached content`);
+          } else {
+            toast({ title: t("ed_note_not_found"), variant: "destructive" });
+            navigate("/notes");
+          }
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -383,7 +413,7 @@ export default function NoteEditor() {
       cancelled = true;
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-  }, [id, navigate, searchParams, toast]);
+  }, [id, isRestoring, navigate, searchParams, toast]);
 
   const doSave = useCallback(async (nextTitle: string, json: any, newType: string) => {
     if (!id) return;

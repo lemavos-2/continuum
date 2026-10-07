@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIsRestoring } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
@@ -39,10 +40,11 @@ export default function EntityDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isRestoring = useIsRestoring();
   const { applyUsageDelta, refresh: refreshUsage } = usePlanGate();
   const [entity, setEntity] = useState<EntityData | null>(() => id ? queryClient.getQueryData<EntityData>(qk.entity(id)) ?? null : null);
   const [heatmap, setHeatmap] = useState<HeatmapData>({});
-  const [stats, setStats] = useState<EntityStats | null>(null);
+  const [stats, setStats] = useState<EntityStats | null>(() => id ? queryClient.getQueryData<EntityStats>(qk.entityStats(id)) ?? null : null);
   const [loading, setLoading] = useState(() => !id || !queryClient.getQueryData(qk.entity(id)));
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -51,78 +53,125 @@ export default function EntityDetail() {
   const [editingType, setEditingType] = useState(false);
   const [newType, setNewType] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
-  const [relatedEntities, setRelatedEntities] = useState<EntityData[]>([]);
+  const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>(() => id ? queryClient.getQueryData<RelatedNote[]>(qk.entityNotes(id)) ?? [] : []);
+  const [relatedEntities, setRelatedEntities] = useState<EntityData[]>(() => id
+    ? (queryClient.getQueryData<EntityData[]>(qk.entityConnections(id)) ?? []).filter((item) => item.id !== id)
+    : []);
 
   // Time tracking
   const { getTotalTime, formatSeconds } = useTimeTracking();
   const { data: timeSummary } = getTotalTime(id!);
 
   useEffect(() => {
+    if (isRestoring) return;
     if (!id) return;
     let cancelled = false;
+    const cachedEntity = queryClient.getQueryData<EntityData>(qk.entity(id));
+    const cachedNotes = queryClient.getQueryData<RelatedNote[]>(qk.entityNotes(id));
+    const cachedConnections = queryClient.getQueryData<EntityData[]>(qk.entityConnections(id));
+
+    if (cachedEntity) {
+      setEntity(cachedEntity);
+      setLoading(false);
+    } else {
+      setEntity(null);
+      setLoading(true);
+    }
+    setRelatedNotes(cachedNotes ?? []);
+    setRelatedEntities((cachedConnections ?? []).filter((item) => item.id !== id));
+    if (cachedEntity?.type === "ACTIVITY") {
+      const cachedHeatmap = queryClient.getQueryData<unknown>(qk.entityHeatmap(id));
+      const cachedStats = queryClient.getQueryData<EntityStats>(qk.entityStats(id));
+      if (cachedHeatmap !== undefined) {
+        setHeatmap(normalizeHeatmapData(cachedHeatmap));
+      } else {
+        setHeatmap(buildHeatmapFromTrackingDates(cachedEntity.trackingDates || []));
+      }
+      if (cachedStats) setStats(cachedStats);
+      else setStats(null);
+    } else {
+      setHeatmap({});
+      setStats(null);
+    }
 
     const loadEntity = async () => {
-      setLoading(true);
-
       try {
-        const data = await queryClient.fetchQuery({
-          queryKey: qk.entity(id),
-          queryFn: () => entitiesApi.get(id).then((response) => response.data as EntityData),
-          staleTime: STALE.detail,
-        });
+        let data: EntityData;
+        try {
+          data = await queryClient.fetchQuery({
+            queryKey: qk.entity(id),
+            queryFn: () => entitiesApi.get(id).then((response) => response.data as EntityData),
+            staleTime: STALE.detail,
+          });
+        } catch (error) {
+          if (!cachedEntity) throw error;
+          console.warn(`[entity detail] Refresh failed for ${id}; showing cached entity`, error);
+          data = cachedEntity;
+        }
 
         if (cancelled) {
           return;
         }
 
         setEntity(data);
+        setLoading(false);
 
-        if (data?.type === "ACTIVITY") {
-          const [heatmapData, statsData] = await Promise.all([
-            queryClient.fetchQuery({ queryKey: qk.entityHeatmap(id), queryFn: () => entitiesApi.heatmap(id).then((response) => response.data), staleTime: STALE.detail }),
-            queryClient.fetchQuery({ queryKey: qk.entityStats(id), queryFn: () => entitiesApi.stats(id).then((response) => response.data as EntityStats), staleTime: STALE.detail }),
-          ]);
-
-          if (cancelled) {
-            return;
+        const fetchDetail = async <T,>(
+          queryKey: readonly unknown[],
+          queryFn: () => Promise<T>,
+          label: string,
+        ): Promise<T | undefined> => {
+          try {
+            return await queryClient.fetchQuery({ queryKey, queryFn, staleTime: STALE.detail });
+          } catch (error) {
+            console.warn(`[entity detail] ${label} refresh failed for ${id}`, error);
+            return queryClient.getQueryData<T>(queryKey);
           }
+        };
 
-          // Try API heatmap first, fallback to trackingDates
-          const apiHeatmap = normalizeHeatmapData(heatmapData);
-          const trackingHeatmap = buildHeatmapFromTrackingDates(data.trackingDates || []);
-          const finalHeatmap = Object.keys(apiHeatmap).length > 0 ? apiHeatmap : trackingHeatmap;
-          
-          setHeatmap(finalHeatmap);
-          setStats({
-            ...statsData,
-            totalCompletions: Array.isArray(data.trackingDates) ? data.trackingDates.length : statsData?.totalCompletions,
-          });
-        } else {
-          setHeatmap({});
-          setStats(null);
-        }
-
-        // Load related notes and connections
-        const [notesData, connectionsData] = await Promise.all([
-          queryClient.fetchQuery({ queryKey: qk.entityNotes(id), queryFn: () => entitiesApi.getNotes(id).then((response) => response.data), staleTime: STALE.detail }),
-          queryClient.fetchQuery({ queryKey: qk.entityConnections(id), queryFn: () => entitiesApi.getConnections(id).then((response) => response.data), staleTime: STALE.detail }),
+        const [notesData, connectionsData, heatmapData, statsData] = await Promise.all([
+          fetchDetail(qk.entityNotes(id), () => entitiesApi.getNotes(id).then((response) => response.data), "connected notes"),
+          fetchDetail(qk.entityConnections(id), () => entitiesApi.getConnections(id).then((response) => response.data), "connections"),
+          data.type === "ACTIVITY"
+            ? fetchDetail(qk.entityHeatmap(id), () => entitiesApi.heatmap(id).then((response) => response.data), "heatmap")
+            : Promise.resolve(undefined),
+          data.type === "ACTIVITY"
+            ? fetchDetail(qk.entityStats(id), () => entitiesApi.stats(id).then((response) => response.data as EntityStats), "statistics")
+            : Promise.resolve(undefined),
         ]);
 
         if (cancelled) {
           return;
         }
 
-        setRelatedNotes(Array.isArray(notesData) ? notesData : []);
-        setRelatedEntities(
-          (Array.isArray(connectionsData) ? connectionsData : []).filter(
-            (item: EntityData) => item.id !== id
-          )
-        );
+        if (Array.isArray(notesData)) setRelatedNotes(notesData);
+        if (Array.isArray(connectionsData)) {
+          setRelatedEntities(connectionsData.filter((item: EntityData) => item.id !== id));
+        }
+        if (data.type === "ACTIVITY") {
+          const apiHeatmap = normalizeHeatmapData(heatmapData);
+          const trackingHeatmap = buildHeatmapFromTrackingDates(data.trackingDates || []);
+          setHeatmap(Object.keys(apiHeatmap).length > 0 ? apiHeatmap : trackingHeatmap);
+          if (statsData) {
+            setStats({
+              ...statsData,
+              totalCompletions: Array.isArray(data.trackingDates)
+                ? data.trackingDates.length
+                : statsData.totalCompletions,
+            });
+          }
+        } else {
+          setHeatmap({});
+          setStats(null);
+        }
       } catch {
         if (!cancelled) {
-          toast({ title: t("ent_not_found"), variant: "destructive" });
-          navigate("/entities");
+          if (cachedEntity) {
+            console.warn(`[entity detail] Could not refresh ${id}; retaining cached entity`);
+          } else {
+            toast({ title: t("ent_not_found"), variant: "destructive" });
+            navigate("/entities");
+          }
         }
       } finally {
         if (!cancelled) {
@@ -136,7 +185,7 @@ export default function EntityDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate, toast]);
+  }, [id, isRestoring, navigate, t, toast]);
 
   const normalizeHeatmapData = (payload: unknown): HeatmapData => {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};

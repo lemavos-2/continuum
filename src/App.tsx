@@ -1,5 +1,6 @@
 import * as React from "react";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { useIsRestoring } from "@tanstack/react-query";
 import { createIdbPersister, QUERY_CACHE_BUSTER } from "@/lib/offline/query-persister";
 import { queryClient } from "@/lib/query-client";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
@@ -79,12 +80,40 @@ if (typeof window !== "undefined") {
 /** Warms notes/entities/insights as soon as the user is authenticated. */
 function PrefetchPrimaryData() {
   const { user } = useAuth();
+  const isRestoring = useIsRestoring();
   React.useEffect(() => {
-    if (!user) return;
-    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
-    const run = () => { void prefetchPrimaryLists(); };
-    if (idle) idle(run); else setTimeout(run, 1500);
-  }, [user]);
+    if (!user || isRestoring) return;
+
+    let cancelled = false;
+    let idleHandle: number | undefined;
+    let timeoutHandle: number | undefined;
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const run = () => {
+      idleHandle = undefined;
+      timeoutHandle = undefined;
+      if (!cancelled && navigator.onLine) void prefetchPrimaryLists();
+    };
+    const schedule = () => {
+      if (cancelled || idleHandle !== undefined || timeoutHandle !== undefined) return;
+      if (idleWindow.requestIdleCallback) {
+        idleHandle = idleWindow.requestIdleCallback(run, { timeout: 5000 });
+      } else {
+        timeoutHandle = window.setTimeout(run, 1500);
+      }
+    };
+
+    schedule();
+    window.addEventListener("online", schedule);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", schedule);
+      if (idleHandle !== undefined) idleWindow.cancelIdleCallback?.(idleHandle);
+      if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle);
+    };
+  }, [user, isRestoring]);
   return null;
 }
 
