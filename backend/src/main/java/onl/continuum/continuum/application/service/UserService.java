@@ -5,8 +5,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import onl.continuum.continuum.application.exception.NotFoundException;
+import onl.continuum.continuum.domain.subscription.Subscription;
+import onl.continuum.continuum.domain.subscription.SubscriptionStatus;
 import onl.continuum.continuum.domain.user.User;
 import onl.continuum.continuum.domain.user.UserRepository;
 import onl.continuum.continuum.infra.persistence.NoteRepository;
@@ -76,25 +77,10 @@ public class UserService {
      * @param userId The ID of the user to delete
      * @throws NotFoundException if user not found
      */
-    @Transactional
     public void deleteUserWithCascade(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
-
-        // 1. Delete all notes for this user
-        noteRepository.deleteByUserId(userId);
-
-        // 2. Delete all entities for this user
-        entityRepository.deleteByUserId(userId);
-
-        // 3. Delete all subscriptions for this user
-        subscriptionRepository.deleteByUserId(userId);
-
-        // 4. Delete all blacklisted tokens for this user
-        tokenBlacklistRepository.deleteByUserId(userId);
-
-        // 5. Finally, delete the user
-        userRepository.delete(user);
+        purgeEverything(user);
     }
 
     public static final int DELETION_GRACE_DAYS = 7;
@@ -135,33 +121,25 @@ public class UserService {
     /** Removes every record and file belonging to the user, then the user itself. */
     public void purgeEverything(User user) {
         String userId = user.getId();
-        if (subscriptionService != null) {
-            try { subscriptionService.cancel(userId, true); } catch (Exception ignored) { }
-        }
-        if (vaultStorage != null && user.getVaultId() != null) {
-            String vaultId = user.getVaultId();
-            try {
-                for (var f : vaultStorage.listFiles(vaultId)) {
-                    try { vaultStorage.deleteFile(vaultId, f.fileId()); } catch (Exception ignored) { }
-                }
-            } catch (Exception ignored) { }
-            for (var n : noteRepository.findByUserId(userId)) {
-                try { vaultStorage.deleteNote(vaultId, n.getId()); } catch (Exception ignored) { }
+        Subscription subscription = subscriptionRepository.findByUserId(userId).orElse(null);
+        if (subscription != null && subscription.getStripeSubscriptionId() != null
+                && subscription.getStatus() != SubscriptionStatus.CANCELED) {
+            if (subscriptionService == null) {
+                throw new IllegalStateException("Subscription service unavailable; refusing to purge account");
             }
-            try {
-                vaultStorage.saveEntities(vaultId, "[]");
-                vaultStorage.saveNoteIndex(vaultId, "[]");
-                vaultStorage.saveFolders(vaultId, "[]");
-                vaultStorage.saveTrackingEvents(vaultId, "[]");
-                vaultStorage.saveRefs(vaultId, "[]");
-                vaultStorage.savePreferences(vaultId, "{}");
-            } catch (Exception ignored) { }
+            subscriptionService.cancel(userId, true);
+        }
+        if (user.getVaultId() != null) {
+            if (vaultStorage == null) {
+                throw new IllegalStateException("Vault storage unavailable; refusing to purge account");
+            }
+            vaultStorage.deleteVault(user.getVaultId());
         }
         Query byUser = Query.query(Criteria.where("userId").is(userId));
         for (String c : java.util.List.of("notes", "entities", "entity_links", "note_links", "refresh_tokens",
                 "subscriptions", "time_entries", "timer_sessions", "token_blacklist", "tracking_events",
-                "user_score_snapshots", "trash_items", "folders")) {
-            try { mongoTemplate.remove(byUser, c); } catch (Exception ignored) { }
+                "user_score_snapshots", "trash_items", "folders", "stripe_event_logs")) {
+            mongoTemplate.remove(byUser, c);
         }
         userRepository.deleteById(userId);
     }

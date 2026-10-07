@@ -14,10 +14,10 @@ import { ArrowUturnLeftIcon, DocumentTextIcon, MagnifyingGlassIcon, PaperClipIco
 type Item = { id: string; kind: string; title: string; subtype?: string; deletedAt: string; expiresAt: string };
 type Filter = "all" | "notes" | "entities" | "files";
 const T = {
-  en: { title: "Trash", eyebrow: "Recently deleted", sub: "Deleted notes and entities stay here for 30 days.", empty: "Trash is empty.", noResults: "No items match your search.", restore: "Restore", del: "Delete forever", emptyTrash: "Empty trash", emptyConfirm: "Permanently delete every item in your trash? This cannot be undone.", left: "{n} days left", note: "Note", entity: "Entity", file: "File", all: "All", notes: "Notes", entities: "Entities", files: "Files", search: "Search trash", ok: "Restored" },
-  es: { title: "Papelera", eyebrow: "Eliminados recientemente", sub: "Las notas y entidades eliminadas quedan aquí 30 días.", empty: "La papelera está vacía.", noResults: "Ningún elemento coincide con tu búsqueda.", restore: "Restaurar", del: "Eliminar para siempre", emptyTrash: "Vaciar papelera", emptyConfirm: "¿Eliminar permanentemente todos los elementos de la papelera? Esta acción no se puede deshacer.", left: "Quedan {n} días", note: "Nota", entity: "Entidad", file: "Archivo", all: "Todo", notes: "Notas", entities: "Entidades", files: "Archivos", search: "Buscar en la papelera", ok: "Restaurado" },
-  pt: { title: "Lixeira", eyebrow: "Excluídos recentemente", sub: "Notas e entidades excluídas ficam aqui por 30 dias.", empty: "A lixeira está vazia.", noResults: "Nenhum item corresponde à busca.", restore: "Restaurar", del: "Excluir para sempre", emptyTrash: "Esvaziar lixeira", emptyConfirm: "Excluir permanentemente todos os itens da lixeira? Esta ação não pode ser desfeita.", left: "{n} dias restantes", note: "Nota", entity: "Entidade", file: "Arquivo", all: "Tudo", notes: "Notas", entities: "Entidades", files: "Arquivos", search: "Buscar na lixeira", ok: "Restaurado" },
-  fr: { title: "Corbeille", eyebrow: "Supprimés récemment", sub: "Les notes et entités supprimées restent ici 30 jours.", empty: "La corbeille est vide.", noResults: "Aucun élément ne correspond à votre recherche.", restore: "Restaurer", del: "Supprimer définitivement", emptyTrash: "Vider la corbeille", emptyConfirm: "Supprimer définitivement tous les éléments de la corbeille ? Cette action est irréversible.", left: "{n} jours restants", note: "Note", entity: "Entité", file: "Fichier", all: "Tout", notes: "Notes", entities: "Entités", files: "Fichiers", search: "Rechercher dans la corbeille", ok: "Restauré" },
+  en: { title: "Trash", sub: "Deleted notes, entities, and files stay here for 30 days.", empty: "Trash is empty.", noResults: "No items match your search.", restore: "Restore", del: "Delete forever", emptyTrash: "Empty trash", emptyConfirm: "Permanently delete every item in your trash? This cannot be undone.", left: "{n} days left", note: "Note", entity: "Entity", file: "File", all: "All", notes: "Notes", entities: "Entities", files: "Files", search: "Search trash", ok: "Restored" },
+  es: { title: "Papelera", sub: "Las notas, entidades y archivos eliminados quedan aquí 30 días.", empty: "La papelera está vacía.", noResults: "Ningún elemento coincide con tu búsqueda.", restore: "Restaurar", del: "Eliminar para siempre", emptyTrash: "Vaciar papelera", emptyConfirm: "¿Eliminar permanentemente todos los elementos de la papelera? Esta acción no se puede deshacer.", left: "Quedan {n} días", note: "Nota", entity: "Entidad", file: "Archivo", all: "Todo", notes: "Notas", entities: "Entidades", files: "Archivos", search: "Buscar en la papelera", ok: "Restaurado" },
+  pt: { title: "Lixeira", sub: "Notas, entidades e arquivos excluídos ficam aqui por 30 dias.", empty: "A lixeira está vazia.", noResults: "Nenhum item corresponde à busca.", restore: "Restaurar", del: "Excluir para sempre", emptyTrash: "Esvaziar lixeira", emptyConfirm: "Excluir permanentemente todos os itens da lixeira? Esta ação não pode ser desfeita.", left: "{n} dias restantes", note: "Nota", entity: "Entidade", file: "Arquivo", all: "Tudo", notes: "Notas", entities: "Entidades", files: "Arquivos", search: "Buscar na lixeira", ok: "Restaurado" },
+  fr: { title: "Corbeille", sub: "Les notes, entités et fichiers supprimés restent ici 30 jours.", empty: "La corbeille est vide.", noResults: "Aucun élément ne correspond à votre recherche.", restore: "Restaurer", del: "Supprimer définitivement", emptyTrash: "Vider la corbeille", emptyConfirm: "Supprimer définitivement tous les éléments de la corbeille ? Cette action est irréversible.", left: "{n} jours restants", note: "Note", entity: "Entité", file: "Fichier", all: "Tout", notes: "Notes", entities: "Entités", files: "Fichiers", search: "Rechercher dans la corbeille", ok: "Restauré" },
 };
 
 function categoryOf(kind: string): Exclude<Filter, "all"> {
@@ -58,19 +58,16 @@ export default function Trash() {
   return (
     <AppLayout>
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-12 lg:py-16">
-        <header className="mb-8 border-b border-white/5 pb-5">
-          <div className="flex items-end justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{s.eyebrow}</p>
-              <h1 className="mt-2 font-serif text-4xl text-foreground sm:text-5xl">{s.title}</h1>
-            </div>
-            {!!items.length && (
-              <Button variant="outline" size="sm" onClick={() => setEmptyOpen(true)} className="shrink-0 rounded-sm border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-red-300">
-                <TrashIcon className="mr-2 h-4 w-4" />{s.emptyTrash}
-              </Button>
-            )}
+        <header className="mb-6 flex items-center justify-between gap-4 border-b border-white/5 pb-4">
+          <div className="min-w-0">
+            <h1 className="sr-only">{s.title}</h1>
+            <p className="text-sm text-muted-foreground">{s.sub}</p>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">{s.sub}</p>
+          {!!items.length && (
+            <Button variant="outline" size="sm" onClick={() => setEmptyOpen(true)} className="shrink-0 rounded-sm border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-red-300">
+              <TrashIcon className="mr-2 h-4 w-4" />{s.emptyTrash}
+            </Button>
+          )}
         </header>
 
         <div className="mb-5 space-y-3">

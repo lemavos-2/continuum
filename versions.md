@@ -97,7 +97,7 @@ Add: limit alerts.
 - Environment configuration tweak.
 
 ## v1.0.2 — Jul 28, 2026
--Cleaned up unused code and simplified the build config.
+- Cleaned up unused code and simplified the build config.
 
 ## v1.0.1 — Jul 28, 2026
 - Continuum now works **offline** and can run as a PWA, syncing automatically once you're back online.

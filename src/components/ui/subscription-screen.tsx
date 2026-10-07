@@ -107,7 +107,7 @@ export function SubscriptionScreen({
             {planDetails.map((detail) => (
               <div key={detail.label} className="min-w-0">
                 <dt className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{detail.label}</dt>
-                <dd className="mt-1 truncate font-serif text-xl tabular-nums text-foreground">{detail.value}</dd>
+                <dd className="mt-1 min-w-0 whitespace-normal break-words font-serif text-sm leading-tight tabular-nums text-foreground [overflow-wrap:anywhere] sm:text-base">{detail.value}</dd>
               </div>
             ))}
           </dl>

@@ -19,7 +19,7 @@ interface SubInfo {
 
 export default function SubscriptionContent() {
   const { user } = useAuth();
-  const { usage, loading: usageLoading } = useUsage();
+  const { usage } = useUsage();
   const { toast } = useToast();
   const { t } = useLanguage();
   const visionPrice = useVisionPrice();
@@ -87,15 +87,15 @@ export default function SubscriptionContent() {
     return isUnlimited(value) ? "∞" : `${value}${suffix}`;
   };
   const formatUsageLimit = (used: number | undefined, limit: number | undefined, suffix = "") => {
-    if (used === undefined || limit === undefined) return "—";
-    const formattedUsed = suffix === " MB" ? used.toFixed(1) : String(Math.round(used));
-    return `${formattedUsed}${suffix}/${formatLimit(limit, suffix)}`;
+    if (limit === undefined) return "—";
+    const formattedUsed = used === undefined ? "—" : suffix === " MB" ? used.toFixed(1) : String(Math.round(used));
+    return `${formattedUsed}/${formatLimit(limit)}${suffix}`;
   };
-  const planDetails = !isPro && !usageLoading && usage ? [
-    { label: t("bill_notes"), value: formatUsageLimit(usage.notesCount, user?.maxNotes) },
-    { label: t("bill_entities"), value: formatUsageLimit(usage.entitiesCount, user?.maxEntities) },
+  const planDetails = !isPro ? [
+    { label: t("bill_notes"), value: formatUsageLimit(usage?.notesCount, user?.maxNotes) },
+    { label: t("bill_entities"), value: formatUsageLimit(usage?.entitiesCount, user?.maxEntities) },
     { label: t("bill_history"), value: formatLimit(user?.historyDays, "d") },
-    { label: t("bill_vault"), value: formatUsageLimit(usage.vaultSizeMB, user?.maxVaultSizeMB, " MB") },
+    { label: t("bill_vault"), value: formatUsageLimit(usage?.vaultSizeMB, user?.maxVaultSizeMB, " MB") },
   ] : undefined;
 
   const handleCheckout = async () => {
