@@ -1,60 +1,378 @@
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import SubscriptionContent from "@/components/subscription/SubscriptionContent";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi, importApi } from "@/lib/api";
 import { version } from "@/lib/version";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ArrowDownTrayIcon, ArrowPathIcon, ArrowUpTrayIcon, ChatBubbleLeftEllipsisIcon, ChevronRightIcon, CodeBracketIcon, BugAntIcon, LifebuoyIcon, LinkIcon, InformationCircleIcon, CurrencyDollarIcon, DocumentTextIcon, ShieldCheckIcon, ClockIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownTrayIcon,
+  ArrowRightOnRectangleIcon,
+  ArrowUpTrayIcon,
+  BugAntIcon,
+  ChatBubbleLeftEllipsisIcon,
+  ChevronRightIcon,
+  CodeBracketIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  InformationCircleIcon,
+  LifebuoyIcon,
+  LinkIcon,
+  PencilSquareIcon,
+  ShieldCheckIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useExtrasText, useDeletionStatus } from "@/components/AccountExtras";
 import { useQueryClient } from "@tanstack/react-query";
-import { TrashIcon } from "@heroicons/react/24/outline";
 
-function SectionTitle({ title }: { eyebrow?: string; title: string }) {
-  return <h2 className="font-serif text-xl text-foreground">{title}</h2>;
-}
+/* ------------------------------------------------------------------ */
+/* Constants                                                           */
+/* ------------------------------------------------------------------ */
+
+const SOCIAL_HANDLE = "continuum.onl";
+const INSTAGRAM_URL = `https://www.instagram.com/${SOCIAL_HANDLE}`;
+const TIKTOK_URL = `https://www.tiktok.com/@${SOCIAL_HANDLE}`;
+const GITHUB_URL = "https://github.com/continuumnodes/continuum";
+
+type Lang = "en" | "es" | "pt" | "fr";
+
+const SECTION_TITLES: Record<
+  "account" | "preferences" | "data" | "community" | "support" | "legal" | "actions",
+  Record<Lang, string>
+> = {
+  account: { pt: "Conta e Assinatura", en: "Account & Subscription", es: "Cuenta y suscripción", fr: "Compte et abonnement" },
+  preferences: { pt: "Preferências", en: "Preferences", es: "Preferencias", fr: "Préférences" },
+  data: { pt: "Dados e Integrações", en: "Data & Integrations", es: "Datos e integraciones", fr: "Données et intégrations" },
+  community: { pt: "Comunidade e Redes", en: "Community & Social", es: "Comunidad y redes", fr: "Communauté et réseaux" },
+  support: { pt: "Suporte e Feedback", en: "Support & Feedback", es: "Soporte y comentarios", fr: "Support et retours" },
+  legal: { pt: "Sobre e Legal", en: "About & Legal", es: "Acerca de y legal", fr: "À propos et mentions légales" },
+  actions: { pt: "Ações da Conta", en: "Account Actions", es: "Acciones de la cuenta", fr: "Actions du compte" },
+};
+
+/* ------------------------------------------------------------------ */
+/* UI helpers                                                          */
+/* ------------------------------------------------------------------ */
 
 type RowIcon = ComponentType<{ className?: string }>;
-function ActionRow({ icon: Icon, label, description, onClick, href, disabled = false, destructive = false }: { icon: RowIcon; label: string; description?: string; onClick?: () => void; href?: string; disabled?: boolean; destructive?: boolean }) {
-  const content = <><Icon className={`h-5 w-5 shrink-0 ${destructive ? "text-destructive" : "text-muted-foreground"}`} /><span className="min-w-0 flex-1 text-left"><span className={`block text-sm font-medium ${destructive ? "text-destructive" : "text-foreground/80"}`}>{label}</span>{description && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{description}</span>}</span><ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" /></>;
-  const className = "flex h-16 w-full items-center gap-4 border-b border-border/10 py-0 transition-colors last:border-b-0 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60";
-  return href ? <a href={href} className={className}>{content}</a> : <button type="button" onClick={onClick} disabled={disabled} className={className}>{content}</button>;
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <h2 className="font-serif text-xl text-foreground">{title}</h2>
+      <div className="divide-y divide-border/10">{children}</div>
+    </section>
+  );
 }
+
+interface ActionRowProps {
+  icon: RowIcon;
+  label: string;
+  description?: string;
+  onClick?: () => void;
+  href?: string;
+  disabled?: boolean;
+  destructive?: boolean;
+}
+
+function ActionRow({ icon: Icon, label, description, onClick, href, disabled = false, destructive = false }: ActionRowProps) {
+  const content = (
+    <>
+      <Icon className={`h-5 w-5 shrink-0 ${destructive ? "text-destructive" : "text-muted-foreground"}`} />
+      <span className="min-w-0 flex-1 text-left">
+        <span className={`block text-sm font-medium ${destructive ? "text-destructive" : "text-foreground/80"}`}>{label}</span>
+        {description && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{description}</span>}
+      </span>
+      <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </>
+  );
+  const className =
+    "flex h-16 w-full items-center gap-4 border-b border-border/10 py-0 transition-colors last:border-b-0 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60";
+
+  if (href) {
+    const external = href.startsWith("http");
+    return (
+      <a href={href} className={className} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={className}>
+      {content}
+    </button>
+  );
+}
+
+/* Custom icons */
 
 function VisionIcon({ className }: { className?: string }) {
   return <img src="/vision-symbol.png" alt="" aria-hidden="true" className={`${className ?? ""} rounded-full object-cover`} />;
 }
 
-const moreLinks = [
-  { href: "/about", icon: InformationCircleIcon, label: "lp_footer_about" }, { href: "/pricing", icon: CurrencyDollarIcon, label: "lp_footer_pricing" }, { href: "/support", icon: LifebuoyIcon, label: "lp_footer_support" }, { href: "/terms", icon: DocumentTextIcon, label: "lp_footer_terms" }, { href: "/privacy", icon: ShieldCheckIcon, label: "lp_footer_privacy" }, { href: "/versions", icon: ClockIcon, label: "versions_title" },
-] as const;
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className} aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5" />
+      <path d="M14 3c.3 2.4 2 4 4.5 4.2" />
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 
 export default function SettingsPage() {
-  const { user, refreshUser, logout } = useAuth(); const navigate = useNavigate(); const { toast } = useToast(); const { t, language } = useLanguage();
-  const [username, setUsername] = useState(""); const [exporting, setExporting] = useState(false); const [relinking, setRelinking] = useState(false); const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false); const [cancelDeletionOpen, setCancelDeletionOpen] = useState(false); const [importOpen, setImportOpen] = useState(false); const [subscriptionOpen, setSubscriptionOpen] = useState(() => new URLSearchParams(window.location.search).has("status"));
-  useEffect(() => { setUsername(user?.username ?? ""); }, [user]);
-  const handleExportData = async () => { if (exporting) return; setExporting(true); try { const res = await authApi.exportData(); const json = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2); const url = URL.createObjectURL(new Blob([json], { type: "application/json" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "continuum-backup.json"; document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url); toast({ title: t("profile_backupOk") }); } catch (error: any) { toast({ title: t("profile_backupFailed"), description: error?.message ?? t("common_tryAgain"), variant: "destructive" }); } finally { setExporting(false); } };
-  const handleRelinkEntities = async () => { if (relinking) return; setRelinking(true); try { const res = await importApi.relinkEntities(); const data = res.data as { notesUpdated?: number; connectionsCreated?: number }; toast({ title: t("import_relinkDoneTitle"), description: t("import_relinkDoneDesc", { n: data.connectionsCreated ?? 0, notes: data.notesUpdated ?? 0 }) }); } catch (error: any) { toast({ title: t("profile_relinkFailed"), description: error?.response?.data?.message || error?.message || t("profile_relinkFailedDesc"), variant: "destructive" }); } finally { setRelinking(false); } };
-  const x = useExtrasText(); const qc = useQueryClient(); const { data: del } = useDeletionStatus(); const [deleteOpen, setDeleteOpen] = useState(false); const [cancelingDeletion, setCancelingDeletion] = useState(false);
-  const handleDelete = async () => { try { await authApi.scheduleDeletion(); await qc.invalidateQueries({ queryKey: ["account", "deletion"] }); } catch (error: any) { toast({ title: t("common_tryAgain"), description: error?.message, variant: "destructive" }); } };
+  const { user, refreshUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { t, language } = useLanguage();
+  const x = useExtrasText();
+  const qc = useQueryClient();
+  const { data: del } = useDeletionStatus();
+
+  const [exporting, setExporting] = useState(false);
+  const [relinking, setRelinking] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [cancelDeletionOpen, setCancelDeletionOpen] = useState(false);
+  const [cancelingDeletion, setCancelingDeletion] = useState(false);
+  const [subscriptionOpen, setSubscriptionOpen] = useState(() => new URLSearchParams(window.location.search).has("status"));
+
+  const title = (key: keyof typeof SECTION_TITLES) => SECTION_TITLES[key][language as Lang] ?? SECTION_TITLES[key].en;
+
+  /* Handlers */
+
+  const handleExportData = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await authApi.exportData();
+      const json = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2);
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "continuum-backup.json";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: t("profile_backupOk") });
+    } catch (error: any) {
+      toast({ title: t("profile_backupFailed"), description: error?.message ?? t("common_tryAgain"), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleRelinkEntities = async () => {
+    if (relinking) return;
+    setRelinking(true);
+    try {
+      const res = await importApi.relinkEntities();
+      const data = res.data as { notesUpdated?: number; connectionsCreated?: number };
+      toast({
+        title: t("import_relinkDoneTitle"),
+        description: t("import_relinkDoneDesc", { n: data.connectionsCreated ?? 0, notes: data.notesUpdated ?? 0 }),
+      });
+    } catch (error: any) {
+      toast({
+        title: t("profile_relinkFailed"),
+        description: error?.response?.data?.message || error?.message || t("profile_relinkFailedDesc"),
+        variant: "destructive",
+      });
+    } finally {
+      setRelinking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await authApi.scheduleDeletion();
+      await qc.invalidateQueries({ queryKey: ["account", "deletion"] });
+    } catch (error: any) {
+      toast({ title: t("common_tryAgain"), description: error?.message, variant: "destructive" });
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    if (cancelingDeletion) return;
+    setCancelingDeletion(true);
+    try {
+      await authApi.cancelDeletion();
+      await qc.invalidateQueries({ queryKey: ["account", "deletion"] });
+      toast({ title: x.canceled });
+    } catch (error: any) {
+      toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" });
+    } finally {
+      setCancelingDeletion(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
+  /* Derived */
+
   const deletionPending = !!(del?.scheduled || del?.deletionRequestedAt);
   const dateLocale = { en: "en-US", es: "es-ES", pt: "pt-BR", fr: "fr-FR" }[language];
-  const deletionDescription = del?.purgeAt ? x.delDesc.replace("{d}", new Intl.DateTimeFormat(dateLocale).format(new Date(del.purgeAt))) : x.delTitle;
-  const handleCancelDeletion = async () => { if (cancelingDeletion) return; setCancelingDeletion(true); try { await authApi.cancelDeletion(); await qc.invalidateQueries({ queryKey: ["account", "deletion"] }); toast({ title: x.canceled }); } catch (error: any) { toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" }); } finally { setCancelingDeletion(false); } };
-  const handleLogout = async () => { await logout(); navigate("/"); };
+  const deletionDescription = del?.purgeAt
+    ? x.delDesc.replace("{d}", new Intl.DateTimeFormat(dateLocale).format(new Date(del.purgeAt)))
+    : x.delTitle;
 
-  return <AppLayout><div className="mx-auto max-w-5xl space-y-7 px-4 py-6 sm:px-6 lg:px-10 lg:py-12">
-    <section className="space-y-4"><SectionTitle title={t("profile_planUsage")} /><div className="divide-y divide-border/10"><ActionRow icon={VisionIcon} label={t("profile_continuumSubscription")} onClick={() => setSubscriptionOpen(true)} /></div></section>
-    <section className="space-y-4"><SectionTitle eyebrow={t("profile_eyebrowData")} title={t("profile_dataSync")} /><div className="divide-y divide-border/10"><ActionRow icon={ArrowUpTrayIcon} label={t("profile_importMd")} description={t("profile_importMdDesc")} onClick={() => setImportOpen(true)} /><ActionRow icon={ArrowDownTrayIcon} label={t("profile_exportData")} description={user?.dataExport ? "continuum-backup.json" : t("profile_locked")} onClick={handleExportData} disabled={exporting || !user?.dataExport} /><ActionRow icon={LinkIcon} label={t("import_relinkBtn")} description={t("profile_relinkDesc")} onClick={handleRelinkEntities} disabled={relinking} /></div></section>
-    <section className="space-y-4"><SectionTitle eyebrow={t("profile_eyebrowSupport")} title={t("profile_supportCenter")} /><div className="divide-y divide-border/10"><ActionRow icon={LifebuoyIcon} label={t("profile_supportCenter")} description={t("profile_supportCenterDesc")} href="/support" /><ActionRow icon={ChatBubbleLeftEllipsisIcon} label={t("profile_sendFeedback")} description="feedback@continuum.onl" href="mailto:feedback@continuum.onl?subject=Continuum%20%E2%80%94%20Feedback" /><ActionRow icon={BugAntIcon} label={t("profile_reportBug")} description="bugs@continuum.onl" href="mailto:bugs@continuum.onl?subject=Continuum%20%E2%80%94%20Bug%20report" /></div></section>
-    <section className="space-y-4"><SectionTitle eyebrow={t("nav_more")} title={t("nav_more")} /><div className="divide-y divide-border/10"><LanguageSelector /><ActionRow href="/editor" icon={PencilSquareIcon} label={t("nav_editorSettings")} /><ActionRow href="/trash" icon={TrashIcon} label={t("nav_trash")} />{moreLinks.map(({ href, icon: Icon, label }) => <ActionRow key={href} href={href} icon={Icon} label={label === "versions_title" ? "Versions" : t(label)} />)}<ActionRow href="https://github.com/continuumnodes/continuum" icon={CodeBracketIcon} label="GitHub" /></div></section>
-    <div className="divide-y divide-border/10"><ActionRow icon={TrashIcon} label={deletionPending ? x.cancel : x.deleteAccount} description={deletionPending ? deletionDescription : x.deleteAccountDesc} onClick={() => { if (deletionPending) setCancelDeletionOpen(true); else setDeleteOpen(true); }} disabled={cancelingDeletion} destructive={deletionPending} /></div><ConfirmDialog open={deleteOpen} onOpenChange={setDeleteOpen} title={x.deleteAccount} description={x.deleteConfirm} confirmText={x.deleteAccount} confirmationPhrase="CONFIRM" confirmationPrompt={t("account_deleteConfirmPrompt")} destructive onConfirm={async () => { setDeleteOpen(false); await handleDelete(); }} /><ConfirmDialog open={cancelDeletionOpen} onOpenChange={setCancelDeletionOpen} title={x.cancelConfirmTitle} description={x.cancelConfirmDesc} confirmText={x.cancel} onConfirm={async () => { setCancelDeletionOpen(false); await handleCancelDeletion(); }} />
-    <Button variant="destructive" onClick={() => setLogoutConfirmOpen(true)} className="w-full normal-case">{t("nav_logout")}</Button><ConfirmDialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen} title={t("auth_signOut")} description={t("auth_signOutDesc")} confirmText={t("nav_logout")} destructive onConfirm={async () => { setLogoutConfirmOpen(false); await handleLogout(); }} /><div className="flex w-full justify-center pb-4 font-mono text-[10px] text-muted-foreground">{version}</div>
-  </div><MarkdownImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => { refreshUser(); }} />{subscriptionOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 p-0 backdrop-blur-md" role="dialog" aria-modal="true" onMouseDown={(event) => { const target = event.target as HTMLElement; if (!target.closest("[data-subscription-panel]")) setSubscriptionOpen(false); }}><div className="w-full"><SubscriptionContent /></div></div>}</AppLayout>;
+  return (
+    <AppLayout>
+      <div className="mx-auto max-w-5xl space-y-7 px-4 py-6 sm:px-6 lg:px-10 lg:py-12">
+        {/* 1. Conta e Assinatura */}
+        <Section title={title("account")}>
+          <ActionRow icon={VisionIcon} label={t("profile_continuumSubscription")} onClick={() => setSubscriptionOpen(true)} />
+          <ActionRow icon={CurrencyDollarIcon} label={t("lp_footer_pricing")} href="/pricing" />
+        </Section>
+
+        {/* 2. Preferências */}
+        <Section title={title("preferences")}>
+          <ActionRow icon={PencilSquareIcon} label={t("nav_editorSettings")} href="/editor" />
+          <LanguageSelector />
+        </Section>
+
+        {/* 3. Dados e Integrações */}
+        <Section title={title("data")}>
+          <ActionRow icon={ArrowUpTrayIcon} label={t("profile_importMd")} description={t("profile_importMdDesc")} onClick={() => setImportOpen(true)} />
+          <ActionRow
+            icon={ArrowDownTrayIcon}
+            label={t("profile_exportData")}
+            description={user?.dataExport ? "continuum-backup.json" : t("profile_locked")}
+            onClick={handleExportData}
+            disabled={exporting || !user?.dataExport}
+          />
+          <ActionRow icon={LinkIcon} label={t("import_relinkBtn")} description={t("profile_relinkDesc")} onClick={handleRelinkEntities} disabled={relinking} />
+        </Section>
+
+        {/* 4. Comunidade e Redes */}
+        <Section title={title("community")}>
+          <ActionRow icon={InstagramIcon} label="Instagram" description={`@${SOCIAL_HANDLE}`} href={INSTAGRAM_URL} />
+          <ActionRow icon={TikTokIcon} label="TikTok" description={`@${SOCIAL_HANDLE}`} href={TIKTOK_URL} />
+          <ActionRow icon={CodeBracketIcon} label="GitHub" href={GITHUB_URL} />
+        </Section>
+
+        {/* 5. Suporte e Feedback */}
+        <Section title={title("support")}>
+          <ActionRow icon={LifebuoyIcon} label={t("profile_supportCenter")} description={t("profile_supportCenterDesc")} href="/support" />
+          <ActionRow
+            icon={ChatBubbleLeftEllipsisIcon}
+            label={t("profile_sendFeedback")}
+            description="feedback@continuum.onl"
+            href="mailto:feedback@continuum.onl?subject=Continuum%20%E2%80%94%20Feedback"
+          />
+          <ActionRow
+            icon={BugAntIcon}
+            label={t("profile_reportBug")}
+            description="bugs@continuum.onl"
+            href="mailto:bugs@continuum.onl?subject=Continuum%20%E2%80%94%20Bug%20report"
+          />
+        </Section>
+
+        {/* 6. Sobre e Legal */}
+        <Section title={title("legal")}>
+          <ActionRow icon={InformationCircleIcon} label={t("lp_footer_about")} href="/about" />
+          <ActionRow icon={DocumentTextIcon} label={t("lp_footer_terms")} href="/terms" />
+          <ActionRow icon={ShieldCheckIcon} label={t("lp_footer_privacy")} href="/privacy" />
+        </Section>
+
+        {/* 7. Ações da Conta */}
+        <Section title={title("actions")}>
+          <ActionRow
+            icon={TrashIcon}
+            label={deletionPending ? x.cancel : x.deleteAccount}
+            description={deletionPending ? deletionDescription : x.deleteAccountDesc}
+            onClick={() => (deletionPending ? setCancelDeletionOpen(true) : setDeleteOpen(true))}
+            disabled={cancelingDeletion}
+            destructive={deletionPending}
+          />
+          <ActionRow icon={ArrowRightOnRectangleIcon} label={t("nav_logout")} onClick={() => setLogoutConfirmOpen(true)} destructive />
+        </Section>
+
+        {/* 8. Rodapé */}
+        <footer className="flex w-full justify-center pb-4">
+          <a href="/versions" className="font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground">
+            {version} · Versions
+          </a>
+        </footer>
+      </div>
+
+      {/* Dialogs */}
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={x.deleteAccount}
+        description={x.deleteConfirm}
+        confirmText={x.deleteAccount}
+        confirmationPhrase="CONFIRM"
+        confirmationPrompt={t("account_deleteConfirmPrompt")}
+        destructive
+        onConfirm={async () => {
+          setDeleteOpen(false);
+          await handleDelete();
+        }}
+      />
+      <ConfirmDialog
+        open={cancelDeletionOpen}
+        onOpenChange={setCancelDeletionOpen}
+        title={x.cancelConfirmTitle}
+        description={x.cancelConfirmDesc}
+        confirmText={x.cancel}
+        onConfirm={async () => {
+          setCancelDeletionOpen(false);
+          await handleCancelDeletion();
+        }}
+      />
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        onOpenChange={setLogoutConfirmOpen}
+        title={t("auth_signOut")}
+        description={t("auth_signOutDesc")}
+        confirmText={t("nav_logout")}
+        destructive
+        onConfirm={async () => {
+          setLogoutConfirmOpen(false);
+          await handleLogout();
+        }}
+      />
+      <MarkdownImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => refreshUser()} />
+
+      {subscriptionOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 p-0 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(event) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest("[data-subscription-panel]")) setSubscriptionOpen(false);
+          }}
+        >
+          <div className="w-full">
+            <SubscriptionContent />
+          </div>
+        </div>
+      )}
+    </AppLayout>
+  );
 }
