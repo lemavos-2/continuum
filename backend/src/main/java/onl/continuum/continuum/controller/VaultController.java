@@ -77,7 +77,7 @@ public class VaultController {
             .filter(f -> f.fileId().equals(fileId))
             .findFirst()
             .orElseThrow(() -> new NotFoundException("File not found"));
-        trashService.trashFile(user.getUserId(), user.getVaultId(), file);
+        trashService.trashFile(userDetails.getUserId(), user.getVaultId(), file);
         return ResponseEntity.noContent().build();
     }
 
