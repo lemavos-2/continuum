@@ -77,7 +77,7 @@ export function ConfirmDialog({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={confirmationPhrase !== undefined && typedConfirmation !== confirmationPhrase}
-            className={destructive ? "bg-white text-black hover:bg-white/90" : "bg-white text-black hover:bg-white/90"}
+            className={destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-white text-black hover:bg-white/90"}
           >
             {resolvedConfirmText}
           </AlertDialogAction>
