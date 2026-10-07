@@ -32,20 +32,8 @@ import {
 
 import { SessionNavBar } from "@/components/ui/session-nav-bar";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Trash2 } from "@/lib/heroicons";
-import { DeletionBanner, VaultPicker } from "@/components/AccountExtras";
+import { VaultPicker } from "@/components/AccountExtras";
 import { OfflineStatus } from "@/components/offline/OfflineStatus";
-
-const mobileItems = [
-  { to: "/notes", icon: StickyNote, key: "nav_notes" },
-  { to: "/entities", icon: Tag, key: "nav_entities" },
-  { to: "/insights", icon: BarChart3, key: "nav_insights" },
-  { to: "/vault", icon: Lock, key: "nav_vault" },
-  { to: "/projects", icon: FolderOpen, key: "nav_projects" },
-  { to: "/activities", icon: Clock, key: "nav_activities" },
-  { to: "/graph", icon: GlobeAlt, key: "nav_graph" },
-  { to: "/trash", icon: Trash2, key: "nav_trash" },
-];
 
 // Primary tabs shown in the bottom navigation bar on mobile.
 const mobileTabs = [
@@ -66,8 +54,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background text-foreground">
       <CommandPalette />
       <VaultPicker />
-      <DeletionBanner />
-
       {/* Desktop hover-expand sidebar */}
       <SessionNavBar />
 
@@ -144,9 +130,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => navigate("/vault")}>
                   <Lock className="mr-2 h-4 w-4" /> {t("nav_vault")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate("/trash")}>
-                  <Trash2 className="mr-2 h-4 w-4" /> {t("nav_trash")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground">{user?.email}</DropdownMenuLabel>

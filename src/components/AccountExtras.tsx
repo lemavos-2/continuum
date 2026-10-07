@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/core";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { authApi, vaultApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUsage } from "@/contexts/UsageContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "@/lib/heroicons";
 import type { VaultFile } from "@/types";
 
@@ -63,22 +62,6 @@ export function VaultPicker() {
 export function useDeletionStatus() {
   const { user } = useAuth();
   return useQuery({ queryKey: ["account", "deletion"], queryFn: () => authApi.deletionStatus().then((r) => r.data as { scheduled?: boolean; purgeAt?: string; deletionRequestedAt?: string }), enabled: !!user, staleTime: 60_000 });
-}
-
-export function DeletionBanner() {
-  const s = useExtrasText();
-  const qc = useQueryClient();
-  const { data } = useDeletionStatus();
-  const [busy, setBusy] = useState(false);
-  const at = data?.purgeAt ?? (data?.deletionRequestedAt ? new Date(new Date(data.deletionRequestedAt).getTime() + 7 * 864e5).toISOString() : null);
-  if (!data || (!data.scheduled && !data.deletionRequestedAt)) return null;
-  return (
-    <div className="fixed inset-x-3 top-3 z-50 mx-auto max-w-lg rounded-xl border border-destructive/30 bg-background/95 p-3 shadow-lg backdrop-blur-sm">
-      <p className="text-sm font-medium text-destructive">{s.delTitle}</p>
-      {at && <p className="mt-0.5 text-xs text-muted-foreground">{s.delDesc.replace("{d}", new Date(at).toLocaleDateString())}</p>}
-      <Button size="sm" variant="outline" className="mt-2" disabled={busy} onClick={async () => { setBusy(true); try { await authApi.cancelDeletion(); await qc.invalidateQueries({ queryKey: ["account", "deletion"] }); } finally { setBusy(false); } }}>{s.cancel}</Button>
-    </div>
-  );
 }
 
 /** Real usage bars. `alertOnly` renders only a warning card when any limit is >= 80%. */
