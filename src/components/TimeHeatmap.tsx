@@ -72,6 +72,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
   const [goalDraft, setGoalDraft] = useState<string>(String(goalMinutes));
 
   const [adding, setAdding] = useState(false);
+  const [entryDate, setEntryDate] = useState<string>(() => dateKey(new Date()));
   const [entryMin, setEntryMin] = useState<string>('30');
   const [entryError, setEntryError] = useState<string | null>(null);
 
@@ -168,15 +169,21 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
       setEntryError(t('tm_enter_positive_minutes'));
       return;
     }
+    const maxDate = dateKey(new Date());
+    if (!entryDate || entryDate > maxDate) {
+      setEntryError('Future dates are not allowed');
+      return;
+    }
     try {
       await addTimeAsync({
         entityId,
-        date: dateKey(new Date()),
+        date: entryDate,
         durationSeconds: minutes * 60,
       });
       await qc.invalidateQueries({ queryKey: ['timeTracking'] });
       setAdding(false);
       setEntryMin('30');
+      setEntryDate(dateKey(new Date()));
     } catch (err: any) {
       console.error('Failed to add entry:', err);
       setEntryError(err?.response?.data?.message || err?.message || t('tm_failed_to_add_entry'));
@@ -273,9 +280,14 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
       {adding && entityId && (
         <div className="mb-4 rounded-lg border border-border/10 bg-foreground/[0.02] p-2.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2 py-1 text-[11px] font-mono text-muted-foreground border border-border/10 rounded">
-              {t('tm_today_label', { date: dateKey(new Date()) })}
-            </span>
+            <input
+              type="date"
+              value={entryDate}
+              max={dateKey(new Date())}
+              onChange={(e) => setEntryDate(e.target.value)}
+              aria-label="Date"
+              className="px-2 py-1 text-[11px] font-mono bg-foreground/[0.04] border border-border/15 rounded text-foreground focus:outline-none focus:border-border/30"
+            />
             <input
               type="number"
               min={1}
