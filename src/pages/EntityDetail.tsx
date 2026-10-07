@@ -168,9 +168,11 @@ export default function EntityDetail() {
     return heatmap;
   };
 
-  const handleTrack = async () => {
+  const localToday = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0]; };
+  const [trackDate, setTrackDate] = useState(localToday);
+  const handleTrack = async (pickedDate?: string) => {
     if (!id) return;
-    const today = new Date().toISOString().split("T")[0];
+    const today = pickedDate || localToday();
 
     try {
       // Optimistically update tracking dates and heatmap
@@ -190,7 +192,7 @@ export default function EntityDetail() {
         [today]: (prev[today] || 0) + 1,
       }));
 
-      await entitiesApi.track(id);
+      await entitiesApi.track(id, today);
 
       const [eRes, sRes, hRes] = await Promise.all([
         entitiesApi.get(id),
@@ -372,6 +374,12 @@ export default function EntityDetail() {
           {isHabit && (
             <div className="mt-5 flex flex-wrap gap-2">
               <Badge variant="meta">{t("ent_total", { count: totalCompletions })}</Badge>
+            </div>
+          )}
+          {isHabit && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Input type="date" value={trackDate} max={localToday()} onChange={(e) => setTrackDate(e.target.value)} className="h-9 w-auto" aria-label="Date" />
+              <Button size="sm" onClick={() => handleTrack(trackDate)} disabled={!trackDate || trackDate > localToday()}>{t("ent_save")}</Button>
             </div>
           )}
 
