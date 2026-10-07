@@ -276,4 +276,7 @@ public class User {
         this.updatedAt = Instant.now();
     }
 
+
+    public Instant getDeletionRequestedAt() { return deletionRequestedAt; }
+    public void setDeletionRequestedAt(Instant deletionRequestedAt) { this.deletionRequestedAt = deletionRequestedAt; }
 }
