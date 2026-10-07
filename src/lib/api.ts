@@ -238,7 +238,13 @@ class RefreshTokenManager {
         console.log("[RefreshTokenManager] Token renovado com sucesso");
         
         // Atualiza tokens (pode vir novo refresh token por rotation)
-        setAuthTokens(data.accessToken, data.refreshToken);
+        // O endpoint pode não rotacionar o refresh token. Nesse caso, preserve
+        // o token atual em vez de apagá-lo ao salvar apenas o novo access token.
+        if (data.refreshToken) {
+          setAuthTokens(data.accessToken, data.refreshToken);
+        } else {
+          setAuthTokens(data.accessToken);
+        }
 
         // Processa fila de requisições
         this.processQueue(data.accessToken);
@@ -383,6 +389,9 @@ export const authApi = {
   resendVerification: (email: string) =>
     api.post("/api/auth/resend-verification", { email }),
   exportData: () => api.get("/api/account/export"),
+  scheduleDeletion: () => api.delete("/api/account/me"),
+  deletionStatus: () => api.get("/api/account/deletion"),
+  cancelDeletion: () => api.post("/api/account/deletion/cancel"),
   exportVaultZip: () => api.get("/api/account/export/zip", { responseType: "blob" }),
 };
 
@@ -412,6 +421,8 @@ export const notesApi = {
   delete: (id: string) => api.delete(`/api/notes/${id}`),
   toggleFavorite: (id: string) => api.patch(`/api/notes/${id}/favorite`),
   getBacklinks: (id: string) => api.get(`/api/notes/${id}/backlinks`),
+  getForwardLinks: (id: string) => api.get(`/api/notes/${id}/forward-links`),
+  getBacklinkCount: (id: string) => api.get(`/api/notes/${id}/backlink-count`),
   getTypes: () => api.get("/api/notes/types"),
 };
 
@@ -447,7 +458,7 @@ export const entitiesApi = {
   getNotes: (id: string) => api.get(`/api/entities/${id}/notes`),
   getConnections: (id: string) => api.get(`/api/entities/${id}/connections`),
   getContext: (id: string) => api.get(`/api/entities/${id}/context`),
-  track: (entityId: string) => api.post(`/api/entities/${entityId}/track-activity`),
+  track: (entityId: string, date?: string) => api.post(`/api/entities/${entityId}/track-activity`, null, date ? { params: { date } } : undefined),
   untrack: (entityId: string, date: string) =>
     api.delete(`/api/entities/${entityId}/track`, { params: { date } }),
   stats: (entityId: string) => api.get(`/api/entities/${entityId}/stats`),
@@ -567,6 +578,13 @@ export const importApi = {
   },
   commitMarkdown: (payload: unknown) =>
     api.post("/api/import/markdown/commit", payload, { timeout: 120000 }),
+  relinkEntities: () => api.post("/api/import/entities/relink", {}, { timeout: 180000 }),
 };
 
 export default api;
+export const trashApi = {
+  list: () => api.get("/api/trash"),
+  restore: (id: string) => api.post(`/api/trash/${encodeURIComponent(id)}/restore`),
+  purge: (id: string) => api.delete(`/api/trash/${encodeURIComponent(id)}`),
+  empty: () => api.delete("/api/trash"),
+};

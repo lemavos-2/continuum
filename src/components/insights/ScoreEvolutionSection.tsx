@@ -87,8 +87,8 @@ export function ScoreEvolutionSection({
     if (!active || !payload?.length) return null;
     const p = payload[0].payload as Point & { label: string };
     return (
-      <div className="rounded-lg border border-white/10 bg-black/90 px-3 py-2 text-[11px] shadow-xl backdrop-blur-md">
-        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-white/40">
+      <div className="rounded-lg border border-border/10 bg-background/90 px-3 py-2 text-[11px] shadow-xl backdrop-blur-md">
+        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
           {fmtDate(p.date)} · {p.score.toFixed(2)}
           {p.delta !== 0 && (
             <span className={cn("ml-1", p.delta > 0 ? "text-emerald-400" : "text-red-400")}>
@@ -99,9 +99,9 @@ export function ScoreEvolutionSection({
         </p>
         <div className="space-y-0.5">
           {COMPONENT_KEYS.map((k) => (
-            <div key={k} className="flex items-center justify-between gap-4 text-white/70">
+            <div key={k} className="flex items-center justify-between gap-4 text-muted-foreground">
               <span>{t(`sc_bd_${k}`)}</span>
-              <span className="font-mono tabular-nums text-white">
+              <span className="font-mono tabular-nums text-foreground">
                 {(p.components?.[k] ?? 0).toFixed(1)}
               </span>
             </div>
@@ -112,11 +112,11 @@ export function ScoreEvolutionSection({
   };
 
   return (
-    <div className="flex flex-col justify-between bg-black">
+    <div className="flex flex-col justify-between bg-background">
       <div className="flex h-full flex-col justify-between p-4 sm:p-6">
         <div className="mb-3 flex items-baseline justify-between">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">{t("sc_current")}</p>
-          <p className="font-mono text-sm text-white">{current.toFixed(2)}</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{t("sc_current")}</p>
+          <p className="font-mono text-sm text-foreground">{current.toFixed(2)}</p>
         </div>
 
         <div className="relative mb-4 -mx-4 sm:mx-0">
@@ -140,8 +140,8 @@ export function ScoreEvolutionSection({
                   className={cn(
                     "h-auto shrink-0 rounded-full border px-3.5 py-1.5 text-[11px] normal-case transition-colors",
                     active
-                      ? "border-white/70 text-white hover:bg-transparent hover:text-white"
-                      : "border-white/15 text-white/40 hover:border-white/30 hover:bg-transparent hover:text-white/70"
+                      ? "border-border/70 text-foreground hover:bg-transparent hover:text-foreground"
+                      : "border-border/15 text-muted-foreground hover:border-border/30 hover:bg-transparent hover:text-muted-foreground"
                   )}
                 >
                   {labels[range]}
@@ -154,13 +154,13 @@ export function ScoreEvolutionSection({
 
         <div className="relative h-[260px] w-full sm:h-[320px]">
           {isLoading && !hasData ? (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
               {t("sc_loading")}
             </div>
           ) : !hasData ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
-              <p className="text-xs text-white/40">{t("sc_empty")}</p>
-              <p className="text-[11px] text-white/30">{t("sc_emptyHint")}</p>
+              <p className="text-xs text-muted-foreground">{t("sc_empty")}</p>
+              <p className="text-[11px] text-muted-foreground">{t("sc_emptyHint")}</p>
             </div>
           ) : (
             <>

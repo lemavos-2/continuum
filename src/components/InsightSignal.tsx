@@ -192,7 +192,7 @@ export function InsightSignalBadge({ kind, id, className }: { kind: Kind; id?: s
           ref={popupRef}
           role="dialog"
           aria-label={label}
-          className="fixed z-[60] rounded-md border border-white/10 bg-black/90 px-2 py-1.5 text-popover-foreground shadow-2xl backdrop-blur-xl"
+          className="fixed z-[60] rounded-md border border-border/10 bg-background/90 px-2 py-1.5 text-popover-foreground shadow-2xl backdrop-blur-xl"
           style={{
             left: `${popupPosition.left}px`,
             top: `${popupPosition.top}px`,

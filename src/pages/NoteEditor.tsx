@@ -19,6 +19,7 @@ import {
   Link2, AtSign, Eye, PenLine
 } from "@/lib/heroicons";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TiptapEditor, type TiptapEditorHandle } from "@/components/TiptapEditor";
 import { BacklinksPanel } from "@/components/BacklinksPanel";
 import { countTiptapMentions, extractMentionIds, extractMentionLabels, parseTiptapContent, sanitizeTiptapMentions, tiptapContentToPlainText } from "@/lib/tiptap-content";
@@ -32,6 +33,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getNoteFoldsSync, loadNoteFolds, saveNoteFolds } from "@/lib/note-folds";
 import { getEditorReadOnlySync, loadEditorReadOnly, saveEditorReadOnly } from "@/lib/editor-mode";
 import { loadNoteFontSize, subscribeNoteFontSize } from "@/lib/note-font-size";
+import { queryClient } from "@/lib/query-client";
+import { qk, STALE } from "@/lib/queries";
 
 interface NoteData {
   id: string;
@@ -58,7 +61,9 @@ export default function NoteEditor() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const editorRef = useRef<TiptapEditorHandle>(null);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const tempId = searchParams.get("tempId");
   const isOptimistic = searchParams.get("optimistic") === "true";
   const optimisticKey = tempId ? `optimistic-note:${tempId}` : null;
@@ -88,6 +93,34 @@ export default function NoteEditor() {
     document.documentElement.style.setProperty("--note-title-font-scale", String(noteTitleScale));
     document.documentElement.style.setProperty("--note-body-font-scale", String(noteBodyScale));
   }, [noteTitleScale, noteBodyScale]);
+
+  useEffect(() => {
+    if (!isMobile || typeof window === "undefined") {
+      setKeyboardInset(0);
+      document.documentElement.style.setProperty("--mobile-keyboard-offset", "0px");
+      return;
+    }
+
+    const vv = window.visualViewport;
+    const updateKeyboardOffset = () => {
+      const rawOffset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+      const next = rawOffset > 120 ? rawOffset : 0;
+      setKeyboardInset(next);
+      document.documentElement.style.setProperty("--mobile-keyboard-offset", `${next}px`);
+    };
+
+    updateKeyboardOffset();
+    vv?.addEventListener("resize", updateKeyboardOffset);
+    vv?.addEventListener("scroll", updateKeyboardOffset);
+    window.addEventListener("resize", updateKeyboardOffset);
+
+    return () => {
+      vv?.removeEventListener("resize", updateKeyboardOffset);
+      vv?.removeEventListener("scroll", updateKeyboardOffset);
+      window.removeEventListener("resize", updateKeyboardOffset);
+      document.documentElement.style.setProperty("--mobile-keyboard-offset", "0px");
+    };
+  }, [isMobile]);
 
   useEffect(() => {
     void loadEditorReadOnly().then((v) => setReadOnly(v));
@@ -241,30 +274,46 @@ export default function NoteEditor() {
       setSaveStatus("creating");
       setLoading(false);
 
-      Promise.allSettled([entitiesApi.list(), notesApi.getTypes()])
+      Promise.allSettled([
+        queryClient.fetchQuery({ queryKey: qk.entities(), queryFn: () => entitiesApi.list().then((response) => response.data), staleTime: STALE.list }),
+        queryClient.fetchQuery({ queryKey: qk.noteTypes(), queryFn: () => notesApi.getTypes().then((response) => response.data), staleTime: STALE.list }),
+      ])
         .then(([entitiesResult, typesResult]) => {
           if (cancelled) return;
-          if (entitiesResult.status === "fulfilled" && Array.isArray(entitiesResult.value.data)) {
-            setAllEntities(entitiesResult.value.data);
+          if (entitiesResult.status === "fulfilled" && Array.isArray(entitiesResult.value)) {
+            setAllEntities(entitiesResult.value);
           }
-          if (typesResult.status === "fulfilled" && Array.isArray(typesResult.value.data)) {
-            setAvailableTypes(typesResult.value.data);
+          if (typesResult.status === "fulfilled" && Array.isArray(typesResult.value)) {
+            setAvailableTypes(typesResult.value);
           }
         })
         .catch(() => {
           /* ignore fetch details for optimistic placeholder */
         });
     } else {
-      Promise.allSettled([notesApi.get(id), entitiesApi.list(), notesApi.getTypes()])
+      // Paint from cache instantly (even if stale); revalidate in the background.
+      const swr = <T,>(queryKey: readonly unknown[], queryFn: () => Promise<T>, staleTime: number) => {
+        const cached = queryClient.getQueryData<T>(queryKey);
+        if (cached !== undefined) {
+          void queryClient.prefetchQuery({ queryKey, queryFn, staleTime });
+          return Promise.resolve(cached);
+        }
+        return queryClient.fetchQuery({ queryKey, queryFn, staleTime });
+      };
+      Promise.allSettled([
+        swr(qk.note(id), () => notesApi.get(id).then((response) => response.data as NoteData), STALE.detail),
+        swr(qk.entities(), () => entitiesApi.list().then((response) => response.data), STALE.list),
+        swr(qk.noteTypes(), () => notesApi.getTypes().then((response) => response.data), STALE.list),
+      ])
         .then(([noteResult, entitiesResult, typesResult]) => {
           if (noteResult.status !== "fulfilled") throw noteResult.reason;
           if (cancelled) return;
 
-          const data = noteResult.value.data as NoteData;
+          const data = noteResult.value as NoteData;
           const parsedContent = parseTiptapContent(data.content);
           const userEntities =
-            entitiesResult.status === "fulfilled" && Array.isArray(entitiesResult.value.data)
-              ? entitiesResult.value.data
+            entitiesResult.status === "fulfilled" && Array.isArray(entitiesResult.value)
+              ? entitiesResult.value
               : [];
           
           setAllEntities(userEntities);
@@ -275,8 +324,8 @@ export default function NoteEditor() {
           
           const normalizedContent = sanitized.doc;
 
-          if (typesResult.status === "fulfilled" && Array.isArray(typesResult.value.data)) {
-            setAvailableTypes(typesResult.value.data);
+          if (typesResult.status === "fulfilled" && Array.isArray(typesResult.value)) {
+            setAvailableTypes(typesResult.value);
           }
 
           const optimisticDraft = loadOptimisticDraft();
@@ -352,6 +401,9 @@ export default function NoteEditor() {
       });
 
       setNote((prev) => prev ? { ...prev, title: nextTitle, content: json, entityIds, type: newType } : null);
+      queryClient.setQueryData(qk.note(id), (previous: NoteData | undefined) => previous ? { ...previous, title: nextTitle, content: json, entityIds, type: newType } : previous);
+      void queryClient.invalidateQueries({ queryKey: qk.notes() });
+      void queryClient.invalidateQueries({ queryKey: qk.graph() });
 
       lastSavedTitle.current = nextTitle;
       lastSavedJSON.current = jsonStr;
@@ -472,15 +524,15 @@ export default function NoteEditor() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
           {/* Top Toolbar */}
-          <header className="relative z-10 flex shrink-0 items-center justify-between border-b border-white/5 bg-background/70 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md lg:pt-3">
+          <header className="relative z-10 flex shrink-0 items-center justify-between border-b border-border/5 bg-background/70 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md lg:pt-3">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/notes"))} className="text-muted-foreground hover:text-foreground w-8 h-8">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
-              <div className="h-4 w-[1px] bg-border mx-2" />
+              <div className="h-4 w-[1px] bg-border/10 mx-2" />
               
               {/* Status Indicator */}
-              <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full">
+              <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 bg-foreground/5 px-2.5 py-1 rounded-full">
                 {saveStatus === "creating" && <><Loader2 className="w-3 h-3 animate-spin" /> {t("ed_creating")}</>}
                 {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> {t("ed_saving")}</>}
                 {saveStatus === "saved" && <><Check className="w-3 h-3 text-emerald-400" /> {t("ed_saved")}</>}
@@ -518,7 +570,12 @@ export default function NoteEditor() {
 
           {/* Editor Canvas */}
           <div className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth">
-            <div className="mx-auto w-full max-w-[750px] px-6 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-12 lg:px-12 lg:pb-32">
+            <div
+              className="mx-auto w-full max-w-[750px] px-6 pt-12 lg:px-12"
+              style={{
+                paddingBottom: `calc(${Math.max(7 * 16, keyboardInset + 140)}px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))`,
+              }}
+            >
               <Input
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
@@ -549,7 +606,7 @@ export default function NoteEditor() {
           
           {/* Footer Metadata */}
           {note?.updatedAt && (
-            <div className="pointer-events-none absolute bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-4 flex items-center gap-1.5 rounded-md border border-white/5 bg-background/80 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur">
+            <div className="pointer-events-none absolute bottom-[calc(0.5rem+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))] left-4 flex items-center gap-1.5 rounded-md border border-border/5 bg-background/80 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur">
               <Clock className="w-3 h-3" />
               {t("ed_edited", { date: new Date(note.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })}
             </div>
@@ -569,11 +626,11 @@ export default function NoteEditor() {
         <aside
 
           aria-hidden={!showBacklinks}
-          className={`absolute right-0 top-0 bottom-0 z-30 flex w-full max-w-[20rem] flex-col overflow-hidden border-l border-white/5 bg-black/80 backdrop-blur-2xl transition-transform duration-300 ease-in-out
+          className={`absolute right-0 top-0 bottom-0 z-30 flex w-full max-w-[20rem] flex-col overflow-hidden border-l border-border/5 bg-background/80 backdrop-blur-2xl transition-transform duration-300 ease-in-out
           ${showBacklinks ? "translate-x-0" : "pointer-events-none translate-x-full"}`}
         >
           
-          <div className="flex items-center justify-between border-b border-white/5 px-5 py-4 shrink-0">
+          <div className="flex items-center justify-between border-b border-border/5 px-5 py-4 shrink-0">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("ed_context")}</p>
               <h3 className="mt-0.5 text-sm font-medium text-foreground">{t("ed_note_connections")}</h3>
@@ -586,14 +643,14 @@ export default function NoteEditor() {
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
             {/* Note type */}
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <FileText className="w-3 h-3" />
                 <span>{t("ed_note_type")}</span>
               </div>
               <div className="flex gap-2">
                 {availableTypes.length > 0 && (
                   <Select value={type} onValueChange={handleTypeChange}>
-                    <SelectTrigger className="flex-1 bg-white/5 border-white/10 h-8 text-xs">
+                    <SelectTrigger className="flex-1 bg-foreground/5 border-border/10 h-8 text-xs">
                       <SelectValue placeholder={t("ed_select_ellipsis")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -607,7 +664,7 @@ export default function NoteEditor() {
                   value={type}
                   onChange={(e) => handleTypeChange(e.target.value)}
                   placeholder={t("ed_or_new")}
-                  className="flex-1 bg-white/5 border-white/10 h-8 text-xs"
+                  className="flex-1 bg-foreground/5 border-border/10 h-8 text-xs"
                   maxLength={50}
                 />
                 {type && (
@@ -620,32 +677,32 @@ export default function NoteEditor() {
 
             <div className="space-y-4">
 
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <AtSign className="w-3 h-3" />
                 <span>{t("ed_note_metadata")}</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_score")}</p>
-                  <p className="mt-2 text-sm font-medium text-white">{noteScore.toFixed(1)}</p>
+                <Card variant="subtle" className="border border-border/5 bg-background/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{t("ed_score")}</p>
+                  <p className="mt-2 text-sm font-medium text-foreground">{noteScore.toFixed(1)}</p>
                 </Card>
-                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_mentions")}</p>
-                  <p className="mt-2 text-sm font-medium text-white">{mentionCounts.total}</p>
+                <Card variant="subtle" className="border border-border/5 bg-background/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{t("ed_mentions")}</p>
+                  <p className="mt-2 text-sm font-medium text-foreground">{mentionCounts.total}</p>
                 </Card>
-                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_entities")}</p>
-                  <p className="mt-2 text-sm font-medium text-white">{note?.entityIds?.length ?? 0}</p>
+                <Card variant="subtle" className="border border-border/5 bg-background/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{t("ed_entities")}</p>
+                  <p className="mt-2 text-sm font-medium text-foreground">{note?.entityIds?.length ?? 0}</p>
                 </Card>
-                <Card variant="subtle" className="border border-white/5 bg-black/40 p-3 backdrop-blur-xl">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">{t("ed_characters")}</p>
-                  <p className="mt-2 text-sm font-medium text-white">{characterCount}</p>
+                <Card variant="subtle" className="border border-border/5 bg-background/40 p-3 backdrop-blur-xl">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{t("ed_characters")}</p>
+                  <p className="mt-2 text-sm font-medium text-foreground">{characterCount}</p>
                 </Card>
               </div>
             </div>
 
             <div>
-              <div className="flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+              <div className="flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <AtSign className="w-3 h-3" />
                 <span>{t("ed_mentioned_entities")}</span>
               </div>
@@ -661,9 +718,9 @@ export default function NoteEditor() {
                       <Button
                         variant="ghost"
                         onClick={() => navigate(`/entities/${entity.id}`)}
-                        className="w-full h-auto flex flex-col items-start gap-1 rounded-md border border-white/5 bg-black/40 p-2.5 text-left normal-case tracking-normal backdrop-blur-xl hover:bg-black/60 hover:border-white/10"
+                        className="w-full h-auto flex flex-col items-start gap-1 rounded-md border border-border/5 bg-background/40 p-2.5 text-left normal-case tracking-normal backdrop-blur-xl hover:bg-background/60 hover:border-border/10"
                       >
-                        <span className="w-full break-words text-xs font-medium leading-snug text-white/90 line-clamp-2">
+                        <span className="w-full break-words text-xs font-medium leading-snug text-muted-foreground line-clamp-2">
                           {entity.title || t("ed_untitled_entity")}
                         </span>
                         {entity.type && (
@@ -678,8 +735,8 @@ export default function NoteEditor() {
               )}
             </div>
 
-            <div className="border-t border-white/5 pt-4">
-              <div className="flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+            <div className="border-t border-border/5 pt-4">
+              <div className="flex items-center gap-1.5 mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <Link2 className="w-3 h-3" />
                 <span>{t("ed_linked_mentions")}</span>
               </div>

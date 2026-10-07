@@ -1,3 +1,4 @@
+import { useVisionPrice } from "@/hooks/useVisionPrice";
 import { useEffect, useMemo, useState } from "react";
 import api, { plansApi, subscriptionApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const visionPrice = useVisionPrice();
   const [sub, setSub] = useState<SubInfo | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -57,7 +59,6 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return;
     subscriptionApi.me().then(({ data }) => setSub(data)).catch(() => {});
-    plansApi.list().then(({ data }) => setPlans(data || [])).catch(() => {});
     api
       .get("/api/plans/prices")
       .then(({ data }) => setPrices({ monthly: data?.vision?.monthly }))
@@ -68,7 +69,6 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
   const normalizedPlan = currentPlan === "PRO" ? ("VISION" as Plan) : (currentPlan as Plan);
   const isPro = normalizedPlan === "VISION";
 
-  const visionLimits = useMemo(() => plans.find((p) => p.plan === "VISION")?.limits, [plans]);
 
   const handleCheckout = async () => {
     setCheckoutLoading(true);
@@ -117,7 +117,7 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
                 VISION
               </DialogTitle>
               <div className="text-right">
-                <p className="font-serif text-3xl text-foreground">$7.90</p>
+                <p className="font-serif text-3xl text-foreground">{visionPrice}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
                   {t("bill_per_month")}
                 </p>
@@ -129,7 +129,7 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
           </DialogHeader>
 
           {/* Current status */}
-          <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/10 pt-4">
             <div className="flex items-baseline gap-2">
               <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
                 {t("bill_current")}
@@ -152,7 +152,7 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
             )}
           </div>
 
-          <ul className="mt-5 space-y-3 border-t border-border pt-5">
+          <ul className="mt-5 space-y-3 border-t border-border/10 pt-5">
             {VISION_BENEFITS.map((b) => (
               <li key={b} className="flex items-start gap-3 text-sm text-foreground/80">
                 <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -161,19 +161,14 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
             ))}
           </ul>
 
-          {visionLimits && (
-            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-border pt-5 text-xs sm:grid-cols-4">
+          <div className="mt-5 border-t border-border/10 pt-5">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{t("bill_your_limits")}</p>
+            <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-xs sm:grid-cols-4">
               {[
-                { k: t("bill_notes"), v: formatLimit(visionLimits.maxNotes ?? -1) },
-                { k: t("bill_entities"), v: formatLimit(visionLimits.maxEntities ?? -1) },
-                { k: t("bill_vault"), v: formatLimit(visionLimits.maxVaultSizeMB ?? -1, " MB") },
-                {
-                  k: t("bill_history"),
-                  v: formatLimit(
-                    ((visionLimits as any)?.maxHistoryDays ?? (visionLimits as any)?.historyDays) ?? -1,
-                    "d",
-                  ),
-                },
+                { k: t("bill_notes"), v: formatLimit(user?.maxNotes) },
+                { k: t("bill_entities"), v: formatLimit(user?.maxEntities) },
+                { k: t("bill_vault"), v: formatLimit(user?.maxVaultSizeMB, " MB") },
+                { k: t("bill_history"), v: formatLimit(user?.historyDays, "d") },
               ].map((row) => (
                 <div key={row.k}>
                   <dt className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{row.k}</dt>
@@ -181,11 +176,11 @@ export default function SubscriptionModal({ open, onOpenChange }: Props) {
                 </div>
               ))}
             </dl>
-          )}
+          </div>
 
           <div className="mt-6 space-y-3">
             {isPro ? (
-              <div className="flex h-11 items-center justify-center rounded-sm border border-dashed border-border text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+              <div className="flex h-11 items-center justify-center rounded-sm border border-dashed border-border/10 text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                 {t("bill_active")}
               </div>
             ) : (

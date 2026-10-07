@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { authApi } from "@/lib/api";
+import { resetAllCaches } from "@/lib/query-client";
 import type { Plan, User as AppUser } from "@/types";
 
 // Lê em tempo de execução, não de build
@@ -17,7 +20,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  setTokens: (accessToken: string, refreshToken?: string) => void;
   refreshUser: () => Promise<void>;
 }
 
@@ -99,13 +102,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("auth_user");
+      void resetAllCaches();
       setUser(null);
     };
     window.addEventListener("auth:logout", onLogout);
     return () => window.removeEventListener("auth:logout", onLogout);
   }, []);
 
-  const setTokens = (accessToken: string, _refreshToken: string) => {
+  const setTokens = (accessToken: string, _refreshToken?: string) => {
     sessionStorage.setItem("access_token", accessToken);
     localStorage.setItem("access_token", accessToken);
 
@@ -113,8 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // mesmo quando o backend não usa cookie HttpOnly.
     if (_refreshToken) {
       localStorage.setItem("refresh_token", _refreshToken);
-    } else {
-      localStorage.removeItem("refresh_token");
     }
   };
 
@@ -126,7 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async () => {
     const { data } = await authApi.googleStart();
-    window.location.href = data.authorizationUrl;
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url: data.authorizationUrl });
+    } else {
+      window.location.href = data.authorizationUrl;
+    }
   };
 
   const register = async (username: string, email: string, password: string) => {
@@ -150,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("auth_user");
+    await resetAllCaches();
     setUser(null);
   };
 

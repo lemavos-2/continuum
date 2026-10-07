@@ -1,9 +1,9 @@
 import * as React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createIdbPersister, QUERY_CACHE_BUSTER } from "@/lib/offline/query-persister";
+import { queryClient } from "@/lib/query-client";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UsageProvider } from "@/contexts/UsageContext";
@@ -11,18 +11,20 @@ import { EntityProvider } from "@/contexts/EntityContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SkeletonPage } from "@/components/ui/skeleton";
-import { PageTransition } from "@/components/motion/PageTransition";
-import { GlobalProgress } from "@/components/motion/GlobalProgress";
 import { extractAuthTokensFromLocation, sanitizeAuthRedirectUrl } from "@/lib/auth-redirect";
 import { EMAIL_AUTH_ENABLED } from "@/lib/dev-mode";
 import UpdateDialog from "@/components/updater/UpdateDialog";
+import { prefetchPrimaryLists } from "@/lib/prefetch";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
-// Capacitor: aplica cor da status bar só quando rodando dentro do APK nativo
+// Capacitor 8: configura as barras do sistema somente no APK nativo.
 import { Capacitor } from "@capacitor/core";
-import { StatusBar, Style } from "@capacitor/status-bar";
+import { SystemBars, SystemBarsStyle } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
+import { useNavigate } from "react-router-dom";
 
 // Auth-critical screens stay eager (they gate the first paint); everything else
 // is code-split and streamed in behind a skeleton.
@@ -48,12 +50,83 @@ const Support = React.lazy(() => import("./pages/Support"));
 const About = React.lazy(() => import("./pages/About"));
 const Pricing = React.lazy(() => import("./pages/Pricing"));
 const Versions = React.lazy(() => import("./pages/Versions"));
-const Subscription = React.lazy(() => import("./pages/Subscription"));
-const Profile = React.lazy(() => import("./pages/Profile"));
+const SettingsPage = React.lazy(() => import("./pages/Settings"));
+const EditorSettingsPage = React.lazy(() => import("./pages/EditorSettings"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Trash = React.lazy(() => import("./pages/Trash"));
 const Insights = React.lazy(() => import("./pages/Insights"));
 
-const queryClient = new QueryClient();
+const queryPersister = createIdbPersister();
+
+/** Downloads every screen's code in the background so no route ever waits. */
+const PAGE_LOADERS = [
+  () => import("./pages/Notes"), () => import("./pages/NoteEditor"), () => import("./pages/Entities"),
+  () => import("./pages/EntityDetail"), () => import("./pages/Activities"), () => import("./pages/Projects"),
+  () => import("./pages/Insights"), () => import("./pages/Vault"), () => import("./pages/KnowledgeGraph"),
+  () => import("./pages/Settings"), () => import("./pages/EditorSettings"), () => import("./pages/About"),
+  () => import("./pages/Pricing"), () => import("./pages/Support"), () => import("./pages/Terms"),
+  () => import("./pages/Privacy"), () => import("./pages/Versions"), () => import("./pages/VaultDownload"),
+  () => import("./pages/Login"), () => import("./pages/Register"), () => import("./pages/NotFound"),
+];
+if (typeof window !== "undefined") {
+  const warm = () => PAGE_LOADERS.reduce((p, load) => p.then(() => load().catch(() => {})), Promise.resolve() as Promise<unknown>);
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+  window.addEventListener("load", () => (idle ? idle(warm) : setTimeout(warm, 1500)), { once: true });
+}
+
+/** Warms notes/entities/insights as soon as the user is authenticated. */
+function PrefetchPrimaryData() {
+  const { user } = useAuth();
+  React.useEffect(() => {
+    if (!user) return;
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    const run = () => { void prefetchPrimaryLists(); };
+    if (idle) idle(run); else setTimeout(run, 1500);
+  }, [user]);
+  return null;
+}
+
+function NativeGoogleAuthRedirect() {
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let disposed = false;
+    let removeListener: (() => void) | undefined;
+    void CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
+      let callbackUrl: URL;
+      try {
+        callbackUrl = new URL(url);
+      } catch {
+        return;
+      }
+
+      if (
+        callbackUrl.origin !== "https://continuum.onl" ||
+        callbackUrl.pathname !== "/google-callback"
+      ) {
+        return;
+      }
+
+      navigate(`/google-callback${callbackUrl.search}`);
+      await Browser.close();
+    }).then((listener) => {
+      if (disposed) {
+        void listener.remove();
+      } else {
+        removeListener = () => { void listener.remove(); };
+      }
+    });
+
+    return () => {
+      disposed = true;
+      removeListener?.();
+    };
+  }, [navigate]);
+
+  return null;
+}
 
 function RouteFallback() {
   return (
@@ -97,12 +170,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => {
-  const location = useLocation();
   return (
     <React.Suspense fallback={<RouteFallback />}>
-      <AnimatePresence mode="wait" initial={false}>
-        <PageTransition key={location.pathname}>
-          <Routes location={location}>
+      <Routes>
     <Route path="/" element={<HomeRoute />} />
     <Route path="/index" element={<HomeRoute />} />
     <Route path="/dashboard" element={<Navigate to="/notes" replace />} />
@@ -136,14 +206,14 @@ const AppRoutes = () => {
     <Route path="/projects/:id" element={<ProtectedRoute><EntityDetail /></ProtectedRoute>} />
     <Route path="/graph" element={<ProtectedRoute><KnowledgeGraph /></ProtectedRoute>} />
     <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
+    <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
     <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
     <Route path="/vault/download/:fileId" element={<ProtectedRoute><VaultDownload /></ProtectedRoute>} />
-    <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
-    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+    <Route path="/editor" element={<ProtectedRoute><EditorSettingsPage /></ProtectedRoute>} />
+    <Route path="/profile" element={<Navigate to="/settings" replace />} />
     <Route path="*" element={<NotFound />} />
-          </Routes>
-        </PageTransition>
-      </AnimatePresence>
+      </Routes>
     </React.Suspense>
   );
 };
@@ -151,23 +221,34 @@ const AppRoutes = () => {
 const App = () => {
   React.useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      StatusBar.setBackgroundColor({ color: "#000000" });
-      StatusBar.setStyle({ style: Style.Dark });
+      void SystemBars.setStyle({ style: SystemBarsStyle.Dark });
     }
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: 24 * 60 * 60 * 1000,
+        buster: QUERY_CACHE_BUSTER,
+        dehydrateOptions: {
+          // Never persist auth/session-scoped queries.
+          shouldDehydrateQuery: (query) =>
+            query.state.status === "success" && String(query.queryKey[0]) !== "auth",
+        },
+      }}
+    >
       <ThemeProvider>
         <TooltipProvider>
-          <GlobalProgress />
-          <Toaster />
           <Sonner />
           <BrowserRouter>
+            <NativeGoogleAuthRedirect />
             <LanguageProvider>
               <AuthProvider>
                 <UsageProvider>
                   <EntityProvider>
+                    <PrefetchPrimaryData />
                     <AppRoutes />
                     <UpdateDialog />
                   </EntityProvider>
@@ -179,7 +260,7 @@ const App = () => {
       </ThemeProvider>
       <Analytics />
       <SpeedInsights />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 };
 

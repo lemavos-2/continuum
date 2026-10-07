@@ -2,97 +2,116 @@
 
 Every notable change to **Continuum**, from the first release to what just shipped. Newest at the top.
 
-> A few early versions (`v2`, `v3`) predate our versioning scheme, and a couple of tags got committed twice on the same day — those are merged into one entry each below.
-
 ---
 
-## v1.2.15 — Aug 29, 2026 *(current)*
-🔧 Small backend configuration tweak.
+## v1.3.1 — Set 00, 2026 *(current)*
+- Fixed: scroll bugs on app.
+- Fixed: delay after open the app.
+- Fixed: PDF render inside notes and vault.
+- Add: trash to deleted itens, now users can restaure notes and entities.
+- Add: resize to photos in notes.
+Add: limit alerts.
+- Now users can add past entrys on projects and activities.
+- Now users can delete their account without contact support.
+- Now users can use files already stored in vault.
+- Some minor UI enchaces (note index, select notes/entities, mention selector, subscription banner.)
+
+## v1.3.0 — Set 25, 2026
+- Enhanced UI/UX.
+- Changed "/profile" to "/settings".
+- Enhanced "/settings" UI.
+- Enhanced the mobile bottom bar.
+- Enchance subscription screen
+- Added caching for improved performance and speed.
+- Added note search for both mobile and desktop.
+- Fixed Markdown elements when changing the body text size.
+
+## v1.2.16 — Set 13, 2026
+- Add apk feature using capacitor.
+- Remove "/" for dashboard. 
+
+## v1.2.15 — Aug 29, 2026
+- Small backend configuration tweak.
 
 ## v1.2.12 — Aug 30, 2026
-🔧 Small refinements to the note editor and its styling.
+- Small refinements to the note editor and its styling.
 
 ## v1.2.11 — Aug 30, 2026
-🔧 Minor visual polish across the app.
+- Minor visual polish across the app.
 
 ## v1.2.10 — Aug 30, 2026
-🔧 Continued work on profile wallpapers and editor font sizing.
+- Continued work on profile wallpapers and editor font sizing.
 
 ## v1.2.9 — Aug 30, 2026
-✨ You can now adjust the font size in the note editor, with new related options in your Profile.
+- You can now adjust the font size in the note editor, with new related options in your Profile.
 
 ## v1.2.8 — Aug 30, 2026
-🔧 Reworked how sign-in/sign-up redirects you through the app, plus route fixes on several pages.
-🔧 Free plan limits were tightened, and data export is now a paid-only feature.
-🗑️ Removed a leftover static Google auth file from the backend build.
+- Reworked how sign-in/sign-up redirects you through the app, plus route fixes on several pages.
+- Free plan limits were tightened, and data export is now a paid-only feature.
+- Removed a leftover static Google auth file from the backend build.
 
 ## v1.2.6 — Aug 26, 2026
-✨ Notifications now go through **Telegram** instead of Discord.
-✨ Smoother page transitions and loading animations throughout the app.
-✨ New wallpaper customization options for your profile.
-🔧 Big rewrite of the note editor and the Notes page for a better writing experience.
-🔧 Polish on the Dashboard, Entities, Insights, and Vault pages.
+- Notifications now go through **Telegram** instead of Discord.
+- Smoother page transitions and loading animations throughout the app.
+- New wallpaper customization options for your profile.
+- Big rewrite of the note editor and the Notes page for a better writing experience.
+- Polish on the Dashboard, Entities, Insights, and Vault pages.
 
 ## v1.2.5 — Aug 10, 2026
-🔧 Environment configuration tweak.
+- Environment configuration tweak.
 
 ## v1.2.4 — Aug 10, 2026
-✨ New "Score Evolution" card on the Dashboard, showing how your score changes over time.
-✨ Discord notifications for important events.
-🔧 Metrics engine rewritten under the hood.
+- New "Score Evolution" card on the Dashboard, showing how your score changes over time.
+- Discord notifications for important events.
+- Metrics engine rewritten under the hood.
 
 ## v1.2.3 — Aug 9, 2026
-🔧 Environment configuration tweak.
+- Environment configuration tweak.
 
 ## v1.2.1 — Aug 9, 2026
-✨ Notes can now be folded/collapsed by heading.
-✨ Configurable editor mode.
-✨ Custom naming for your vaults.
-✨ New subscription modal for managing your plan.
-🔧 Stripe payments are now reconciled automatically, with full event auditing.
-🔧 Requests are now time-zone aware.
+- Notes can now be folded/collapsed by heading.
+- Configurable editor mode.
+- Custom naming for your vaults.
+- New subscription modal for managing your plan.
+- Stripe payments are now reconciled automatically, with full event auditing.
+- Requests are now time-zone aware.
 
 ## v1.2.0 — Aug 4, 2026
-🔧 **Full visual redesign** — nearly every core page (Dashboard, Entities, Insights, Knowledge Graph, Notes, Pricing, Profile, Projects, Subscription, Vault) got a fresh look.
-✨ New reusable UI building blocks across the app.
+- **Full visual redesign** — nearly every core page (Dashboard, Entities, Insights, Knowledge Graph, Notes, Pricing, Profile, Projects, Subscription, Vault) got a fresh look.
+- New reusable UI building blocks across the app.
 
 ## v1.1.2 — Jul 29, 2026
-🔧 Small cosmetic fix on the landing page.
+- Small cosmetic fix on the landing page.
 
 ## v1.1.1 — Jul 29, 2026
-✨ Continuum can now be installed as a PWA (with install prompts and buttons).
-🔧 Dashboard and auth screens (Login, Forgot Password, Register, etc.) rewritten for clarity.
+- Continuum can now be installed as a PWA (with install prompts and buttons).
+- Dashboard and auth screens (Login, Forgot Password, Register, etc.) rewritten for clarity.
 
 ## v1.1.0 — Jul 29, 2026
-🔧 Small fix to time-tracking behavior.
+- Small fix to time-tracking behavior.
 
 ## v1.0.4 — Jul 28, 2026
-🐛 Backend security hardening.
+- Backend security hardening.
 
 ## v1.0.3 — Jul 28, 2026
-🔧 Environment configuration tweak.
+- Environment configuration tweak.
 
 ## v1.0.2 — Jul 28, 2026
-🗑️ Cleaned up unused code and simplified the build config.
+-Cleaned up unused code and simplified the build config.
 
 ## v1.0.1 — Jul 28, 2026
-✨ Continuum now works **offline** and can run as a PWA, syncing automatically once you're back online.
-✨ New activity calendars and time-tracking history views.
-✨ Language switcher, plus a fully modular translation system.
-✨ New About, Pricing, and Support pages.
-✨ Timer goals and related notifications.
-🔧 Payments migrated from LemonSqueezy to **Stripe**.
-🗑️ Removed the LemonSqueezy integration.
-
-## v3 — Jun 13, 2026
-🔧 Reverted the folder reorganization from v2 — no functional changes.
-
-## v2 — Jun 13, 2026
-✨ You can now **import Markdown files**, with a confirmation step before anything is committed.
-✨ Expanded the note editor: find & replace, status bar, keyboard shortcuts, and more.
-✨ New sign-up page.
-✨ Vercel Web Analytics and Speed Insights added.
-🐛 Fixed Google login and token refresh issues.
+- Continuum now works **offline** and can run as a PWA, syncing automatically once you're back online.
+- New activity calendars and time-tracking history views.
+- Language switcher, plus a fully modular translation system.
+- New About, Pricing, and Support pages.
+- Timer goals and related notifications.
+- Payments migrated from LemonSqueezy to **Stripe**.
+- Removed the LemonSqueezy integration.
+- You can now **import Markdown files**, with a confirmation step before anything is committed.
+- Expanded the note editor: find & replace, status bar, keyboard shortcuts, and more.
+- New sign-up page.
+- Vercel Web Analytics and Speed Insights added.
+- Fixed Google login and token refresh issues.
 
 ## v1.0.0-RELEASE — May 28, 2026
 🎉 **The first full release of Continuum**, shipped as a complete product:

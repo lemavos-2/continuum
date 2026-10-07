@@ -27,9 +27,10 @@ interface Props {
   defaultType?: string;
   lockType?: boolean;
   onCreated?: (entity: Entity) => void;
+  onCreationFailed?: (entityId: string) => void;
 }
 
-export function CreateEntityDialog({ open, onOpenChange, defaultType = "TOPIC", lockType = false, onCreated }: Props) {
+export function CreateEntityDialog({ open, onOpenChange, defaultType = "TOPIC", lockType = false, onCreated, onCreationFailed }: Props) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState(defaultType);
   const [description, setDescription] = useState("");
@@ -57,14 +58,23 @@ export function CreateEntityDialog({ open, onOpenChange, defaultType = "TOPIC", 
       return;
     }
     setSubmitting(true);
+    const optimisticEntity: Entity = {
+      id: `optimistic-entity-${Date.now()}`,
+      title: title.trim(),
+      type: type as Entity["type"],
+      description: description.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    };
+    onCreated?.(optimisticEntity);
     try {
       const { data } = await entitiesApi.create(title.trim(), type, description.trim() || undefined);
       applyUsageDelta({ entitiesCount: 1, activitiesCount: type === "ACTIVITY" ? 1 : 0 });
       void refresh();
       toast({ title: t("ent_created_toast", { type: selected.label }), description: data?.title });
-      onCreated?.(data as Entity);
+      onCreated?.({ ...data, _optimisticId: optimisticEntity.id } as Entity & { _optimisticId: string });
       onOpenChange(false);
     } catch (err: any) {
+      onCreationFailed?.(optimisticEntity.id);
       toast({
         title: t("ent_could_not_create"),
         description: err?.response?.data?.message || err?.message || t("ent_try_again"),
@@ -93,7 +103,7 @@ export function CreateEntityDialog({ open, onOpenChange, defaultType = "TOPIC", 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("ent_name_your", { type: selected.label.toLowerCase() })}
-              className="h-11 bg-white/[0.03] border-white/[0.06] focus-visible:ring-white/20"
+              className="h-11 bg-foreground/[0.03] border-border/10 focus-visible:ring-ring"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && title.trim()) {
                   e.preventDefault();
@@ -107,8 +117,8 @@ export function CreateEntityDialog({ open, onOpenChange, defaultType = "TOPIC", 
             <div className="space-y-1.5">
               <Label className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{t("ent_type")}</Label>
               <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="h-11 bg-white/[0.03] border-white/[0.06]">
-                  <SelectValue />
+                <SelectTrigger className="h-11 bg-foreground/[0.03] border-border/10">
+                  <SelectValue className="flex-1 text-left" />
                 </SelectTrigger>
                 <SelectContent>
                   {TYPE_OPTIONS.map((opt) => (
@@ -130,7 +140,7 @@ export function CreateEntityDialog({ open, onOpenChange, defaultType = "TOPIC", 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t("ent_a_short_note")}
-              className="h-11 bg-white/[0.03] border-white/[0.06] focus-visible:ring-white/20"
+              className="h-11 bg-foreground/[0.03] border-border/10 focus-visible:ring-ring"
             />
           </div>
 

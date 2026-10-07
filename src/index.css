@@ -80,8 +80,9 @@
     --destructive: 355 82% 66%;
     --destructive-foreground: 30 12% 4%;
 
-    --border: 0 0% 100% / 0.06;
-    --input: 0 0% 100% / 0.06;
+    /* Solid channels keep Tailwind opacity modifiers valid (border-border/10). */
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
     --ring: 45 25% 94% / 0.38;
 
     --radius: 0.5rem;
@@ -92,7 +93,7 @@
     --sidebar-primary-foreground: 30 12% 4%;
     --sidebar-accent: 0 0% 13%;
     --sidebar-accent-foreground: 45 12% 90%;
-    --sidebar-border: 0 0% 100% / 0.05;
+    --sidebar-border: 0 0% 100%;
     --sidebar-ring: 45 25% 94% / 0.38;
 
     --success: 154 66% 54%;
@@ -161,8 +162,8 @@
     --destructive: 355 70% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 10% 9% / 0.08;
-    --input: 45 10% 9% / 0.08;
+    --border: 45 10% 9%;
+    --input: 45 10% 9%;
     --ring: 45 10% 9% / 0.32;
 
     --sidebar-background: 40 25% 98%;
@@ -171,7 +172,7 @@
     --sidebar-primary-foreground: 40 25% 98%;
     --sidebar-accent: 40 12% 93%;
     --sidebar-accent-foreground: 45 10% 9%;
-    --sidebar-border: 45 10% 9% / 0.06;
+    --sidebar-border: 45 10% 9%;
     --sidebar-ring: 45 10% 9% / 0.32;
 
     --success: 154 60% 34%;
@@ -194,7 +195,7 @@
 }
 
 @layer base {
-  * { @apply border-border; }
+  * { @apply border-border/10; }
   html, body {
     background: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -583,8 +584,8 @@
   .markdown-content ol { @apply list-decimal pl-5 space-y-1; }
   .markdown-content blockquote { @apply border-l-2 border-white/30 pl-4 italic text-muted-foreground; }
   .markdown-content a { @apply text-foreground underline underline-offset-4; }
-  .markdown-content hr { @apply border-border; }
-  .markdown-content pre { @apply overflow-x-auto rounded-md border border-border bg-accent p-4 font-mono; }
+  .markdown-content hr { @apply border-border/10; }
+  .markdown-content pre { @apply overflow-x-auto rounded-md border border-border/10 bg-accent p-4 font-mono; }
   .markdown-content code { @apply rounded bg-accent px-1.5 py-0.5 text-xs text-foreground font-mono; }
   .markdown-content pre code { @apply bg-transparent p-0 text-xs; }
 
@@ -604,9 +605,9 @@
   .ProseMirror ul { @apply list-disc pl-5 mb-3 space-y-1; }
   .ProseMirror ol { @apply list-decimal pl-5 mb-3 space-y-1; }
   .ProseMirror blockquote { @apply border-l-2 border-white/30 pl-4 italic text-muted-foreground my-4; }
-  .ProseMirror pre { @apply overflow-x-auto rounded-md border border-border bg-accent p-4 mb-4 font-mono; }
+  .ProseMirror pre { @apply overflow-x-auto rounded-md border border-border/10 bg-accent p-4 mb-4 font-mono; }
   .ProseMirror code { @apply rounded bg-accent px-1.5 py-0.5 text-xs font-mono; }
-  .ProseMirror hr { @apply border-border my-6; }
+  .ProseMirror hr { @apply border-border/10 my-6; }
   .ProseMirror a { @apply text-white underline underline-offset-4 cursor-pointer; }
 
   .continuum-popup-black {
@@ -615,6 +616,7 @@
     border-color: hsl(var(--popup-border));
   }
 }
+
 
 @layer utilities {
   ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -670,38 +672,26 @@
   .continuum-editor .ProseMirror > * {
     font-size: inherit !important;
   }
-  .continuum-editor .ProseMirror p,
-  .continuum-editor .ProseMirror li,
-  .continuum-editor .ProseMirror blockquote,
-  .continuum-editor .ProseMirror td,
-  .continuum-editor .ProseMirror th,
-  .continuum-editor .ProseMirror table,
-  .continuum-editor .ProseMirror code,
-  .continuum-editor .ProseMirror pre,
-  .continuum-editor .ProseMirror a,
-  .continuum-editor .ProseMirror span {
-    font-size: calc(1em * var(--note-body-font-scale) / 100) !important;
-  }
   .continuum-editor p { @apply my-2; }
   .continuum-editor h1 { @apply text-3xl mt-8 mb-3 tracking-tight; font-family: var(--font-serif-stack); font-weight: 700; }
   .continuum-editor h2 { @apply text-2xl mt-7 mb-2 tracking-tight; font-family: var(--font-serif-stack); font-weight: 700; }
   .continuum-editor h3 { @apply text-xl mt-5 mb-2; font-family: var(--font-serif-stack); font-weight: 700; }
   .continuum-editor blockquote { @apply border-l-2 border-white/40 pl-4 italic text-muted-foreground my-3; }
-  .continuum-editor ul { @apply list-disc pl-6 my-2; list-style-position: outside; }
-  .continuum-editor ol { @apply list-decimal pl-6 my-2; list-style-position: outside; }
+  .continuum-editor ul { @apply list-disc my-2; padding-left: 1.5em; list-style-position: outside; }
+  .continuum-editor ol { @apply list-decimal my-2; padding-left: 1.5em; list-style-position: outside; }
   .continuum-editor li::marker { color: rgba(255, 255, 255, 0.85); }
   .continuum-editor li > p { @apply my-0.5; }
   /* Task list — large, tactile checkboxes */
   .continuum-editor ul[data-type="taskList"] { @apply list-none pl-0 my-2; }
-  .continuum-editor ul[data-type="taskList"] li { @apply flex items-start gap-2 my-0.5 rounded-md transition-colors; }
+  .continuum-editor ul[data-type="taskList"] li { @apply flex items-start my-0.5 rounded-md transition-colors; gap: 0.5em; }
   .continuum-editor ul[data-type="taskList"] li > label {
     @apply relative flex shrink-0 items-center justify-center select-none cursor-pointer;
-    width: 1.15rem; height: 1.15rem; margin: 0; margin-top: 0.28em;
+    width: 1.15em; height: 1.15em; margin: 0; margin-top: 0.28em;
   }
   .continuum-editor ul[data-type="taskList"] li > div { @apply flex-1 min-w-0; }
   .continuum-editor ul[data-type="taskList"] li > div > p { @apply my-0; }
   /* Nested task lists keep their own indentation */
-  .continuum-editor ul[data-type="taskList"] ul[data-type="taskList"] { @apply pl-5 my-0.5; }
+  .continuum-editor ul[data-type="taskList"] ul[data-type="taskList"] { @apply my-0.5; padding-left: 1.25em; }
   /* Checkboxes stay interactive in read/view mode */
   .continuum-editor.is-readonly ul[data-type="taskList"] li > label,
   .continuum-editor.is-readonly ul[data-type="taskList"] input[type="checkbox"] {
@@ -709,9 +699,9 @@
   }
   .continuum-editor ul[data-type="taskList"] input[type="checkbox"] {
     appearance: none; -webkit-appearance: none;
-    width: 1.15rem; height: 1.15rem; margin: 0; cursor: pointer;
-    border-radius: 0.375rem;
-    border: 1.5px solid hsl(var(--foreground) / 0.35);
+    width: 1.15em; height: 1.15em; margin: 0; cursor: pointer; font-size: inherit;
+    border-radius: 0.375em;
+    border: 0.1em solid hsl(var(--foreground) / 0.35);
     background: hsl(var(--foreground) / 0.04);
     transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
   }
@@ -724,8 +714,8 @@
   }
   .continuum-editor ul[data-type="taskList"] li > label::after {
     content: ""; position: absolute; pointer-events: none;
-    width: 0.35rem; height: 0.62rem; margin-top: -0.12rem;
-    border: solid hsl(var(--background)); border-width: 0 2px 2px 0;
+    width: 0.35em; height: 0.62em; margin-top: -0.12em;
+    border: solid hsl(var(--background)); border-width: 0 0.12em 0.12em 0;
     transform: rotate(45deg) scale(0.4); opacity: 0;
     transition: transform 120ms ease, opacity 120ms ease;
   }
@@ -733,23 +723,23 @@
   .continuum-editor ul[data-type="taskList"] li[data-checked="true"] > div { @apply text-muted-foreground line-through decoration-1; }
 
   .continuum-editor code:not(pre code) { @apply bg-muted text-foreground rounded px-1.5 py-0.5 text-[0.85em] font-mono border border-border/50; }
-  .continuum-editor pre { @apply bg-card border border-border rounded-md p-4 my-4 overflow-x-auto font-mono text-sm; }
+  .continuum-editor pre { @apply bg-card border border-border/10 rounded-md my-4 overflow-x-auto font-mono; padding: 1em; }
   .continuum-editor pre code { @apply bg-transparent p-0 border-0; }
-  .continuum-editor hr { @apply my-6 border-t border-border; }
+  .continuum-editor hr { @apply my-6 border-t border-border/10; }
   .continuum-editor img { @apply rounded-md my-3; }
   .continuum-editor a { @apply text-white underline underline-offset-4; }
 
   /* Tables — resizable columns + horizontal scroll */
   .continuum-editor .tableWrapper { @apply my-4 overflow-x-auto; }
-  .continuum-editor table { @apply w-full border-collapse text-sm; table-layout: fixed; }
-  .continuum-editor th, .continuum-editor td { @apply border border-border px-3 py-2 align-top; position: relative; min-width: 3rem; }
+  .continuum-editor table { @apply w-full border-collapse; table-layout: fixed; font-size: inherit; }
+  .continuum-editor th, .continuum-editor td { @apply border border-border/10 align-top; padding: 0.5em 0.75em; position: relative; min-width: 3em; }
   .continuum-editor th { @apply bg-muted/50 font-medium text-left; }
   .continuum-editor .selectedCell::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
     background: hsl(var(--foreground) / 0.08);
   }
   .continuum-editor .column-resize-handle {
-    position: absolute; right: -2px; top: 0; bottom: 0; width: 4px;
+    position: absolute; right: -0.125em; top: 0; bottom: 0; width: 0.25em;
     background: hsl(var(--foreground) / 0.45); cursor: col-resize; z-index: 5;
   }
   .continuum-editor.resize-cursor { cursor: col-resize; }
