@@ -142,7 +142,6 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
   const [entryHours, setEntryHours] = useState(0);
   const [entryMinutes, setEntryMinutes] = useState(30);
   const [entrySeconds, setEntrySeconds] = useState(0);
-  const [entryNote, setEntryNote] = useState('');
   const [entryError, setEntryError] = useState<string | null>(null);
 
   const goalSeconds = goalMinutes * 60;
@@ -248,14 +247,12 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
         entityId,
         date: entryDate,
         durationSeconds,
-        note: entryNote.trim() || undefined,
       });
       await qc.invalidateQueries({ queryKey: ['timeTracking'] });
       setAdding(false);
       setEntryHours(0);
       setEntryMinutes(30);
       setEntrySeconds(0);
-      setEntryNote('');
       setEntryDate(dateKey(new Date()));
     } catch (err: unknown) {
       console.error('Failed to add entry:', err);
@@ -344,7 +341,6 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
                 setEntryHours(0);
                 setEntryMinutes(30);
                 setEntrySeconds(0);
-                setEntryNote('');
                 setAdding(true);
               }}
               className="text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/10 hover:border-border/25 rounded px-1.5 py-0.5 transition"
@@ -388,16 +384,6 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
                 <DurationWheel label={t('tm_seconds_short')} value={entrySeconds} max={59} onChange={setEntrySeconds} />
               </div>
             </fieldset>
-            <label className="block space-y-2">
-              <span className="text-xs font-medium text-muted-foreground">{t('tm_note_optional')}</span>
-              <textarea
-                value={entryNote}
-                onChange={(event) => setEntryNote(event.target.value)}
-                placeholder={t('tm_entry_note_placeholder')}
-                rows={2}
-                className="w-full resize-none rounded-xl border border-border/15 bg-foreground/[0.03] px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </label>
             {entryError && <p role="alert" className="text-sm text-destructive">{entryError}</p>}
             <Button type="button" onClick={submitEntry} disabled={isAdding} className="h-12 w-full rounded-xl">
               {isAdding ? t('tm_saving_entry') : t('tm_add')}
