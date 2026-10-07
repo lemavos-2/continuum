@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
-/** Snapshot of a deleted note or entity, restorable for {@link #RETENTION_DAYS} days. */
+/** A deleted note, entity, or file that can be restored for {@link #RETENTION_DAYS} days. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,7 +26,7 @@ public class TrashItem {
     @Indexed
     private String userId;
     private String vaultId;
-    /** NOTE or ENTITY */
+    /** NOTE, ENTITY, or FILE */
     private String kind;
     private String originalId;
     private String title;

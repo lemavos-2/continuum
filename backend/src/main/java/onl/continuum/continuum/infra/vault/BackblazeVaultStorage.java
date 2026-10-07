@@ -247,8 +247,9 @@ public class BackblazeVaultStorage implements VaultStorageService {
                     .bucket(bucket)
                     .key(key(vaultId, "files/" + fileId))
                     .build());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("Failed to delete vault file {} from vault {}: {}", fileId, vaultId, e.getMessage());
+            throw e;
         }
     }
 

@@ -2,6 +2,7 @@ import { useVisionPrice } from "@/hooks/useVisionPrice";
 import { useEffect, useState } from "react";
 import api, { subscriptionApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUsage } from "@/contexts/UsageContext";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SubscriptionScreen } from "@/components/ui/subscription-screen";
@@ -18,6 +19,7 @@ interface SubInfo {
 
 export default function SubscriptionContent() {
   const { user } = useAuth();
+  const { usage, loading: usageLoading } = useUsage();
   const { toast } = useToast();
   const { t } = useLanguage();
   const visionPrice = useVisionPrice();
@@ -84,12 +86,17 @@ export default function SubscriptionContent() {
     if (value === undefined) return "—";
     return isUnlimited(value) ? "∞" : `${value}${suffix}`;
   };
-  const planDetails = [
-    { label: t("bill_notes"), value: formatLimit(user?.maxNotes) },
-    { label: t("bill_entities"), value: formatLimit(user?.maxEntities) },
+  const formatUsageLimit = (used: number | undefined, limit: number | undefined, suffix = "") => {
+    if (used === undefined || limit === undefined) return "—";
+    const formattedUsed = suffix === " MB" ? used.toFixed(1) : String(Math.round(used));
+    return `${formattedUsed}${suffix}/${formatLimit(limit, suffix)}`;
+  };
+  const planDetails = !isPro && !usageLoading && usage ? [
+    { label: t("bill_notes"), value: formatUsageLimit(usage.notesCount, user?.maxNotes) },
+    { label: t("bill_entities"), value: formatUsageLimit(usage.entitiesCount, user?.maxEntities) },
     { label: t("bill_history"), value: formatLimit(user?.historyDays, "d") },
-    { label: t("bill_vault"), value: formatLimit(user?.maxVaultSizeMB, " MB") },
-  ];
+    { label: t("bill_vault"), value: formatUsageLimit(usage.vaultSizeMB, user?.maxVaultSizeMB, " MB") },
+  ] : undefined;
 
   const handleCheckout = async () => {
     if (!prices.monthly || !prices.monthly.startsWith("price_")) {

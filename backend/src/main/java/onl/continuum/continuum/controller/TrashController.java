@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/trash")
-@Tag(name = "Trash", description = "Deleted notes and entities, restorable for 30 days")
+@Tag(name = "Trash", description = "Deleted notes, entities, and files, restorable for 30 days")
 public class TrashController {
 
     private final TrashService trashService;

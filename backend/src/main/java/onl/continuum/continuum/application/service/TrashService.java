@@ -40,8 +40,26 @@ public class TrashService {
     }
 
     public List<TrashItem> list(String userId) {
-        trashRepo.deleteByUserIdAndDeletedAtBefore(userId, cutoff());
+        permanentlyDelete(trashRepo.findByUserIdAndDeletedAtBefore(userId, cutoff()));
         return trashRepo.findByUserIdOrderByDeletedAtDesc(userId);
+    }
+
+    public List<String> trashedFileIds(String vaultId) {
+        return trashRepo.findByVaultIdAndKind(vaultId, "FILE").stream()
+                .map(TrashItem::getOriginalId)
+                .toList();
+    }
+
+    public void trashFile(String userId, String vaultId, VaultStorageService.VaultFileDescriptor file) {
+        trashRepo.save(TrashItem.builder()
+                .userId(userId)
+                .vaultId(vaultId)
+                .kind("FILE")
+                .originalId(file.fileId())
+                .title(file.fileName())
+                .subtype(file.contentType())
+                .deletedAt(Instant.now())
+                .build());
     }
 
     private TrashItem owned(String userId, String id) {
@@ -71,20 +89,32 @@ public class TrashService {
             entity.setUserId(userId);
             entityRepo.save(entity);
             userService.incrementEntityCount(userId);
+        } else if ("FILE".equals(item.getKind())
+                && storage.loadFile(item.getVaultId(), item.getOriginalId()).isEmpty()) {
+            throw new NotFoundException("File no longer exists");
         }
         trashRepo.delete(item);
     }
 
     public void purge(String userId, String id) {
-        trashRepo.delete(owned(userId, id));
+        permanentlyDelete(List.of(owned(userId, id)));
     }
 
     public void empty(String userId) {
-        trashRepo.deleteByUserId(userId);
+        permanentlyDelete(trashRepo.findByUserIdOrderByDeletedAtDesc(userId));
     }
 
     @Scheduled(cron = "0 15 3 * * *")
     public void purgeExpired() {
-        trashRepo.deleteByDeletedAtBefore(cutoff());
+        permanentlyDelete(trashRepo.findByDeletedAtBefore(cutoff()));
+    }
+
+    private void permanentlyDelete(List<TrashItem> items) {
+        for (TrashItem item : items) {
+            if ("FILE".equals(item.getKind())) {
+                storage.deleteFile(item.getVaultId(), item.getOriginalId());
+            }
+            trashRepo.delete(item);
+        }
     }
 }

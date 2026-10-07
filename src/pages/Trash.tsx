@@ -50,7 +50,7 @@ export default function Trash() {
       return matchesFilter && matchesSearch;
     });
   }, [filter, items, search]);
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["trash"] }); qc.invalidateQueries({ queryKey: ["notes"] }); qc.invalidateQueries({ queryKey: ["entities"] }); };
+  const refresh = () => { qc.invalidateQueries({ queryKey: ["trash"] }); qc.invalidateQueries({ queryKey: ["notes"] }); qc.invalidateQueries({ queryKey: ["entities"] }); qc.invalidateQueries({ queryKey: ["vault", "files"] }); };
   const act = async (fn: () => Promise<unknown>, msg?: string) => {
     try { await fn(); if (msg) toast({ title: msg }); } catch (e: any) { toast({ title: e?.response?.data?.message ?? "Error", variant: "destructive" }); }
     refresh();

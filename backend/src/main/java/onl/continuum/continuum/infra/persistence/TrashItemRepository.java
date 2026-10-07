@@ -10,7 +10,8 @@ import java.util.List;
 @Repository
 public interface TrashItemRepository extends MongoRepository<TrashItem, String> {
     List<TrashItem> findByUserIdOrderByDeletedAtDesc(String userId);
-    void deleteByUserIdAndDeletedAtBefore(String userId, Instant cutoff);
-    void deleteByDeletedAtBefore(Instant cutoff);
+    List<TrashItem> findByVaultIdAndKind(String vaultId, String kind);
+    List<TrashItem> findByUserIdAndDeletedAtBefore(String userId, Instant cutoff);
+    List<TrashItem> findByDeletedAtBefore(Instant cutoff);
     void deleteByUserId(String userId);
 }
