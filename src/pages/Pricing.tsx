@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckIcon, MinusIcon } from "@heroicons/react/24/outline";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PageBackButton } from "@/components/PageBackButton";
 
 type Row = { label: string; free: string | boolean; vision: string | boolean };
 
@@ -39,9 +40,7 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
-        <Button asChild variant="link" className="mb-8 inline-flex text-sm font-semibold uppercase tracking-[0.28em] text-zinc-400 transition hover:text-foreground">
-          <a href="/">{t("bill_back_to_home")}</a>
-        </Button>
+        <PageBackButton />
 
         <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("bill_pricing_plans")}</p>
         <h1 className="mt-3 font-serif text-4xl tracking-tight text-foreground sm:text-5xl">

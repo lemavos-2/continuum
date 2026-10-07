@@ -1,14 +1,10 @@
-import { useLanguage } from "@/contexts/LanguageContext";
+import { PageBackButton } from "@/components/PageBackButton";
 
 const Privacy = () => {
-  const { t } = useLanguage();
-
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <a href="/" className="mb-8 inline-flex text-sm font-semibold uppercase tracking-[0.28em] text-zinc-400 transition hover:text-foreground">
-          {t("lp_privacy_back_to_home")}
-        </a>
+        <PageBackButton />
 
         <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{t("lp_privacy_title")}</h1>
         <p className="mt-4 text-sm text-zinc-400">{t("lp_privacy_last_updated")}</p>

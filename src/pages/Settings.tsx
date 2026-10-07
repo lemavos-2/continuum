@@ -264,6 +264,7 @@ export default function SettingsPage() {
             disabled={exporting || !user?.dataExport}
           />
           <ActionRow icon={LinkIcon} label={t("import_relinkBtn")} description={t("profile_relinkDesc")} onClick={handleRelinkEntities} disabled={relinking} />
+          <ActionRow icon={TrashIcon} label={t("nav_trash")} href="/trash" />
         </Section>
 
         {/* 4. Comunidade e Redes */}
