@@ -145,7 +145,7 @@ export function VaultPicker() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={s.search} className="h-10 pl-9" />
             </div>
-            <FilterChips options={filterOptions} value={category} onChange={(value) => setCategory(value as "all" | VaultCategory)} className="mx-0 px-0" />
+            <FilterChips options={filterOptions} value={category} onChange={(value) => setCategory(value as "all" | VaultCategory)} className="mx-0 flex-wrap overflow-visible px-0" />
           </div>
         )}
         <div className="max-h-[55vh] overflow-y-auto">
