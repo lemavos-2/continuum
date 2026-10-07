@@ -14,7 +14,7 @@ Add: limit alerts.
 - Now users can add past entrys on projects and activities.
 - Now users can delete their account without contact support.
 - Now users can use files already stored in vault.
-- Some minor UI enchaces (note index, select notes/entities, mention selector, subscription banner.)
+- Some minor UI enchaces (note index, select notes/entities, mention selector, subscription banner, /settings reorganized.)
 
 ## v1.3.0 — Set 25, 2026
 - Enhanced UI/UX.
