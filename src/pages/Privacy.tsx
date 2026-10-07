@@ -1,6 +1,9 @@
 import { PageBackButton } from "@/components/PageBackButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Privacy = () => {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
