@@ -20,7 +20,7 @@ const getAPIBaseURL = () => {
   return "http://localhost:8080";
 };
 
-const API_BASE_URL = getAPIBaseURL();
+export const API_BASE_URL = getAPIBaseURL();
 
 export const ACCESS_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";

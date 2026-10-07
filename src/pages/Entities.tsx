@@ -194,7 +194,7 @@ export default function Entities() {
       const res = await entitiesApi.list();
       return Array.isArray(res.data) ? (res.data as Entity[]) : [];
     },
-    { staleTime: STALE.list }
+    { staleTime: STALE.list, refetchOnMount: "always" }
   );
   const loading =
     entitiesQuery.loading ||

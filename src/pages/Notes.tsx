@@ -253,7 +253,7 @@ export default function Notes() {
       const res = await notesApi.list();
       return Array.isArray(res.data) ? res.data : [];
     },
-    { staleTime: STALE.list, refetchInterval: 15_000 }
+    { staleTime: STALE.list, refetchInterval: 15_000, refetchOnMount: "always" }
   );
   const typesQuery = useCachedResource<string[]>(
     qk.noteTypes(),

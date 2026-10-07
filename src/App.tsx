@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UsageProvider } from "@/contexts/UsageContext";
 import { EntityProvider } from "@/contexts/EntityContext";
+import { API_BASE_URL } from "@/lib/api";
+import { initSyncManager } from "@/lib/offline/sync";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SkeletonPage } from "@/components/ui/skeleton";
@@ -220,6 +222,7 @@ const AppRoutes = () => {
 
 const App = () => {
   React.useEffect(() => {
+    initSyncManager(API_BASE_URL);
     if (Capacitor.isNativePlatform()) {
       void SystemBars.setStyle({ style: SystemBarsStyle.Dark });
     }
