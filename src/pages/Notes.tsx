@@ -342,6 +342,7 @@ export default function Notes() {
     notesQuery.setData((prev) => (prev ?? []).filter((n) => n.id !== deletedNote.id));
     try {
       await notesApi.delete(deletedNote.id);
+      await queryClient.invalidateQueries({ queryKey: ["trash"] });
       applyUsageDelta({ notesCount: -1 });
       void refresh();
     } catch {
@@ -383,6 +384,7 @@ export default function Notes() {
     setBulkDeleting(true);
     try {
       await Promise.all(ids.map((id) => notesApi.delete(id)));
+      await queryClient.invalidateQueries({ queryKey: ["trash"] });
       applyUsageDelta({ notesCount: -ids.length });
       void refresh();
       toast({ title: t(ids.length === 1 ? "notes_bulk_removed_one" : "notes_bulk_removed", { n: ids.length }) || `${ids.length} removed` });

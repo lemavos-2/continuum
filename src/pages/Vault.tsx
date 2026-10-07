@@ -30,6 +30,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getPlanLimits, isUnlimited } from "@/lib/plan";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { resolveVaultBlob, invalidateVaultBlob } from "@/lib/vault-blob";
+import { queryClient } from "@/lib/query-client";
 
 type Category = "images" | "audio" | "pdf" | "other";
 
@@ -288,6 +289,7 @@ export default function Vault() {
     setPendingDelete(null);
     try {
       await vaultApi.delete(file.id);
+      await queryClient.invalidateQueries({ queryKey: ["trash"] });
       invalidateVaultBlob(file.id);
       setFiles((cur) => cur.filter((f) => f.id !== file.id));
       applyUsageDelta({ vaultSizeMB: -Number((file.size / (1024 * 1024)).toFixed(2)) });

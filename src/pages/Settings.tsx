@@ -36,7 +36,7 @@ const moreLinks = [
 ] as const;
 
 export default function SettingsPage() {
-  const { user, refreshUser, logout } = useAuth(); const navigate = useNavigate(); const { toast } = useToast(); const { t } = useLanguage();
+  const { user, refreshUser, logout } = useAuth(); const navigate = useNavigate(); const { toast } = useToast(); const { t, language } = useLanguage();
   const [username, setUsername] = useState(""); const [exporting, setExporting] = useState(false); const [relinking, setRelinking] = useState(false); const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false); const [cancelDeletionOpen, setCancelDeletionOpen] = useState(false); const [importOpen, setImportOpen] = useState(false); const [subscriptionOpen, setSubscriptionOpen] = useState(() => new URLSearchParams(window.location.search).has("status"));
   useEffect(() => { setUsername(user?.username ?? ""); }, [user]);
   const handleExportData = async () => { if (exporting) return; setExporting(true); try { const res = await authApi.exportData(); const json = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2); const url = URL.createObjectURL(new Blob([json], { type: "application/json" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "continuum-backup.json"; document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url); toast({ title: t("profile_backupOk") }); } catch (error: any) { toast({ title: t("profile_backupFailed"), description: error?.message ?? t("common_tryAgain"), variant: "destructive" }); } finally { setExporting(false); } };
@@ -44,7 +44,8 @@ export default function SettingsPage() {
   const x = useExtrasText(); const qc = useQueryClient(); const { data: del } = useDeletionStatus(); const [deleteOpen, setDeleteOpen] = useState(false); const [cancelingDeletion, setCancelingDeletion] = useState(false);
   const handleDelete = async () => { try { await authApi.scheduleDeletion(); await qc.invalidateQueries({ queryKey: ["account", "deletion"] }); } catch (error: any) { toast({ title: t("common_tryAgain"), description: error?.message, variant: "destructive" }); } };
   const deletionPending = !!(del?.scheduled || del?.deletionRequestedAt);
-  const deletionDescription = del?.purgeAt ? x.delDesc.replace("{d}", new Date(del.purgeAt).toLocaleDateString()) : x.delTitle;
+  const dateLocale = { en: "en-US", es: "es-ES", pt: "pt-BR", fr: "fr-FR" }[language];
+  const deletionDescription = del?.purgeAt ? x.delDesc.replace("{d}", new Intl.DateTimeFormat(dateLocale).format(new Date(del.purgeAt))) : x.delTitle;
   const handleCancelDeletion = async () => { if (cancelingDeletion) return; setCancelingDeletion(true); try { await authApi.cancelDeletion(); await qc.invalidateQueries({ queryKey: ["account", "deletion"] }); toast({ title: x.canceled }); } catch (error: any) { toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" }); } finally { setCancelingDeletion(false); } };
   const handleLogout = async () => { await logout(); navigate("/"); };
 

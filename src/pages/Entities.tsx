@@ -5,6 +5,7 @@ import { entitiesApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { qk, STALE } from "@/lib/queries";
+import { queryClient } from "@/lib/query-client";
 import UpgradeModal from "@/components/UpgradeModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -216,6 +217,7 @@ export default function Entities() {
     entitiesQuery.setData((prev) => (prev ?? []).filter((x) => x.id !== deletedEntity.id));
     try {
       await entitiesApi.delete(deletedEntity.id);
+      await queryClient.invalidateQueries({ queryKey: ["trash"] });
       applyUsageDelta({ entitiesCount: -1, activitiesCount: deletedEntity.type === "ACTIVITY" ? -1 : 0 });
       void refreshUsage();
     } catch {
@@ -256,6 +258,7 @@ export default function Entities() {
     setBulkDeleting(true);
     try {
       await Promise.all(targets.map((e) => entitiesApi.delete(e.id)));
+      await queryClient.invalidateQueries({ queryKey: ["trash"] });
       const activities = targets.filter((e) => e.type === "ACTIVITY").length;
       applyUsageDelta({ entitiesCount: -targets.length, activitiesCount: -activities });
       void refreshUsage();

@@ -255,6 +255,7 @@ export default function EntityDetail() {
     if (!id || !entity) return;
     try {
       await entitiesApi.delete(id);
+      await queryClient.invalidateQueries({ queryKey: ["trash"] });
       applyUsageDelta({ entitiesCount: -1, activitiesCount: entity.type === "ACTIVITY" ? -1 : 0 });
       void refreshUsage();
       queryClient.removeQueries({ queryKey: qk.entity(id) });
