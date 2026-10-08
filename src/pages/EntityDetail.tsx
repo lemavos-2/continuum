@@ -38,13 +38,11 @@ interface RelatedNote { id: string; title: string; createdAt: string; updatedAt:
 
 function DetailStat({ label, value, icon: Icon }: { label: string; value: string | number; icon: typeof Calendar }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border/10 bg-background/35 px-4 py-3.5">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-foreground/[0.05] text-muted-foreground">
-        <Icon className="h-4 w-4" />
-      </span>
+    <div className="flex min-w-0 items-start gap-2 border-l border-border/15 py-1 pl-3 sm:gap-2.5 sm:pl-4">
+      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <span className="min-w-0">
-        <span className="block truncate text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
-        <span className="mt-1 block truncate font-serif text-lg leading-none text-foreground tabular-nums">{value}</span>
+        <span className="block whitespace-normal break-words text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-muted-foreground sm:text-[10px] sm:tracking-[0.16em]">{label}</span>
+        <span className="mt-1 block whitespace-normal break-words font-serif text-base leading-snug text-foreground tabular-nums sm:text-lg">{value}</span>
       </span>
     </div>
   );
@@ -375,16 +373,15 @@ export default function EntityDetail() {
           <ArrowLeft className="w-3.5 h-3.5" /> {t("ent_back")}
         </Button>
 
-        <header className="relative mb-7 overflow-hidden rounded-3xl border border-border/10 bg-gradient-to-br from-foreground/[0.055] via-background/70 to-background p-5 shadow-[0_24px_80px_-56px_rgba(0,0,0,0.8)] sm:p-8">
-          <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/[0.07] blur-3xl" />
-          <div className="relative">
+        <header className="mb-7 border-b border-border/10 pb-6 sm:pb-8">
+          <div>
             <div className="flex items-start gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-border/10 bg-background/60 text-foreground/80 shadow-inner sm:h-14 sm:w-14">
-                <EntityTypeIcon type={entity.type} className="h-6 w-6 sm:h-7 sm:w-7" />
+              <div className="mt-1 grid h-10 w-10 shrink-0 place-items-center text-muted-foreground sm:h-12 sm:w-12">
+                <EntityTypeIcon type={entity.type} className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="min-w-0 flex-1 pt-0.5">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-border/10 bg-background/45 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{typeLabel}</span>
+                  <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{typeLabel}</span>
                   <InsightSignalBadge kind="entity" id={entity.id} />
                 </div>
                 {editingTitle ? (
@@ -428,7 +425,7 @@ export default function EntityDetail() {
               </div>
             )}
 
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:ml-[4.5rem] sm:grid-cols-3 sm:gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:ml-[4.5rem] sm:grid-cols-3 sm:gap-5">
               {isProject ? (
                 <>
                   <DetailStat label={t("ent_total_time")} value={timeSummary?.formattedTotal || "00:00:00"} icon={Clock} />
@@ -451,7 +448,7 @@ export default function EntityDetail() {
             </div>
 
             {isHabit && (
-              <div className="mt-5 flex flex-col gap-2 rounded-2xl border border-border/10 bg-background/35 p-3 sm:ml-[4.5rem] sm:flex-row sm:items-center">
+              <div className="mt-5 flex flex-col gap-2 border-t border-border/10 pt-4 sm:ml-[4.5rem] sm:flex-row sm:items-center">
                 <Input type="date" value={trackDate} max={localToday()} onChange={(e) => setTrackDate(e.target.value)} className="h-10 w-full sm:w-auto" aria-label={t("tm_date")} />
                 <Button size="sm" className="h-10 w-full rounded-xl sm:w-auto" onClick={() => handleTrack(trackDate)} disabled={!trackDate || trackDate > localToday()}>
                   {t("ent_save")}
@@ -477,7 +474,7 @@ export default function EntityDetail() {
 
 
         {isHabit && (
-          <div className="mb-7 rounded-3xl border border-border/10 bg-foreground/[0.015] p-3 sm:p-5">
+          <div className="mb-7">
             <ActivityAnalyticsCalendar trackingDates={entity.trackingDates} />
           </div>
         )}
@@ -486,9 +483,9 @@ export default function EntityDetail() {
         <Accordion
           type="multiple"
           defaultValue={["metadata"]}
-          className="flex flex-col gap-3 border-0"
+          className="border-t border-border/10"
         >
-          <AccordionItem value="metadata" className="rounded-2xl border border-border/10 bg-foreground/[0.015] px-4 sm:px-5">
+          <AccordionItem value="metadata" className="border-b border-border/10">
             <AccordionTrigger className="py-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground hover:no-underline">
               {t("ent_metadata")}
             </AccordionTrigger>
@@ -556,7 +553,7 @@ export default function EntityDetail() {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="notes" className="rounded-2xl border border-border/10 bg-foreground/[0.015] px-4 sm:px-5">
+          <AccordionItem value="notes" className="border-b border-border/10">
             <AccordionTrigger className="py-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground hover:no-underline">
               <span className="flex w-full items-center justify-between gap-3">
                 <span>{t("ent_connected_notes")}</span>
@@ -571,7 +568,7 @@ export default function EntityDetail() {
                       key={note.id}
                       variant="ghost"
                       onClick={() => navigate(`/notes/${note.id}`)}
-                      className="flex h-auto w-full items-start justify-start gap-3 rounded-xl border border-transparent px-3 py-3 text-left normal-case tracking-normal font-normal hover:border-border/10 hover:bg-background/50"
+                      className="flex h-auto w-full items-start justify-start gap-3 rounded-md border border-transparent px-3 py-3 text-left normal-case tracking-normal font-normal hover:bg-foreground/[0.035]"
                     >
                       <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -583,13 +580,13 @@ export default function EntityDetail() {
                     </Button>
                   ))
                 ) : (
-                  <p className="rounded-xl bg-background/30 px-3 py-4 text-sm text-muted-foreground">{t("ent_no_connected_notes")}</p>
+                  <p className="px-3 py-4 text-sm text-muted-foreground">{t("ent_no_connected_notes")}</p>
                 )}
               </div>
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="entities" className="rounded-2xl border border-border/10 bg-foreground/[0.015] px-4 sm:px-5">
+          <AccordionItem value="entities" className="border-b border-border/10">
             <AccordionTrigger className="py-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground hover:no-underline">
               <span className="flex w-full items-center justify-between gap-3">
                 <span>{t("ent_connected_entities")}</span>
@@ -604,7 +601,7 @@ export default function EntityDetail() {
                       key={ent.id}
                       variant="ghost"
                       onClick={() => navigate(`/entities/${ent.id}`)}
-                      className="flex h-auto w-full items-start justify-start gap-3 rounded-xl border border-transparent px-3 py-3 text-left normal-case tracking-normal font-normal hover:border-border/10 hover:bg-background/50"
+                      className="flex h-auto w-full items-start justify-start gap-3 rounded-md border border-transparent px-3 py-3 text-left normal-case tracking-normal font-normal hover:bg-foreground/[0.035]"
                     >
                       <Network className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -614,7 +611,7 @@ export default function EntityDetail() {
                     </Button>
                   ))
                 ) : (
-                  <p className="rounded-xl bg-background/30 px-3 py-4 text-sm text-muted-foreground">{t("ent_no_connected_entities")}</p>
+                  <p className="px-3 py-4 text-sm text-muted-foreground">{t("ent_no_connected_entities")}</p>
                 )}
               </div>
             </AccordionContent>

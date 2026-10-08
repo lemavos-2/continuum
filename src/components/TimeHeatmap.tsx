@@ -292,13 +292,13 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-border/10 bg-foreground/[0.02] p-4 sm:p-6 relative">
+    <section className="relative border-y border-border/10 py-5 sm:py-6">
       <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
         <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-mono">
           {t('tm_activity_heatmap')}
         </h3>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="whitespace-normal text-[10px] text-muted-foreground font-mono">
             {t('tm_active_days_summary', { count: activeDays, time: fmtHM(totalSeconds) })}
           </span>
           {editingGoal ? (
@@ -327,7 +327,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
                 setGoalDraft(String(goalMinutes));
                 setEditingGoal(true);
               }}
-              className="text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/10 hover:border-border/25 rounded px-1.5 py-0.5 transition"
+              className="max-w-full whitespace-normal rounded-md border border-border/10 px-2 py-1 text-left text-[10px] font-mono text-muted-foreground transition hover:border-border/25 hover:text-foreground"
               title={t('tm_set_daily_goal')}
             >
               {t('tm_goal_label', { time: fmtHM(goalSeconds) })}
@@ -343,7 +343,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
                 setEntrySeconds(0);
                 setAdding(true);
               }}
-              className="text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/10 hover:border-border/25 rounded px-1.5 py-0.5 transition"
+              className="whitespace-normal rounded-md border border-border/10 px-2 py-1 text-[10px] font-mono text-muted-foreground transition hover:border-border/25 hover:text-foreground"
               title={t('tm_add_manual_entry_title')}
             >
               {t('tm_add_entry_short')}
@@ -478,6 +478,6 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
