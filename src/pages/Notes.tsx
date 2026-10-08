@@ -218,6 +218,7 @@ export default function Notes() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [othersChipActive, setOthersChipActive] = useState(false);
 
   // Multiselect
   const [selectMode, setSelectMode] = useState(false);
@@ -628,7 +629,13 @@ export default function Notes() {
         )}
 
         {/* Mobile filter drawer */}
-        <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+        <Sheet
+          open={filterDrawerOpen}
+          onOpenChange={(open) => {
+            setFilterDrawerOpen(open);
+            if (!open) setOthersChipActive(false);
+          }}
+        >
           <SheetContent
             side="left"
             className="w-[min(84vw,320px)] rounded-r-2xl border-border/10 bg-muted/60 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[6px] supports-[backdrop-filter]:bg-muted/60"
@@ -680,12 +687,14 @@ export default function Notes() {
                 </div>
               <div onTouchStart={(event) => event.stopPropagation()}>
                 <FilterChips
-                  value={filterDrawerOpen ? "others" : view}
+                  value={othersChipActive ? "others" : view}
                   onChange={(v) => {
                     if (v === "others") {
+                      setOthersChipActive(true);
                       setFilterDrawerOpen(true);
                       return;
                     }
+                    setOthersChipActive(false);
                     setView(v as View);
                   }}
                   options={[
