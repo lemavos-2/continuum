@@ -38,7 +38,7 @@ interface RelatedNote { id: string; title: string; createdAt: string; updatedAt:
 
 function DetailStat({ label, value, icon: Icon }: { label: string; value: string | number; icon: typeof Calendar }) {
   return (
-    <div className="flex min-w-0 items-start gap-2 border-l border-border/15 py-1 pl-3 sm:gap-2.5 sm:pl-4">
+    <div className="flex min-w-0 items-start gap-2 rounded-md bg-secondary/60 px-3 py-2.5 sm:gap-2.5 sm:px-4">
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <span className="min-w-0">
         <span className="block whitespace-normal break-words text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-muted-foreground sm:text-[10px] sm:tracking-[0.16em]">{label}</span>

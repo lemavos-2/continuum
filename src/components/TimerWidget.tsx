@@ -296,7 +296,7 @@ export function TimerWidget({
           <button
             onClick={handleStart}
             disabled={isStarting || timerLoading}
-            className="min-h-11 rounded-xl bg-foreground px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-background transition hover:bg-foreground/90 disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
+            className="min-h-11 rounded-xl bg-secondary px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary-foreground transition hover:bg-secondary/75 disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
           >
             {isStarting ? t("tm_starting") : t("tm_start")}
           </button>
@@ -305,14 +305,14 @@ export function TimerWidget({
             <button
               onClick={handlePauseToggle}
               disabled={timerLoading}
-              className="min-h-11 rounded-xl border border-border/10 bg-transparent px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground transition hover:bg-foreground/[0.04] disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
+              className="min-h-11 rounded-xl bg-secondary px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary-foreground transition hover:bg-secondary/75 disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
             >
               {isPaused ? t("tm_resume") : t("tm_pause")}
             </button>
             <button
               onClick={handleStop}
               disabled={isStopping || timerLoading}
-              className="min-h-11 rounded-xl border border-border/10 bg-transparent px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-foreground/[0.04] hover:text-foreground disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
+              className="min-h-11 rounded-xl bg-secondary px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
             >
               {isStopping ? '…' : t("tm_stop")}
             </button>
@@ -321,7 +321,7 @@ export function TimerWidget({
         <button
           onClick={handleRestart}
           disabled={!isRunning || timerLoading}
-          className="min-h-11 rounded-xl border border-border/10 bg-transparent px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-foreground/[0.04] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30 sm:text-[11px] sm:tracking-[0.2em]"
+          className="min-h-11 rounded-xl bg-secondary px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-30 sm:text-[11px] sm:tracking-[0.2em]"
         >
           {t("tm_restart")}
         </button>
@@ -329,7 +329,7 @@ export function TimerWidget({
 
       <button
         onClick={() => setIsFullscreen(true)}
-        className="min-h-11 w-full rounded-xl border border-border/10 bg-transparent px-2 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-foreground/[0.04] hover:text-foreground sm:text-[10px] sm:tracking-[0.2em]"
+        className="min-h-11 w-full rounded-xl bg-secondary px-2 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground sm:text-[10px] sm:tracking-[0.2em]"
       >
         {t("tm_flip_clock")}
       </button>

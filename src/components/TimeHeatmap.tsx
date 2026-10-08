@@ -327,7 +327,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
                 setGoalDraft(String(goalMinutes));
                 setEditingGoal(true);
               }}
-              className="max-w-full whitespace-normal rounded-md border border-border/10 px-2 py-1 text-left text-[10px] font-mono text-muted-foreground transition hover:border-border/25 hover:text-foreground"
+              className="max-w-full whitespace-normal rounded-md bg-secondary px-2 py-1 text-left text-[10px] font-mono text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground"
               title={t('tm_set_daily_goal')}
             >
               {t('tm_goal_label', { time: fmtHM(goalSeconds) })}
@@ -343,7 +343,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
                 setEntrySeconds(0);
                 setAdding(true);
               }}
-              className="whitespace-normal rounded-md border border-border/10 px-2 py-1 text-[10px] font-mono text-muted-foreground transition hover:border-border/25 hover:text-foreground"
+              className="whitespace-normal rounded-md bg-secondary px-2 py-1 text-[10px] font-mono text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground"
               title={t('tm_add_manual_entry_title')}
             >
               {t('tm_add_entry_short')}
