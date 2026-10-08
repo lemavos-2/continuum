@@ -233,7 +233,33 @@ export default function Notes() {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const indexSwipeStart = useRef<{ x: number; y: number; startedAt: number; excluded: boolean } | null>(null);
+  const handleIndexTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    const target = event.target;
+    const excluded = target instanceof Element && !!target.closest(
+      "input, textarea, select, [contenteditable='true'], [role='dialog'], [data-radix-popper-content-wrapper]",
+    );
+    indexSwipeStart.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      startedAt: Date.now(),
+      excluded,
+    };
+  };
+  const handleIndexTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = indexSwipeStart.current;
+    indexSwipeStart.current = null;
+    if (!start || start.excluded || event.changedTouches.length !== 1) return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
 
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = Math.abs(touch.clientY - start.y);
+    if (dx >= 60 && dy <= dx * 0.75 && Date.now() - start.startedAt <= 1000) {
+      setFilterDrawerOpen(true);
+    }
+  };
 
   /* Load — cached first, revalidated in background */
   const notesQuery = useCachedResource<NoteSummary[]>(
@@ -584,6 +610,8 @@ export default function Notes() {
         onDragOver={dragOver}
         onDragLeave={dragLeave}
         onDrop={handleFileDrop}
+        onTouchStart={handleIndexTouchStart}
+        onTouchEnd={handleIndexTouchEnd}
       >
         {dragActive && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">
