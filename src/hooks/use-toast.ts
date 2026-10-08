@@ -1,6 +1,6 @@
 import * as React from "react";
 import { toast as sonnerToast } from "sonner";
-import { notificationContent, NOTIFICATION_DURATION } from "@/lib/notifications";
+import { notificationContent, NOTIFICATION_DURATION, shouldDisplayNotification, type NotificationCategory } from "@/lib/notifications";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -134,11 +134,24 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, "id" | "variant"> & { variant?: ToastProps["variant"] | "info" };
+type Toast = Omit<ToasterToast, "id" | "variant"> & {
+  variant?: ToastProps["variant"] | "info" | "warning";
+  notificationCategory?: NotificationCategory;
+};
 
-function toast({ ...props }: Toast) {
+function toast({ notificationCategory, ...props }: Toast) {
   const id = genId();
-  const kind = props.variant === "destructive" ? "error" : props.variant === "info" ? "info" : "success";
+  const kind = props.variant === "destructive"
+    ? "error"
+    : props.variant === "info"
+      ? "info"
+      : props.variant === "warning"
+        ? "warning"
+        : "success";
+  if (!shouldDisplayNotification(kind, notificationCategory)) {
+    return { id, dismiss: () => {}, update: () => {} };
+  }
+
   const content = notificationContent(kind, props.title, props.description);
   const sonnerOptions = {
     id,
@@ -171,7 +184,7 @@ function toast({ ...props }: Toast) {
     type: "ADD_TOAST",
     toast: {
       ...props,
-      variant: props.variant === "info" ? "default" : props.variant,
+      variant: props.variant === "info" || props.variant === "warning" ? "default" : props.variant,
       id,
       open: true,
       onOpenChange: (open) => {

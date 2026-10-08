@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
+import { isUnlimited, type CurrentPlanLimits } from "@/lib/plan";
+import type { UserUsage } from "@/types";
 
 export type NotificationKind = "success" | "error" | "info" | "warning";
+export type NotificationCategory = "limit" | "account-deletion";
 export type UsageMetric = "notes" | "entities" | "vault";
 export const NOTIFICATION_DURATION = 5000;
 
@@ -27,6 +30,10 @@ export function notificationContent(kind: NotificationKind, title?: ReactNode, d
     : { title: labels[kind], description: title || labels[kind] };
 }
 
+export function shouldDisplayNotification(kind: NotificationKind, category?: NotificationCategory) {
+  return kind === "error" || category === "limit" || category === "account-deletion";
+}
+
 export function usageWarningContent(metric: UsageMetric, percent: number) {
   const template = usageWarnings[language() as keyof typeof usageWarnings] ?? usageWarnings.en;
   return {
@@ -34,4 +41,18 @@ export function usageWarningContent(metric: UsageMetric, percent: number) {
     description: template.description.replace("{x}", template.labels[metric]).replace("{p}", String(percent)),
     action: template.action,
   };
+}
+
+export function getUsageWarnings(usage: UserUsage, limits: CurrentPlanLimits) {
+  const metrics = [
+    { metric: "notes" as const, used: usage.notesCount, limit: limits.maxNotes },
+    { metric: "entities" as const, used: usage.entitiesCount, limit: limits.maxEntities },
+    { metric: "vault" as const, used: usage.vaultSizeMB, limit: limits.maxVaultSizeMB },
+  ];
+
+  return metrics.flatMap(({ metric, used, limit }) => {
+    if (isUnlimited(limit) || limit <= 0) return [];
+    const percent = Math.round((used / limit) * 100);
+    return percent >= 80 ? [{ metric, percent: Math.min(100, percent) }] : [];
+  });
 }

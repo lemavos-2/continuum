@@ -217,7 +217,7 @@ export default function SettingsPage() {
     try {
       await authApi.cancelDeletion();
       await qc.invalidateQueries({ queryKey: ["account", "deletion"] });
-      toast({ title: x.canceled });
+      toast({ title: x.canceled, notificationCategory: "account-deletion" });
     } catch (error: any) {
       toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" });
     } finally {
