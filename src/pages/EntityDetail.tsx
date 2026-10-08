@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Loader2, Edit, StickyNote, Network, Calendar, Tag, Clock, Trash2 } from "@/lib/heroicons";
+import { ArrowLeft, Loader2, Edit, StickyNote, Network, Calendar, Tag, Trash2 } from "@/lib/heroicons";
 import {
   Accordion,
   AccordionContent,
@@ -72,8 +72,7 @@ export default function EntityDetail() {
     : []);
 
   // Time tracking
-  const { getTotalTime, formatSeconds } = useTimeTracking();
-  const { data: timeSummary } = getTotalTime(id!);
+  const { formatSeconds } = useTimeTracking();
 
   useEffect(() => {
     if (isRestoring) return;
@@ -425,13 +424,9 @@ export default function EntityDetail() {
               </div>
             )}
 
-            <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:ml-[4.5rem] sm:gap-5">
-              {isProject ? (
-                <>
-                  <DetailStat label={t("ent_total_time")} value={timeSummary?.formattedTotal || "00:00:00"} icon={Clock} />
-                  <DetailStat label={t("ent_sessions")} value={timeSummary?.entriesCount ?? 0} icon={Calendar} />
-                </>
-              ) : isHabit ? (
+            {!isProject && (
+              <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:ml-[4.5rem] sm:gap-5">
+              {isHabit ? (
                 <>
                   <DetailStat label={t("ent_total_tracked")} value={totalCompletions} icon={Calendar} />
                   <DetailStat label={t("ent_connected_notes")} value={relatedNotes.length} icon={StickyNote} />
@@ -442,7 +437,8 @@ export default function EntityDetail() {
                   <DetailStat label={t("ent_created")} value={new Date(entity.createdAt).toLocaleDateString(language)} icon={Calendar} />
                 </>
               )}
-            </div>
+              </div>
+            )}
 
             {isHabit && (
               <div className="mt-5 flex flex-col gap-2 border-t border-border/10 pt-4 sm:ml-[4.5rem] sm:flex-row sm:items-center">

@@ -609,20 +609,20 @@ export default function Entities() {
                             </Button>
                           </span>
                           <span className="flex h-5 w-5 items-center justify-center">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="iconSm"
-                            className="h-5 w-5 rounded-full p-0 text-foreground opacity-70 transition hover:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              handleDelete(e, entity);
-                            }}
-                            aria-label={t("common_delete")}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="iconSm"
+                              className="h-5 w-5 rounded-full p-0 text-foreground opacity-70 transition hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleDelete(e, entity);
+                              }}
+                              aria-label={t("common_delete")}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </span>
                         </div>
                       )}

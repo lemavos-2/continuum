@@ -291,12 +291,12 @@ export function TimerWidget({
       )}
 
       {/* CONTROLS */}
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="mb-3 grid grid-cols-2 gap-2">
         {!isRunning ? (
           <button
             onClick={handleStart}
             disabled={isStarting || timerLoading}
-            className="col-span-2 min-h-11 rounded-xl bg-foreground text-background font-mono text-[10px] uppercase tracking-[0.18em] transition hover:bg-foreground/90 disabled:opacity-50 sm:col-span-2 sm:text-[11px] sm:tracking-[0.24em]"
+            className="min-h-11 rounded-xl bg-foreground px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-background transition hover:bg-foreground/90 disabled:opacity-50 sm:text-[11px] sm:tracking-[0.2em]"
           >
             {isStarting ? t("tm_starting") : t("tm_start")}
           </button>
@@ -329,7 +329,7 @@ export function TimerWidget({
 
       <button
         onClick={() => setIsFullscreen(true)}
-        className="w-full min-h-10 rounded-xl border border-border/10 bg-transparent px-3 py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground transition hover:bg-foreground/[0.04] hover:text-foreground sm:text-[10px] sm:tracking-[0.28em]"
+        className="min-h-11 w-full rounded-xl border border-border/10 bg-transparent px-2 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground transition hover:bg-foreground/[0.04] hover:text-foreground sm:text-[10px] sm:tracking-[0.2em]"
       >
         {t("tm_flip_clock")}
       </button>
