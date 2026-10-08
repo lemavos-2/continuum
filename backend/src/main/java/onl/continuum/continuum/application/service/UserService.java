@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import onl.continuum.continuum.application.exception.BadRequestException;
 import onl.continuum.continuum.application.exception.NotFoundException;
 import onl.continuum.continuum.domain.subscription.Subscription;
 import onl.continuum.continuum.domain.subscription.SubscriptionStatus;
@@ -103,6 +104,16 @@ public class UserService {
     public void cancelDeletion(String userId) {
         mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(userId)),
             new Update().unset("deletionRequestedAt"), User.class);
+    }
+
+    /** Permanently deletes an account that is already scheduled for deletion. */
+    public void purgeScheduledDeletionNow(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
+        if (user.getDeletionRequestedAt() == null) {
+            throw new BadRequestException("Account deletion is not scheduled");
+        }
+        purgeEverything(user);
     }
 
     /** Hourly: permanently erase accounts whose grace period has ended. */

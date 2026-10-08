@@ -127,8 +127,10 @@ export default function SettingsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteNowOpen, setDeleteNowOpen] = useState(false);
   const [cancelDeletionOpen, setCancelDeletionOpen] = useState(false);
   const [cancelingDeletion, setCancelingDeletion] = useState(false);
+  const [deletingNow, setDeletingNow] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(() => new URLSearchParams(window.location.search).has("status"));
 
   const title = (key: keyof typeof SECTION_TITLES) => SECTION_TITLES[key][language as Lang] ?? SECTION_TITLES[key].en;
@@ -198,6 +200,20 @@ export default function SettingsPage() {
       toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" });
     } finally {
       setCancelingDeletion(false);
+    }
+  };
+
+  const handleDeleteNow = async () => {
+    if (deletingNow) return;
+    setDeletingNow(true);
+    try {
+      await authApi.deleteScheduledAccountNow();
+      await logout();
+      navigate("/");
+    } catch (error: any) {
+      toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" });
+    } finally {
+      setDeletingNow(false);
     }
   };
 
@@ -278,6 +294,16 @@ export default function SettingsPage() {
             disabled={cancelingDeletion}
             destructive={deletionPending}
           />
+          {deletionPending && (
+            <ActionRow
+              icon={TrashIcon}
+              label={x.deleteNow}
+              description={x.deleteNowDescription}
+              onClick={() => setDeleteNowOpen(true)}
+              disabled={deletingNow}
+              destructive
+            />
+          )}
           <ActionRow icon={ArrowRightOnRectangleIcon} label={t("nav_logout")} onClick={() => setLogoutConfirmOpen(true)} destructive />
         </Section>
 
@@ -313,6 +339,20 @@ export default function SettingsPage() {
         onConfirm={async () => {
           setCancelDeletionOpen(false);
           await handleCancelDeletion();
+        }}
+      />
+      <ConfirmDialog
+        open={deleteNowOpen}
+        onOpenChange={setDeleteNowOpen}
+        title={x.deleteNowConfirmTitle}
+        description={x.deleteNowConfirmDescription}
+        confirmText={x.deleteNow}
+        confirmationPhrase="CONFIRM"
+        confirmationPrompt={t("account_deleteNowConfirmPrompt")}
+        destructive
+        onConfirm={async () => {
+          setDeleteNowOpen(false);
+          await handleDeleteNow();
         }}
       />
       <ConfirmDialog

@@ -390,6 +390,7 @@ export const authApi = {
     api.post("/api/auth/resend-verification", { email }),
   exportData: () => api.get("/api/account/export"),
   scheduleDeletion: () => api.delete("/api/account/me"),
+  deleteScheduledAccountNow: () => api.delete("/api/account/me/now"),
   deletionStatus: () => api.get("/api/account/deletion"),
   cancelDeletion: () => api.post("/api/account/deletion/cancel"),
   exportVaultZip: () => api.get("/api/account/export/zip", { responseType: "blob" }),

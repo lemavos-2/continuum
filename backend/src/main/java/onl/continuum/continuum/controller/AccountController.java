@@ -162,6 +162,13 @@ public class AccountController {
         return ResponseEntity.ok(Map.of("purgeAt", purgeAt.toString()));
     }
 
+    @DeleteMapping("/me/now")
+    @Operation(summary = "Delete a scheduled account immediately", description = "Permanently deletes an account that is already scheduled for deletion")
+    public ResponseEntity<Void> deleteScheduledAccountNow(@AuthenticationPrincipal CustomUserDetails user) {
+        userService.purgeScheduledDeletionNow(user.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/deletion")
     @Operation(summary = "Deletion status", description = "Returns when the account will be permanently deleted, if scheduled")
     public ResponseEntity<Map<String, Object>> deletionStatus(@AuthenticationPrincipal CustomUserDetails user) {
