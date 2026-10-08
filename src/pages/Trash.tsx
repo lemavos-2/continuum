@@ -58,10 +58,11 @@ export default function Trash() {
   return (
     <AppLayout>
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-12 lg:py-16">
-        <header className="mb-6 flex items-center justify-between gap-4 border-b border-white/5 pb-4">
+        <header className="mb-8 flex items-end justify-between gap-4 border-b border-white/5 pb-4">
           <div className="min-w-0">
-            <h1 className="sr-only">{s.title}</h1>
-            <p className="text-sm text-muted-foreground">{s.sub}</p>
+            <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{s.title}</p>
+            <h1 className="mt-2 font-serif text-4xl tracking-tight text-foreground sm:text-5xl">{s.title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{s.sub}</p>
           </div>
           {!!items.length && (
             <Button variant="outline" size="sm" onClick={() => setEmptyOpen(true)} className="shrink-0 rounded-sm border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-red-300">

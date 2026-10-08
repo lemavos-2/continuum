@@ -14,7 +14,6 @@ import {
   BugAntIcon,
   ChatBubbleLeftEllipsisIcon,
   ChevronRightIcon,
-  CodeBracketIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
   InformationCircleIcon,
@@ -34,21 +33,15 @@ import { useQueryClient } from "@tanstack/react-query";
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
-const SOCIAL_HANDLE = "continuum.onl";
-const INSTAGRAM_URL = `https://www.instagram.com/${SOCIAL_HANDLE}`;
-const TIKTOK_URL = `https://www.tiktok.com/@${SOCIAL_HANDLE}`;
-const GITHUB_URL = "https://github.com/continuumnodes/continuum";
-
 type Lang = "en" | "es" | "pt" | "fr";
 
 const SECTION_TITLES: Record<
-  "account" | "preferences" | "data" | "community" | "support" | "legal" | "actions",
+  "account" | "preferences" | "data" | "support" | "legal" | "actions",
   Record<Lang, string>
 > = {
   account: { pt: "Conta e Assinatura", en: "Account & Subscription", es: "Cuenta y suscripción", fr: "Compte et abonnement" },
   preferences: { pt: "Preferências", en: "Preferences", es: "Preferencias", fr: "Préférences" },
   data: { pt: "Dados e Integrações", en: "Data & Integrations", es: "Datos e integraciones", fr: "Données et intégrations" },
-  community: { pt: "Comunidade e Redes", en: "Community & Social", es: "Comunidad y redes", fr: "Communauté et réseaux" },
   support: { pt: "Suporte e Feedback", en: "Support & Feedback", es: "Soporte y comentarios", fr: "Support et retours" },
   legal: { pt: "Sobre e Legal", en: "About & Legal", es: "Acerca de y legal", fr: "À propos et mentions légales" },
   actions: { pt: "Ações da Conta", en: "Account Actions", es: "Acciones de la cuenta", fr: "Actions du compte" },
@@ -112,25 +105,6 @@ function ActionRow({ icon: Icon, label, description, onClick, href, disabled = f
 
 function VisionIcon({ className }: { className?: string }) {
   return <img src="/vision-symbol.png" alt="" aria-hidden="true" className={`${className ?? ""} rounded-full object-cover`} />;
-}
-
-function InstagramIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className} aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function TikTokIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5" />
-      <path d="M14 3c.3 2.4 2 4 4.5 4.2" />
-    </svg>
-  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -267,14 +241,7 @@ export default function SettingsPage() {
           <ActionRow icon={TrashIcon} label={t("nav_trash")} href="/trash" />
         </Section>
 
-        {/* 4. Comunidade e Redes */}
-        <Section title={title("community")}>
-          <ActionRow icon={InstagramIcon} label="Instagram" description={`@${SOCIAL_HANDLE}`} href={INSTAGRAM_URL} />
-          <ActionRow icon={TikTokIcon} label="TikTok" description={`@${SOCIAL_HANDLE}`} href={TIKTOK_URL} />
-          <ActionRow icon={CodeBracketIcon} label="GitHub" href={GITHUB_URL} />
-        </Section>
-
-        {/* 5. Suporte e Feedback */}
+        {/* 4. Suporte e Feedback */}
         <Section title={title("support")}>
           <ActionRow icon={LifebuoyIcon} label={t("profile_supportCenter")} description={t("profile_supportCenterDesc")} href="/support" />
           <ActionRow
@@ -291,14 +258,14 @@ export default function SettingsPage() {
           />
         </Section>
 
-        {/* 6. Sobre e Legal */}
+        {/* 5. Sobre e Legal */}
         <Section title={title("legal")}>
           <ActionRow icon={InformationCircleIcon} label={t("lp_footer_about")} href="/about" />
           <ActionRow icon={DocumentTextIcon} label={t("lp_footer_terms")} href="/terms" />
           <ActionRow icon={ShieldCheckIcon} label={t("lp_footer_privacy")} href="/privacy" />
         </Section>
 
-        {/* 7. Ações da Conta */}
+        {/* 6. Ações da Conta */}
         <Section title={title("actions")}>
           <ActionRow
             icon={TrashIcon}
@@ -311,7 +278,7 @@ export default function SettingsPage() {
           <ActionRow icon={ArrowRightOnRectangleIcon} label={t("nav_logout")} onClick={() => setLogoutConfirmOpen(true)} destructive />
         </Section>
 
-        {/* 8. Rodapé */}
+        {/* 7. Rodapé */}
         <footer className="flex w-full justify-center pb-4">
           <a href="/versions" className="font-mono text-[10px] text-muted-foreground transition-colors hover:text-foreground">
             {version} · Versions

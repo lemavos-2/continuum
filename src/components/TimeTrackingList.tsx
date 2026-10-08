@@ -255,7 +255,10 @@ export function TimeTrackingList({
         onCreated={(entity) => {
           queryClient.invalidateQueries({ queryKey: ['entities'] });
           onCreated?.(entity);
-          navigate(`/entities/${entity.id}`);
+          const createdEntity = entity as Entity & { _optimisticId?: string };
+          if (!createdEntity._optimisticId) return;
+          queryClient.setQueryData(qk.entity(createdEntity.id), createdEntity);
+          navigate(`/entities/${createdEntity.id}`);
         }}
       />
     </>
