@@ -425,22 +425,19 @@ export default function EntityDetail() {
               </div>
             )}
 
-            <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:ml-[4.5rem] sm:grid-cols-3 sm:gap-5">
+            <div className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 sm:ml-[4.5rem] sm:gap-5">
               {isProject ? (
                 <>
                   <DetailStat label={t("ent_total_time")} value={timeSummary?.formattedTotal || "00:00:00"} icon={Clock} />
                   <DetailStat label={t("ent_sessions")} value={timeSummary?.entriesCount ?? 0} icon={Calendar} />
-                  <DetailStat label={t("ent_connections")} value={relatedEntities.length} icon={Network} />
                 </>
               ) : isHabit ? (
                 <>
                   <DetailStat label={t("ent_total_tracked")} value={totalCompletions} icon={Calendar} />
-                  <DetailStat label={t("ent_connections")} value={relatedEntities.length} icon={Network} />
                   <DetailStat label={t("ent_connected_notes")} value={relatedNotes.length} icon={StickyNote} />
                 </>
               ) : (
                 <>
-                  <DetailStat label={t("ent_connections")} value={relatedEntities.length} icon={Network} />
                   <DetailStat label={t("ent_connected_notes")} value={relatedNotes.length} icon={StickyNote} />
                   <DetailStat label={t("ent_created")} value={new Date(entity.createdAt).toLocaleDateString(language)} icon={Calendar} />
                 </>
