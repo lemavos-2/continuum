@@ -30,11 +30,11 @@ export function OfflineStatus({ className, compact = false }: OfflineStatusProps
     try {
       const result = await flushQueue();
       if (result.sent === 0 && result.failed === 0) {
-        toast({ title: t("gr_toast_uptodate") });
+        toast({ title: t("gr_toast_uptodate"), variant: "info" });
       } else if (result.failed === 0) {
         toast({ title: t("gr_toast_synced", { count: result.sent, plural: result.sent === 1 ? "" : "s" }) });
       } else {
-        toast({ title: t("gr_toast_partial", { sent: result.sent, failed: result.failed }) });
+        toast({ title: t("gr_toast_partial", { sent: result.sent, failed: result.failed }), variant: "destructive" });
       }
     } catch {
       toast({ title: t("gr_toast_sync_failed"), variant: "destructive" });
