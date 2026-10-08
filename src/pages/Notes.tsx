@@ -112,7 +112,6 @@ function formatMonth(key: string) {
 
 function sortLabels(t: (key: string) => string) {
   return {
-    button: t("list_sort_button"),
     recent: t("list_sort_recent"),
     oldest: t("list_sort_oldest"),
     az: t("list_sort_az"),
@@ -718,11 +717,6 @@ export default function Notes() {
             </div>
 
 
-            {/* Toolbar de Contagem e Controles de Ordenação */}
-            <div className="flex items-center justify-between border-b border-border/5 pb-3 pt-4 mb-6 text-[11px] text-muted-foreground">
-              <div>{filtered.length}</div>
-            </div>
-
             {/* Selection action bar */}
             {selectMode && (
               <div className="sticky top-[7.5rem] z-20 mb-6 flex flex-col items-stretch gap-3 rounded-sm border border-border/15 bg-background/80 px-3 py-2.5 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
@@ -860,9 +854,11 @@ export default function Notes() {
                             ? t(key === "az" ? "list_sort_az" : "list_sort_za")
                             : formatMonth(key)}
                         </span>
-                        <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
-                          {items.length}
-                        </span>
+                        {key !== "az" && key !== "za" && (
+                          <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
+                            {items.length}
+                          </span>
+                        )}
                       </Button>
 
                       {!collapsed && (

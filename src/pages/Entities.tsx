@@ -340,7 +340,6 @@ export default function Entities() {
   }, [entities, selectedType, search, sortMode]);
 
   const sortLabels = {
-    button: t("list_sort_button"),
     recent: t("list_sort_recent"),
     oldest: t("list_sort_oldest"),
     az: t("list_sort_az"),
@@ -468,13 +467,6 @@ export default function Entities() {
               </div>
             </div>
 
-
-            {/* Barra de ferramentas: Contagem e Controles de Ordenação */}
-            <div className="flex items-center justify-between border-b border-border/5 pb-3 pt-4 mb-6 text-[11px] text-muted-foreground">
-              <div>
-                {t(filteredAndSorted.length === 1 ? "list_showing_atoms_one" : "list_showing_atoms", { n: filteredAndSorted.length })}
-              </div>
-            </div>
 
             {/* Selection action bar */}
             {selectMode && (
