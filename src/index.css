@@ -198,7 +198,7 @@
 
 /* One shared appearance for all transient notifications. */
 [data-sonner-toaster].continuum-notifications {
-  --width: 384px;
+  --width: 340px;
   z-index: 200;
 }
 [data-sonner-toast].continuum-notification {
@@ -209,7 +209,7 @@
   border-radius: 8px;
   box-shadow: var(--notification-shadow);
   backdrop-filter: blur(20px);
-  padding: 18px 40px 20px 16px;
+  padding: 24px 44px 26px 18px;
   gap: 12px;
   align-items: flex-start;
   overflow: hidden;
@@ -217,9 +217,11 @@
 }
 [data-sonner-toast].continuum-notification[data-type="success"] { --notification-tone: var(--success); }
 [data-sonner-toast].continuum-notification[data-type="error"] { --notification-tone: var(--destructive); }
+[data-sonner-toast].continuum-notification[data-type="warning"] { --notification-tone: var(--warning); }
 .light [data-sonner-toast].continuum-notification { --notification-tone: var(--foreground); }
 .light [data-sonner-toast].continuum-notification[data-type="success"] { --notification-tone: var(--success); }
 .light [data-sonner-toast].continuum-notification[data-type="error"] { --notification-tone: var(--destructive); }
+.light [data-sonner-toast].continuum-notification[data-type="warning"] { --notification-tone: var(--warning); }
 [data-sonner-toast].continuum-notification .notification-icon {
   color: hsl(var(--notification-tone));
   width: 22px;
