@@ -27,6 +27,7 @@ import { insightsApi } from "@/lib/api";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { qk, STALE } from "@/lib/queries";
 import { useToast } from "@/hooks/use-toast";
+import { useMobilePageSwipe } from "@/hooks/useMobilePageSwipe";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -267,25 +268,12 @@ export default function Insights() {
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  // Edge swipe to open mobile filter drawer
-  const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
-
-  const onSwipeStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    if (t.clientX > 160) return; // Wider edge zone for easier grab
-    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-  };
-
-  const onSwipeEnd = (e: React.TouchEvent) => {
-    const s = swipeRef.current;
-    if (!s) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - s.x;
-    const dy = Math.abs(t.clientY - s.y);
-    // More sensitive: shorter horizontal distance, longer time window
-    if (dx > 28 && dy < 100 && Date.now() - s.t < 1000) setFilterDrawerOpen(true);
-    swipeRef.current = null;
-  };
+  const { onTouchStart, onTouchEnd } = useMobilePageSwipe({
+    onSwipeRight: (startedAtEdge) => {
+      if (startedAtEdge) setFilterDrawerOpen(true);
+      else navigate("/entities");
+    },
+  });
 
 
   const load = async (_silent = false) => {
@@ -420,9 +408,7 @@ export default function Insights() {
 
   return (
     <AppLayout>
-      <div
-        className="relative min-h-full"
-      >
+      <div className="relative min-h-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {/* Edge swipe hint (mobile only) */}
         <div
           aria-hidden

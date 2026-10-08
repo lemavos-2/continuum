@@ -45,6 +45,7 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { StickyNote } from "@/lib/heroicons";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
 import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
+import { useMobilePageSwipe } from "@/hooks/useMobilePageSwipe";
 
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -236,23 +237,10 @@ export default function Notes() {
 
 
   // Edge swipe to open mobile filter drawer
-  const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
-  const onSwipeStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    // Wider edge zone (160px) so it's easier to grab on mobile.
-    if (t.clientX > 160) return;
-    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-  };
-  const onSwipeEnd = (e: React.TouchEvent) => {
-    const s = swipeRef.current;
-    if (!s) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - s.x;
-    const dy = Math.abs(t.clientY - s.y);
-    // More sensitive: shorter distance, longer time window.
-    if (dx > 28 && dy < 100 && Date.now() - s.t < 1000) setFilterDrawerOpen(true);
-    swipeRef.current = null;
-  };
+  const { onTouchStart, onTouchEnd } = useMobilePageSwipe({
+    onSwipeLeft: () => navigate("/entities"),
+    onSwipeRight: () => setFilterDrawerOpen(true),
+  });
 
 
   /* Load — cached first, revalidated in background */
@@ -604,8 +592,8 @@ export default function Notes() {
         onDragOver={dragOver}
         onDragLeave={dragLeave}
         onDrop={handleFileDrop}
-        onTouchStart={onSwipeStart}
-        onTouchEnd={onSwipeEnd}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
       >
         {dragActive && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">

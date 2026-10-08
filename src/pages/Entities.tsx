@@ -32,6 +32,7 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
 import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
+import { useMobilePageSwipe } from "@/hooks/useMobilePageSwipe";
 import { InsightSignalBadge } from "@/components/InsightSignal";
 
 import { cn } from "@/lib/utils";
@@ -173,22 +174,13 @@ export default function Entities() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
-  // Controle de Swipe Lateral para Mobile
-  const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
-  const onSwipeStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    if (t.clientX > 160) return;
-    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-  };
-  const onSwipeEnd = (e: React.TouchEvent) => {
-    const s = swipeRef.current;
-    if (!s) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - s.x;
-    const dy = Math.abs(t.clientY - s.y);
-    if (dx > 28 && dy < 100 && Date.now() - s.t < 1000) setFilterDrawerOpen(true);
-    swipeRef.current = null;
-  };
+  const { onTouchStart, onTouchEnd } = useMobilePageSwipe({
+    onSwipeLeft: () => navigate("/insights"),
+    onSwipeRight: (startedAtEdge) => {
+      if (startedAtEdge) setFilterDrawerOpen(true);
+      else navigate("/notes");
+    },
+  });
 
 
   /* Carregar Dados — cache primeiro, revalida em segundo plano */
@@ -381,6 +373,8 @@ export default function Entities() {
     <AppLayout>
       <div
         className="relative min-h-full"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
       >
         {/* Indicador visual lateral para mobile */}
         <div
