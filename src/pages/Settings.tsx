@@ -196,8 +196,12 @@ export default function SettingsPage() {
       await authApi.cancelDeletion();
       await qc.invalidateQueries({ queryKey: ["account", "deletion"] });
       toast({ title: x.canceled, notificationCategory: "account-deletion" });
-    } catch (error: any) {
-      toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: t("common_tryAgain"),
+        description: error instanceof Error ? error.message : t("common_tryAgain"),
+        variant: "destructive",
+      });
     } finally {
       setCancelingDeletion(false);
     }
@@ -210,8 +214,12 @@ export default function SettingsPage() {
       await authApi.deleteScheduledAccountNow();
       await logout();
       navigate("/");
-    } catch (error: any) {
-      toast({ title: t("common_tryAgain"), description: error?.response?.data?.message || error?.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: t("common_tryAgain"),
+        description: error instanceof Error ? error.message : t("common_tryAgain"),
+        variant: "destructive",
+      });
     } finally {
       setDeletingNow(false);
     }
