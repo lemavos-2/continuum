@@ -14,6 +14,7 @@ import {
   BugAntIcon,
   ChatBubbleLeftEllipsisIcon,
   ChevronRightIcon,
+  CodeBracketIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
   InformationCircleIcon,
@@ -46,6 +47,7 @@ const SECTION_TITLES: Record<
   legal: { pt: "Sobre e Legal", en: "About & Legal", es: "Acerca de y legal", fr: "À propos et mentions légales" },
   actions: { pt: "Ações da Conta", en: "Account Actions", es: "Acciones de la cuenta", fr: "Actions du compte" },
 };
+const GITHUB_URL = "https://github.com/continuumnodes/continuum";
 
 /* ------------------------------------------------------------------ */
 /* UI helpers                                                          */
@@ -261,6 +263,7 @@ export default function SettingsPage() {
         {/* 5. Sobre e Legal */}
         <Section title={title("legal")}>
           <ActionRow icon={InformationCircleIcon} label={t("lp_footer_about")} href="/about" />
+          <ActionRow icon={CodeBracketIcon} label="GitHub" description="continuumnodes/continuum" href={GITHUB_URL} />
           <ActionRow icon={DocumentTextIcon} label={t("lp_footer_terms")} href="/terms" />
           <ActionRow icon={ShieldCheckIcon} label={t("lp_footer_privacy")} href="/privacy" />
         </Section>
