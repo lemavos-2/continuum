@@ -220,30 +220,33 @@ const AppRoutes = () => {
 
   return (
     <React.Suspense fallback={<RouteFallback />}>
-      <AnimatePresence initial={false} mode="sync" custom={direction}>
-        <motion.div
-          key={location.pathname}
-          custom={direction}
-          variants={{
-            initial: (swipeDirection: number) => ({ x: swipeDirection > 0 ? "100%" : swipeDirection < 0 ? "-100%" : 0 }),
-            animate: { x: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
-            exit: (swipeDirection: number) => swipeDirection === 0
-              ? { transition: { duration: 0 } }
-              : {
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  x: swipeDirection > 0 ? "-100%" : "100%",
-                  transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
-                },
-          }}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="relative min-h-screen w-full overflow-x-clip"
-        >
-        <Routes location={location}>
+      <div className="relative min-h-screen w-full overflow-x-clip">
+        <AnimatePresence initial={false} mode="sync" custom={direction}>
+          <motion.div
+            key={location.pathname}
+            custom={direction}
+            variants={{
+              initial: (swipeDirection: number) => ({
+                x: swipeDirection > 0 ? "100%" : swipeDirection < 0 ? "-100%" : 0,
+              }),
+              animate: { x: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
+              exit: (swipeDirection: number) => swipeDirection === 0
+                ? { transition: { duration: 0 } }
+                : {
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    x: swipeDirection > 0 ? "-100%" : "100%",
+                    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                  },
+            }}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="min-h-screen w-full"
+          >
+            <Routes location={location}>
     <Route path="/" element={<HomeRoute />} />
     <Route path="/index" element={<HomeRoute />} />
     <Route path="/dashboard" element={<Navigate to="/notes" replace />} />
@@ -284,9 +287,10 @@ const AppRoutes = () => {
     <Route path="/editor" element={<ProtectedRoute><EditorSettingsPage /></ProtectedRoute>} />
     <Route path="/profile" element={<Navigate to="/settings" replace />} />
     <Route path="*" element={<NotFound />} />
-        </Routes>
-        </motion.div>
-      </AnimatePresence>
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </React.Suspense>
   );
 };
