@@ -31,6 +31,7 @@ import { FitText } from "@/components/ui/fit-text";
 import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
+import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
 import { InsightSignalBadge } from "@/components/InsightSignal";
 
 import { cn } from "@/lib/utils";
@@ -159,8 +160,7 @@ export default function Entities() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   
   // Estados de Ordenação
-  const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("createdAt");
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [sortMode, setSortMode] = useState<ListSortMode>("recent");
   
   const [createOpen, setCreateOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -329,11 +329,23 @@ export default function Entities() {
         return true;
       })
       .sort((a, b) => {
-        const dateA = new Date(sortBy === "updatedAt" ? (a.updatedAt || a.createdAt) : a.createdAt).getTime();
-        const dateB = new Date(sortBy === "updatedAt" ? (b.updatedAt || b.createdAt) : b.createdAt).getTime();
-        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+        if (sortMode === "az" || sortMode === "za") {
+          const order = a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+          return sortMode === "az" ? order : -order;
+        }
+        const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+        return sortMode === "recent" ? dateB - dateA : dateA - dateB;
       });
-  }, [entities, selectedType, search, sortBy, sortOrder]);
+  }, [entities, selectedType, search, sortMode]);
+
+  const sortLabels = {
+    button: t("list_sort_button"),
+    recent: t("list_sort_recent"),
+    oldest: t("list_sort_oldest"),
+    az: t("list_sort_az"),
+    za: t("list_sort_za"),
+  };
 
   const SidebarContent = (
     <div className="space-y-7">
@@ -414,14 +426,17 @@ export default function Entities() {
 
             {/* Mobile: search + type chips */}
             <div className="mb-5 space-y-3 lg:hidden">
-              <div className="relative z-0">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t("entities_searchAmong", { n: counts.all }) || `Search among ${counts.all} entities…`}
-                  className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
-                />
+              <div className="flex items-center gap-2">
+                <div className="relative z-0 flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t("entities_searchAmong", { n: counts.all }) || `Search among ${counts.all} entities…`}
+                    className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
+                  />
+                </div>
+                <ListSortMenu value={sortMode} onValueChange={setSortMode} labels={sortLabels} />
               </div>
               <FilterChips
                 value={selectedType ?? "ALL"}
@@ -438,15 +453,18 @@ export default function Entities() {
 
             {/* Input de Busca Fixo (desktop) */}
             <div className="sticky top-14 z-10 -mx-4 hidden border-b border-border/10 bg-background/70 px-4 py-3 backdrop-blur-xl lg:block">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  variant="ghost"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t("common_search") + "…"}
-                  className="w-full border-0 bg-transparent pl-6 text-sm text-foreground placeholder:italic placeholder:text-muted-foreground focus:outline-none focus:ring-0"
-                />
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    variant="ghost"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t("common_search") + "…"}
+                    className="w-full border-0 bg-transparent pl-6 text-sm text-foreground placeholder:italic placeholder:text-muted-foreground focus:outline-none focus:ring-0"
+                  />
+                </div>
+                <ListSortMenu value={sortMode} onValueChange={setSortMode} labels={sortLabels} />
               </div>
             </div>
 
@@ -455,34 +473,6 @@ export default function Entities() {
             <div className="flex items-center justify-between border-b border-border/5 pb-3 pt-4 mb-6 text-[11px] text-muted-foreground">
               <div>
                 {t(filteredAndSorted.length === 1 ? "list_showing_atoms_one" : "list_showing_atoms", { n: filteredAndSorted.length })}
-              </div>
-              <div className="flex items-center gap-4 font-mono">
-                {/* Tipo de Ordenação */}
-                <div className="flex items-center gap-1.5">
-                  <span>{t("list_sortBy")}</span>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="normal-case text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setSortBy(sortBy === "createdAt" ? "updatedAt" : "createdAt")}
-                  >
-                    [{sortBy === "createdAt" ? t("list_sort_creation") : t("list_sort_modification")}]
-                  </Button>
-                </div>
-                {/* Direção da Ordenação */}
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="normal-case flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-                >
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
-                  </svg>
-                  {sortOrder === "desc" ? t("list_sort_recent") : t("list_sort_oldest")}
-                </Button>
               </div>
             </div>
 
@@ -544,7 +534,7 @@ export default function Entities() {
             ) : (
               <ul className="divide-y divide-border/10">
                 {filteredAndSorted.map((entity) => {
-                  const targetDate = sortBy === "updatedAt" ? (entity.updatedAt || entity.createdAt) : entity.createdAt;
+                  const targetDate = entity.updatedAt || entity.createdAt;
                   const selected = selectedIds.has(entity.id);
                   return (
                     <EntityRow

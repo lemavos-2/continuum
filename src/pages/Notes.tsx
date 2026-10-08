@@ -44,6 +44,7 @@ import { FitText } from "@/components/ui/fit-text";
 import { ListRowContent } from "@/components/ui/list-row-content";
 import { StickyNote } from "@/lib/heroicons";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
+import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
 
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -107,6 +108,16 @@ function formatMonth(key: string) {
   const [y, m] = key.split("-").map(Number);
   const d = new Date(y, m - 1, 1);
   return d.toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase();
+}
+
+function sortLabels(t: (key: string) => string) {
+  return {
+    button: t("list_sort_button"),
+    recent: t("list_sort_recent"),
+    oldest: t("list_sort_oldest"),
+    az: t("list_sort_az"),
+    za: t("list_sort_za"),
+  };
 }
 
 function relativeDate(iso: string): string {
@@ -217,8 +228,7 @@ export default function Notes() {
   const [bulkTypeApplying, setBulkTypeApplying] = useState(false);
 
   // Estados de Ordenação Dinâmica
-  const [sortBy, setSortBy] = useState<"createdAt" | "updatedAt">("updatedAt");
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [sortMode, setSortMode] = useState<ListSortMode>("recent");
 
   // Drag-drop upload to vault
   const [dragActive, setDragActive] = useState(false);
@@ -462,22 +472,28 @@ export default function Notes() {
         return true;
       })
       .sort((a, b) => {
-        const dateA = new Date(sortBy === "createdAt" ? a.createdAt : a.updatedAt).getTime();
-        const dateB = new Date(sortBy === "createdAt" ? b.createdAt : b.updatedAt).getTime();
-        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+        if (sortMode === "az" || sortMode === "za") {
+          const order = a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+          return sortMode === "az" ? order : -order;
+        }
+        const dateA = new Date(a.updatedAt).getTime();
+        const dateB = new Date(b.updatedAt).getTime();
+        return sortMode === "recent" ? dateB - dateA : dateA - dateB;
       });
-  }, [notes, view, selectedType, search, sortBy, sortOrder, searchContentById]);
+  }, [notes, view, selectedType, search, sortMode, searchContentById]);
 
   const grouped = useMemo(() => {
+    if (sortMode === "az" || sortMode === "za") {
+      return filtered.length ? [[sortMode, filtered] as const] : [];
+    }
     const map = new Map<string, NoteSummary[]>();
     for (const n of filtered) {
-      const targetDate = sortBy === "createdAt" ? n.createdAt : n.updatedAt;
-      const key = monthKey(new Date(targetDate));
+      const key = monthKey(new Date(n.updatedAt));
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(n);
     }
     return Array.from(map.entries());
-  }, [filtered, sortBy]);
+  }, [filtered, sortMode]);
 
   const toggleMonth = (key: string) => {
     setCollapsedMonths((prev) => {
@@ -651,16 +667,18 @@ export default function Notes() {
 
             {/* Mobile: search + view chips */}
             <div className="mb-5 space-y-3 lg:hidden">
-              <div className="relative z-0">
-
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t("notes_searchAmong", { n: counts.all }) || `Search among ${counts.all} notes…`}
-                  className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
-                />
-              </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative z-0 flex-1">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder={t("notes_searchAmong", { n: counts.all }) || `Search among ${counts.all} notes…`}
+                      className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <ListSortMenu value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
+                </div>
               <div onTouchStart={(event) => event.stopPropagation()}>
                 <FilterChips
                   value={filterDrawerOpen ? "others" : view}
@@ -684,50 +702,25 @@ export default function Notes() {
 
             {/* Sticky search (desktop) */}
             <div className="sticky top-14 z-10 -mx-4 hidden border-b border-border/10 bg-background/70 px-4 py-3 backdrop-blur-xl lg:block">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  variant="ghost"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t("notes_searchPlaceholder")}
-                  className="w-full border-0 bg-transparent pl-6 text-sm text-foreground placeholder:italic placeholder:text-muted-foreground focus:outline-none focus:ring-0"
-                />
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    variant="ghost"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={t("notes_searchPlaceholder")}
+                    className="w-full border-0 bg-transparent pl-6 text-sm text-foreground placeholder:italic placeholder:text-muted-foreground focus:outline-none focus:ring-0"
+                  />
+                </div>
+                <ListSortMenu value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
               </div>
             </div>
 
 
             {/* Toolbar de Contagem e Controles de Ordenação */}
             <div className="flex items-center justify-between border-b border-border/5 pb-3 pt-4 mb-6 text-[11px] text-muted-foreground">
-              <div>
-                {t(filtered.length === 1 ? "list_showing_entries_one" : "list_showing_entries", { n: filtered.length })}
-              </div>
-              <div className="flex items-center gap-4 font-mono">
-                <div className="flex items-center gap-1.5">
-                  <span>{t("list_sortBy")}</span>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="normal-case text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setSortBy(sortBy === "createdAt" ? "updatedAt" : "createdAt")}
-                  >
-                    [{sortBy === "createdAt" ? t("list_sort_creation") : t("list_sort_modification")}]
-                  </Button>
-                </div>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="normal-case flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-                >
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" />
-                  </svg>
-                  {sortOrder === "desc" ? t("list_sort_recent") : t("list_sort_oldest")}
-                </Button>
-              </div>
+              <div>{filtered.length}</div>
             </div>
 
             {/* Selection action bar */}
@@ -863,10 +856,12 @@ export default function Notes() {
                       >
                         <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-muted-foreground group-hover:text-muted-foreground">
                           {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                          {formatMonth(key)}
+                          {key === "az" || key === "za"
+                            ? t(key === "az" ? "list_sort_az" : "list_sort_za")
+                            : formatMonth(key)}
                         </span>
                         <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
-                          {t(items.length === 1 ? "list_showing_entries_one" : "list_showing_entries", { n: items.length })}
+                          {items.length}
                         </span>
                       </Button>
 
@@ -880,7 +875,7 @@ export default function Notes() {
                                 ?? queryClient.getQueryData<{ content?: unknown }>(qk.note(note.id))?.content
                               : undefined;
                             const preview = activeSearch ? extractSearchSnippet(noteContent, activeSearch) : "";
-                            const targetDate = sortBy === "createdAt" ? note.createdAt : note.updatedAt;
+                            const targetDate = note.updatedAt;
 
                             const selected = selectedIds.has(note.id);
                             return (
