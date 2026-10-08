@@ -213,7 +213,7 @@ export default function SettingsPage() {
     try {
       await authApi.deleteScheduledAccountNow();
       await logout();
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (error: unknown) {
       toast({
         title: t("common_tryAgain"),

@@ -164,8 +164,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("auth_user");
-    await resetAllCaches();
     setUser(null);
+    void resetAllCaches().catch((error: unknown) => {
+      console.error("Failed to clear cached data during logout", error);
+    });
   };
 
   return (
