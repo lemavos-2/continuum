@@ -1,31 +1,34 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
+import { Bell, CircleCheck, CircleAlert, X } from "lucide-react";
+import { NOTIFICATION_DURATION } from "@/lib/notifications";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border/10 group-[.toaster]:shadow-lg max-w-[min(356px,60vw)]",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
-      }}
       {...props}
+      className="continuum-notifications"
       position="bottom-right"
-      style={{
-        width: "min(356px, 60vw)",
-        left: "auto",
-        right: 16,
-        bottom: "calc(16px + env(safe-area-inset-bottom))",
+      duration={NOTIFICATION_DURATION}
+      visibleToasts={3}
+      gap={12}
+      closeButton
+      swipeDirections={["left", "right"]}
+      offset={{ bottom: "calc(96px + env(safe-area-inset-bottom))", right: "24px" }}
+      mobileOffset={{ bottom: "calc(96px + env(safe-area-inset-bottom))", left: "16px", right: "16px" }}
+      icons={{ success: <CircleCheck />, error: <CircleAlert />, info: <Bell />, warning: <Bell />, close: <X /> }}
+      toastOptions={{
+        duration: NOTIFICATION_DURATION,
+        classNames: {
+          toast: "continuum-notification",
+          title: "notification-title",
+          description: "notification-description",
+          icon: "notification-icon",
+          closeButton: "notification-close",
+          actionButton: "notification-action",
+          cancelButton: "notification-action",
+        },
       }}
     />
   );

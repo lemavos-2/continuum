@@ -1,5 +1,6 @@
 import * as React from "react";
 import { toast as sonnerToast } from "sonner";
+import { notificationContent, NOTIFICATION_DURATION } from "@/lib/notifications";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -133,30 +134,32 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, "id">;
+type Toast = Omit<ToasterToast, "id" | "variant"> & { variant?: ToastProps["variant"] | "info" };
 
 function toast({ ...props }: Toast) {
   const id = genId();
+  const kind = props.variant === "destructive" ? "error" : props.variant === "info" ? "info" : "success";
+  const content = notificationContent(kind, props.title, props.description);
   const sonnerOptions = {
     id,
-    description: props.description,
+    description: content.description,
     action: props.action,
-    duration: props.duration,
+    duration: NOTIFICATION_DURATION,
   };
-  const showToast = props.variant === "destructive" ? sonnerToast.error : sonnerToast.success;
-  showToast(props.title ?? "", sonnerOptions);
+  sonnerToast[kind](content.title, sonnerOptions);
 
   const update = (nextToast: ToasterToast) => {
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...nextToast, id },
     });
-    const updateToast = nextToast.variant === "destructive" ? sonnerToast.error : sonnerToast.success;
-    updateToast(nextToast.title ?? "", {
+    const nextKind = nextToast.variant === "destructive" ? "error" : kind;
+    const nextContent = notificationContent(nextKind, nextToast.title, nextToast.description);
+    sonnerToast[nextKind](nextContent.title, {
       id,
-      description: nextToast.description,
+      description: nextContent.description,
       action: nextToast.action,
-      duration: nextToast.duration,
+      duration: NOTIFICATION_DURATION,
     });
   };
   const dismiss = () => {
@@ -168,6 +171,7 @@ function toast({ ...props }: Toast) {
     type: "ADD_TOAST",
     toast: {
       ...props,
+      variant: props.variant === "info" ? "default" : props.variant,
       id,
       open: true,
       onOpenChange: (open) => {
