@@ -4,7 +4,7 @@ Every notable change to Continuum, from the first release to the latest version.
 
 ---
 
-v1.3.1 — Oct 08, 2026
+v1.3.1 — XXX XX, 2026
 
 - Performance: Reduced startup delays when opening the app.
 - Performance: Fixed scrolling issues across the app.
