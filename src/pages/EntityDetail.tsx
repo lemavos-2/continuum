@@ -22,6 +22,7 @@ import { InsightSignalBadge } from "@/components/InsightSignal";
 
 import { useToast } from "@/hooks/use-toast";
 import { ActivityAnalyticsCalendar } from "@/components/ActivityAnalyticsCalendar";
+import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { TimerWidget } from "@/components/TimerWidget";
 import { TimeHeatmap } from "@/components/TimeHeatmap";
 import type { HeatmapData, EntityStats } from "@/types";
@@ -35,11 +36,25 @@ interface EntityData { id: string; title: string; type: string; description?: st
 
 interface RelatedNote { id: string; title: string; createdAt: string; updatedAt: string; }
 
+function DetailStat({ label, value, icon: Icon }: { label: string; value: string | number; icon: typeof Calendar }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border/10 bg-background/35 px-4 py-3.5">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-foreground/[0.05] text-muted-foreground">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+        <span className="mt-1 block truncate font-serif text-lg leading-none text-foreground tabular-nums">{value}</span>
+      </span>
+    </div>
+  );
+}
+
 export default function EntityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isRestoring = useIsRestoring();
   const { applyUsageDelta, refresh: refreshUsage } = usePlanGate();
   const [entity, setEntity] = useState<EntityData | null>(() => id ? queryClient.getQueryData<EntityData>(qk.entity(id)) ?? null : null);
@@ -332,6 +347,7 @@ export default function EntityDetail() {
   if (!entity) return null;
 
   const isHabit = entity.type === "ACTIVITY";
+  const isProject = entity.type === "PROJECT";
   const today = new Date().toISOString().split("T")[0];
   const trackedToday = entity.trackingDates?.some((date) => date.startsWith(today));
   const totalCompletions = entity.trackingDates?.length ?? stats?.totalCompletions ?? 0;
@@ -349,95 +365,106 @@ export default function EntityDetail() {
 
   return (
     <AppLayout>
-      <div className="px-6 lg:px-12 py-10 max-w-4xl mx-auto">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-12">
         <Button
           variant="quiet"
           size="sm"
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/entities"))}
-          className="mb-6 px-0 h-auto"
+          className="mb-5 h-auto rounded-full px-3 py-1.5"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> {t("ent_back")}
         </Button>
 
-        {/* Premium serif header — matches /entities */}
-        <header className="border-b border-border/10 pb-8 mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <p className="label-caps">{typeLabel}</p>
-            <InsightSignalBadge kind="entity" id={entity.id} />
-          </div>
-
-          {editingTitle ? (
-            <div className="flex gap-2 max-w-xl">
-              <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={t("ent_new_name_placeholder")} className="flex-1" />
-              <Button size="sm" onClick={handleSaveTitle}>{t("ent_save")}</Button>
-              <Button size="sm" variant="outline" onClick={() => { setEditingTitle(false); setNewTitle(entity?.title || ""); }}>{t("ent_cancel")}</Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 group">
-              <h1 className="font-serif text-5xl tracking-tight">{entity.title}</h1>
-              <Button
-                variant="ghost"
-                size="iconSm"
-                onClick={() => { setEditingTitle(true); setNewTitle(entity?.title || ""); }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label={t("ent_edit_name")}
-              >
-                <Edit className="w-4 h-4 text-muted-foreground" />
-              </Button>
-              <Button
-                variant="destructive"
-                size="iconSm"
-                onClick={() => setDeleteDialogOpen(true)}
-                aria-label={t("common_delete")}
-                title={t("common_delete")}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {editingDescription ? (
-            <div className="mt-4 flex flex-col gap-2 max-w-xl">
-              <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder={t("ent_add_description_placeholder")} className="text-sm" rows={3} />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveDescription}>{t("ent_save")}</Button>
-                <Button size="sm" variant="outline" onClick={() => { setEditingDescription(false); setNewDescription(entity?.description || ""); }}>{t("ent_cancel")}</Button>
+        <header className="relative mb-7 overflow-hidden rounded-3xl border border-border/10 bg-gradient-to-br from-foreground/[0.055] via-background/70 to-background p-5 shadow-[0_24px_80px_-56px_rgba(0,0,0,0.8)] sm:p-8">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/[0.07] blur-3xl" />
+          <div className="relative">
+            <div className="flex items-start gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-border/10 bg-background/60 text-foreground/80 shadow-inner sm:h-14 sm:w-14">
+                <EntityTypeIcon type={entity.type} className="h-6 w-6 sm:h-7 sm:w-7" />
+              </div>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-border/10 bg-background/45 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{typeLabel}</span>
+                  <InsightSignalBadge kind="entity" id={entity.id} />
+                </div>
+                {editingTitle ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={t("ent_new_name_placeholder")} className="min-w-0 flex-1" />
+                    <Button size="sm" onClick={handleSaveTitle}>{t("ent_save")}</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingTitle(false); setNewTitle(entity.title); }}>{t("ent_cancel")}</Button>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <h1 className="min-w-0 flex-1 break-words font-serif text-3xl leading-tight tracking-tight text-foreground sm:text-5xl">{entity.title}</h1>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button variant="ghost" size="iconSm" onClick={() => { setEditingTitle(true); setNewTitle(entity.title); }} className="rounded-full text-muted-foreground hover:text-foreground" aria-label={t("ent_edit_name")}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="destructive" size="iconSm" onClick={() => setDeleteDialogOpen(true)} className="rounded-full" aria-label={t("common_delete")} title={t("common_delete")}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="mt-3 flex items-start gap-2 group">
-              <p className="text-sm text-muted-foreground flex-1">
-                {entity.description || <span className="italic text-muted-foreground/60">{t("ent_no_description")}</span>}
-              </p>
-              <Button
-                variant="ghost"
-                size="iconSm"
-                onClick={() => { setEditingDescription(true); setNewDescription(entity?.description || ""); }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label={t("ent_edit_description")}
-              >
-                <Edit className="w-3.5 h-3.5 text-muted-foreground" />
-              </Button>
-            </div>
-          )}
 
-          {isHabit && (
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Badge variant="meta">{t("ent_total", { count: totalCompletions })}</Badge>
-            </div>
-          )}
-          {isHabit && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Input type="date" value={trackDate} max={localToday()} onChange={(e) => setTrackDate(e.target.value)} className="h-9 w-auto" aria-label="Date" />
-              <Button size="sm" onClick={() => handleTrack(trackDate)} disabled={!trackDate || trackDate > localToday()}>{t("ent_save")}</Button>
-            </div>
-          )}
+            {editingDescription ? (
+              <div className="mt-5 flex flex-col gap-2">
+                <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder={t("ent_add_description_placeholder")} className="text-sm" rows={3} />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveDescription}>{t("ent_save")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setEditingDescription(false); setNewDescription(entity.description || ""); }}>{t("ent_cancel")}</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="group mt-4 flex items-start gap-2 sm:ml-[4.5rem]">
+                <p className="min-w-0 flex-1 text-sm leading-6 text-muted-foreground">
+                  {entity.description || <span className="italic text-muted-foreground/60">{t("ent_no_description")}</span>}
+                </p>
+                <Button variant="ghost" size="iconSm" onClick={() => { setEditingDescription(true); setNewDescription(entity.description || ""); }} className="shrink-0 rounded-full text-muted-foreground hover:text-foreground" aria-label={t("ent_edit_description")}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
 
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:ml-[4.5rem] sm:grid-cols-3 sm:gap-3">
+              {isProject ? (
+                <>
+                  <DetailStat label={t("ent_total_time")} value={timeSummary?.formattedTotal || "00:00:00"} icon={Clock} />
+                  <DetailStat label={t("ent_sessions")} value={timeSummary?.entriesCount ?? 0} icon={Calendar} />
+                  <DetailStat label={t("ent_connections")} value={relatedEntities.length} icon={Network} />
+                </>
+              ) : isHabit ? (
+                <>
+                  <DetailStat label={t("ent_total_tracked")} value={totalCompletions} icon={Calendar} />
+                  <DetailStat label={t("ent_connections")} value={relatedEntities.length} icon={Network} />
+                  <DetailStat label={t("ent_connected_notes")} value={relatedNotes.length} icon={StickyNote} />
+                </>
+              ) : (
+                <>
+                  <DetailStat label={t("ent_connections")} value={relatedEntities.length} icon={Network} />
+                  <DetailStat label={t("ent_connected_notes")} value={relatedNotes.length} icon={StickyNote} />
+                  <DetailStat label={t("ent_created")} value={new Date(entity.createdAt).toLocaleDateString(language)} icon={Calendar} />
+                </>
+              )}
+            </div>
+
+            {isHabit && (
+              <div className="mt-5 flex flex-col gap-2 rounded-2xl border border-border/10 bg-background/35 p-3 sm:ml-[4.5rem] sm:flex-row sm:items-center">
+                <Input type="date" value={trackDate} max={localToday()} onChange={(e) => setTrackDate(e.target.value)} className="h-10 w-full sm:w-auto" aria-label={t("tm_date")} />
+                <Button size="sm" className="h-10 w-full rounded-xl sm:w-auto" onClick={() => handleTrack(trackDate)} disabled={!trackDate || trackDate > localToday()}>
+                  {t("ent_save")}
+                </Button>
+                {trackedToday && <Badge variant="meta" className="self-center rounded-full px-3 py-1">{t("tm_done_today")}</Badge>}
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Type-specific primary block */}
-        {entity?.type === "PROJECT" && (
-          <div className="mb-8 space-y-4">
+        {isProject && (
+          <div className="mb-7 space-y-4">
             <TimerWidget
               entityId={id!}
               entityName={entity.title}
@@ -449,8 +476,8 @@ export default function EntityDetail() {
         )}
 
 
-        {entity?.type === "ACTIVITY" && (
-          <div className="mb-8">
+        {isHabit && (
+          <div className="mb-7 rounded-3xl border border-border/10 bg-foreground/[0.015] p-3 sm:p-5">
             <ActivityAnalyticsCalendar trackingDates={entity.trackingDates} />
           </div>
         )}
@@ -459,27 +486,27 @@ export default function EntityDetail() {
         <Accordion
           type="multiple"
           defaultValue={["metadata"]}
-          className="border-t border-border/10"
+          className="flex flex-col gap-3 border-0"
         >
-          <AccordionItem value="metadata" className="border-b border-border/10">
-            <AccordionTrigger className="label-caps text-muted-foreground hover:text-foreground hover:no-underline py-4">
+          <AccordionItem value="metadata" className="rounded-2xl border border-border/10 bg-foreground/[0.015] px-4 sm:px-5">
+            <AccordionTrigger className="py-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground hover:no-underline">
               {t("ent_metadata")}
             </AccordionTrigger>
             <AccordionContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-4">
-                <Card variant="faint" className="p-3">
+              <div className="grid grid-cols-1 gap-3 pb-5 sm:grid-cols-3">
+                <Card variant="faint" className="rounded-xl border border-border/10 bg-background/40 p-4">
                   <div className="label-caps text-muted-foreground mb-1.5 inline-flex items-center gap-1.5">
                     <Calendar className="h-3 w-3" /> {t("ent_created")}
                   </div>
                   <div className="text-sm text-foreground">{new Date(entity.createdAt).toLocaleDateString("en-US")}</div>
                 </Card>
-                <Card variant="faint" className="p-3">
+                <Card variant="faint" className="rounded-xl border border-border/10 bg-background/40 p-4">
                   <div className="label-caps text-muted-foreground mb-1.5 inline-flex items-center gap-1.5">
                     <Network className="h-3 w-3" /> {t("ent_connections")}
                   </div>
                   <div className="text-sm text-foreground">{relatedEntities.length}</div>
                 </Card>
-                <Card variant="faint" className="p-3">
+                <Card variant="faint" className="rounded-xl border border-border/10 bg-background/40 p-4">
                   <div className="label-caps text-muted-foreground mb-1.5 inline-flex items-center gap-1.5">
                     <Tag className="h-3 w-3" /> {t("ent_type")}
                   </div>
@@ -529,22 +556,22 @@ export default function EntityDetail() {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="notes" className="border-b border-border/10">
-            <AccordionTrigger className="label-caps text-muted-foreground hover:text-foreground hover:no-underline py-4">
+          <AccordionItem value="notes" className="rounded-2xl border border-border/10 bg-foreground/[0.015] px-4 sm:px-5">
+            <AccordionTrigger className="py-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground hover:no-underline">
               <span className="flex w-full items-center justify-between gap-3">
                 <span>{t("ent_connected_notes")}</span>
                 <span className="text-muted-foreground/60 normal-case tracking-normal">({relatedNotes.length})</span>
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="space-y-1 pb-4">
+              <div className="space-y-1 pb-5">
                 {relatedNotes.length > 0 ? (
                   relatedNotes.map((note) => (
                     <Button
                       key={note.id}
                       variant="ghost"
                       onClick={() => navigate(`/notes/${note.id}`)}
-                      className="flex h-auto w-full items-start justify-start gap-2 rounded-md px-3 py-2.5 text-left normal-case tracking-normal font-normal"
+                      className="flex h-auto w-full items-start justify-start gap-3 rounded-xl border border-transparent px-3 py-3 text-left normal-case tracking-normal font-normal hover:border-border/10 hover:bg-background/50"
                     >
                       <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -556,28 +583,28 @@ export default function EntityDetail() {
                     </Button>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground px-3 py-2">{t("ent_no_connected_notes")}</p>
+                  <p className="rounded-xl bg-background/30 px-3 py-4 text-sm text-muted-foreground">{t("ent_no_connected_notes")}</p>
                 )}
               </div>
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="entities" className="border-b border-border/10">
-            <AccordionTrigger className="label-caps text-muted-foreground hover:text-foreground hover:no-underline py-4">
+          <AccordionItem value="entities" className="rounded-2xl border border-border/10 bg-foreground/[0.015] px-4 sm:px-5">
+            <AccordionTrigger className="py-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground hover:no-underline">
               <span className="flex w-full items-center justify-between gap-3">
                 <span>{t("ent_connected_entities")}</span>
                 <span className="text-muted-foreground/60 normal-case tracking-normal">({relatedEntities.length})</span>
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="space-y-1 pb-4">
+              <div className="space-y-1 pb-5">
                 {relatedEntities.length > 0 ? (
                   relatedEntities.map((ent) => (
                     <Button
                       key={ent.id}
                       variant="ghost"
                       onClick={() => navigate(`/entities/${ent.id}`)}
-                      className="flex h-auto w-full items-start justify-start gap-2 rounded-md px-3 py-2.5 text-left normal-case tracking-normal font-normal"
+                      className="flex h-auto w-full items-start justify-start gap-3 rounded-xl border border-transparent px-3 py-3 text-left normal-case tracking-normal font-normal hover:border-border/10 hover:bg-background/50"
                     >
                       <Network className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -587,7 +614,7 @@ export default function EntityDetail() {
                     </Button>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground px-3 py-2">{t("ent_no_connected_entities")}</p>
+                  <p className="rounded-xl bg-background/30 px-3 py-4 text-sm text-muted-foreground">{t("ent_no_connected_entities")}</p>
                 )}
               </div>
             </AccordionContent>
