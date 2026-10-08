@@ -1,5 +1,5 @@
 import { Toaster as Sonner, toast } from "sonner";
-import { Bell, CircleCheck, CircleAlert, X } from "lucide-react";
+import { BellIcon, CheckCircleIcon, ExclamationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { NOTIFICATION_DURATION } from "@/lib/notifications";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
@@ -17,7 +17,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       swipeDirections={["left", "right"]}
       offset={{ bottom: "calc(96px + env(safe-area-inset-bottom))", right: "24px" }}
       mobileOffset={{ bottom: "calc(96px + env(safe-area-inset-bottom))", left: "16px", right: "16px" }}
-      icons={{ success: <CircleCheck />, error: <CircleAlert />, info: <Bell />, warning: <Bell />, close: <X /> }}
+      icons={{ success: <CheckCircleIcon />, error: <ExclamationCircleIcon />, info: <BellIcon />, warning: <BellIcon />, close: <XMarkIcon /> }}
       toastOptions={{
         duration: NOTIFICATION_DURATION,
         classNames: {
