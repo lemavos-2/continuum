@@ -27,7 +27,6 @@ import { insightsApi } from "@/lib/api";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { qk, STALE } from "@/lib/queries";
 import { useToast } from "@/hooks/use-toast";
-import { useMobilePageSwipe } from "@/hooks/useMobilePageSwipe";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 /* ── Types ────────────────────────────────────────────────────────────── */
@@ -268,14 +267,6 @@ export default function Insights() {
   const [search, setSearch] = useState("");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  const { onTouchStart, onTouchEnd } = useMobilePageSwipe({
-    onSwipeRight: (startedAtEdge) => {
-      if (startedAtEdge) setFilterDrawerOpen(true);
-      else navigate("/entities");
-    },
-  });
-
-
   const load = async (_silent = false) => {
     await insightsQuery.refetch();
   };
@@ -408,13 +399,7 @@ export default function Insights() {
 
   return (
     <AppLayout>
-      <div className="relative min-h-full" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        {/* Edge swipe hint (mobile only) */}
-        <div
-          aria-hidden
-          className="pointer-events-none fixed left-0 top-1/2 z-20 hidden h-24 w-[3px] -translate-y-1/2 rounded-r bg-foreground/15"
-        />
-
+      <div className="relative min-h-full">
         {/* Menu Lateral Mobile */}
         <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
           <SheetContent side="left" className="w-[280px] border-border/10 bg-background/95 p-6">

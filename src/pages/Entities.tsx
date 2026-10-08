@@ -32,7 +32,6 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
 import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
-import { useMobilePageSwipe } from "@/hooks/useMobilePageSwipe";
 import { InsightSignalBadge } from "@/components/InsightSignal";
 
 import { cn } from "@/lib/utils";
@@ -173,15 +172,6 @@ export default function Entities() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
-
-  const { onTouchStart, onTouchEnd } = useMobilePageSwipe({
-    onSwipeLeft: () => navigate("/insights"),
-    onSwipeRight: (startedAtEdge) => {
-      if (startedAtEdge) setFilterDrawerOpen(true);
-      else navigate("/notes");
-    },
-  });
-
 
   /* Carregar Dados — cache primeiro, revalida em segundo plano */
   const entitiesQuery = useCachedResource<Entity[]>(
@@ -371,17 +361,7 @@ export default function Entities() {
 
   return (
     <AppLayout>
-      <div
-        className="relative min-h-full"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* Indicador visual lateral para mobile */}
-        <div
-          aria-hidden
-          className="pointer-events-none fixed left-0 top-1/2 z-20 hidden h-24 w-[3px] -translate-y-1/2 rounded-r bg-foreground/15"
-        />
-
+      <div className="relative min-h-full">
         {/* Menu Lateral Mobile */}
         <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
           <SheetContent side="left" className="w-[280px] border-border/10 bg-background/95 p-6">

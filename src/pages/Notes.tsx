@@ -45,7 +45,6 @@ import { ListRowContent } from "@/components/ui/list-row-content";
 import { StickyNote } from "@/lib/heroicons";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
 import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
-import { useMobilePageSwipe } from "@/hooks/useMobilePageSwipe";
 
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -234,13 +233,6 @@ export default function Notes() {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-
-
-  // Edge swipe to open mobile filter drawer
-  const { onTouchStart, onTouchEnd } = useMobilePageSwipe({
-    onSwipeLeft: () => navigate("/entities"),
-    onSwipeRight: () => setFilterDrawerOpen(true),
-  });
 
 
   /* Load — cached first, revalidated in background */
@@ -592,8 +584,6 @@ export default function Notes() {
         onDragOver={dragOver}
         onDragLeave={dragLeave}
         onDrop={handleFileDrop}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
       >
         {dragActive && (
           <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -608,12 +598,6 @@ export default function Notes() {
             <Loader2 className="h-3 w-3 animate-spin" /> {t("notes_uploading")}
           </div>
         )}
-
-        {/* Edge swipe hint (mobile only) */}
-        <div
-          aria-hidden
-          className="pointer-events-none fixed left-0 top-1/2 z-20 hidden h-24 w-[3px] -translate-y-1/2 rounded-r bg-foreground/15 max-lg:block"
-        />
 
         {/* Mobile filter drawer */}
         <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
