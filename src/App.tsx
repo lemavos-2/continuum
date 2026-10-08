@@ -3,7 +3,8 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { useIsRestoring } from "@tanstack/react-query";
 import { createIdbPersister, QUERY_CACHE_BUSTER } from "@/lib/offline/query-persister";
 import { queryClient } from "@/lib/query-client";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -201,9 +202,48 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 const AppRoutes = () => {
+  const location = useLocation();
+  const previousPath = React.useRef(location.pathname);
+  const prefersReducedMotion = useReducedMotion();
+  const pageOrder: Record<string, number> = { "/notes": 0, "/entities": 1, "/insights": 2 };
+  const previousIndex = pageOrder[previousPath.current];
+  const currentIndex = pageOrder[location.pathname];
+  const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+  const direction = isMobile && !prefersReducedMotion
+    && previousIndex !== undefined && currentIndex !== undefined
+    ? Math.sign(currentIndex - previousIndex)
+    : 0;
+
+  React.useEffect(() => {
+    previousPath.current = location.pathname;
+  }, [location.pathname]);
+
   return (
     <React.Suspense fallback={<RouteFallback />}>
-      <Routes>
+      <AnimatePresence initial={false} mode="sync" custom={direction}>
+        <motion.div
+          key={location.pathname}
+          custom={direction}
+          variants={{
+            initial: (swipeDirection: number) => ({ x: swipeDirection > 0 ? "100%" : swipeDirection < 0 ? "-100%" : 0 }),
+            animate: { x: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
+            exit: (swipeDirection: number) => swipeDirection === 0
+              ? { transition: { duration: 0 } }
+              : {
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  x: swipeDirection > 0 ? "-100%" : "100%",
+                  transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                },
+          }}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="relative min-h-screen w-full overflow-x-clip"
+        >
+        <Routes location={location}>
     <Route path="/" element={<HomeRoute />} />
     <Route path="/index" element={<HomeRoute />} />
     <Route path="/dashboard" element={<Navigate to="/notes" replace />} />
@@ -244,7 +284,9 @@ const AppRoutes = () => {
     <Route path="/editor" element={<ProtectedRoute><EditorSettingsPage /></ProtectedRoute>} />
     <Route path="/profile" element={<Navigate to="/settings" replace />} />
     <Route path="*" element={<NotFound />} />
-      </Routes>
+        </Routes>
+        </motion.div>
+      </AnimatePresence>
     </React.Suspense>
   );
 };
