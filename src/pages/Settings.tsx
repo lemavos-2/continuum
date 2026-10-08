@@ -57,9 +57,9 @@ type RowIcon = ComponentType<{ className?: string }>;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 border-t border-border/10 pt-6 first:border-t-0 first:pt-0">
       <h2 className="font-serif text-xl text-foreground">{title}</h2>
-      <div className="divide-y divide-border/10">{children}</div>
+      <div>{children}</div>
     </section>
   );
 }
@@ -86,7 +86,7 @@ function ActionRow({ icon: Icon, label, description, onClick, href, disabled = f
     </>
   );
   const className =
-    "flex h-16 w-full items-center gap-4 border-b border-border/10 py-0 transition-colors last:border-b-0 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60";
+    "flex h-16 w-full items-center gap-4 py-0 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60";
 
   if (href) {
     const external = href.startsWith("http");
@@ -240,7 +240,7 @@ export default function SettingsPage() {
             disabled={exporting || !user?.dataExport}
           />
           <ActionRow icon={LinkIcon} label={t("import_relinkBtn")} description={t("profile_relinkDesc")} onClick={handleRelinkEntities} disabled={relinking} />
-          <ActionRow icon={TrashIcon} label={t("nav_trash")} href="/trash" />
+          <ActionRow icon={TrashIcon} label={t("nav_trash")} description={t("nav_trash_desc")} href="/trash" />
         </Section>
 
         {/* 4. Suporte e Feedback */}
@@ -263,7 +263,7 @@ export default function SettingsPage() {
         {/* 5. Sobre e Legal */}
         <Section title={title("legal")}>
           <ActionRow icon={InformationCircleIcon} label={t("lp_footer_about")} href="/about" />
-          <ActionRow icon={CodeBracketIcon} label="GitHub" description="continuumnodes/continuum" href={GITHUB_URL} />
+          <ActionRow icon={CodeBracketIcon} label="GitHub" href={GITHUB_URL} />
           <ActionRow icon={DocumentTextIcon} label={t("lp_footer_terms")} href="/terms" />
           <ActionRow icon={ShieldCheckIcon} label={t("lp_footer_privacy")} href="/privacy" />
         </Section>
