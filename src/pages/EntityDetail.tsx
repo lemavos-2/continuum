@@ -458,6 +458,7 @@ export default function EntityDetail() {
             <TimerWidget
               entityId={id!}
               entityName={entity.title}
+              showSectionBorders={false}
               onTimerStart={() => toast({ title: t("ent_timer_started") })}
               onTimerStop={(duration) => toast({ title: t("ent_timer_stopped", { duration: formatSeconds(duration) }) })}
             />

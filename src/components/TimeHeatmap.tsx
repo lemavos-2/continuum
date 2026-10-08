@@ -292,7 +292,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
   };
 
   return (
-    <section className="relative border-y border-border/10 py-5 sm:py-6">
+    <section className="relative py-5 sm:py-6">
       <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
         <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-mono">
           {t('tm_activity_heatmap')}

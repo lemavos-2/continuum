@@ -81,6 +81,7 @@ interface TimerWidgetProps {
   onTimerStart?: (sessionId: string) => void;
   onTimerStop?: (duration: number) => void;
   compact?: boolean;
+  showSectionBorders?: boolean;
 }
 
 // ============================================================
@@ -93,6 +94,7 @@ export function TimerWidget({
   onTimerStart,
   onTimerStop,
   compact = false,
+  showSectionBorders = true,
 }: TimerWidgetProps) {
   const { t } = useLanguage();
   const {
@@ -269,7 +271,7 @@ export function TimerWidget({
   }
 
   return (
-    <section className="border-y border-border/10 py-5 text-foreground sm:py-6">
+    <section className={`${showSectionBorders ? "border-y border-border/10" : ""} py-5 text-foreground sm:py-6`}>
       {/* Header — Activity aesthetic */}
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>

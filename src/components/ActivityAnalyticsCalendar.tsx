@@ -37,7 +37,7 @@ export function ActivityAnalyticsCalendar({ trackingDates = [] }: ActivityAnalyt
   return (
     <div className="space-y-6">
       {/* Completion Summary — minimal, app-aligned */}
-      <div className="border-y border-border/10 py-5">
+      <div className="py-5">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground font-mono">{t("tm_completion")}</p>
