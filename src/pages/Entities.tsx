@@ -18,6 +18,8 @@ import {
   Plus,
   Search,
   Loader2,
+  Bookmark,
+  BookmarkCheck,
   Trash2,
   SlidersHorizontal,
   Check,
@@ -29,6 +31,7 @@ import { FitText } from "@/components/ui/fit-text";
 import { ListRowContent } from "@/components/ui/list-row-content";
 import { EntityTypeIcon } from "@/components/ui/entity-type-icon";
 import { FloatingCreateButton } from "@/components/ui/floating-create-button";
+import { InsightSignalBadge } from "@/components/InsightSignal";
 
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +46,7 @@ interface Entity {
   createdAt: string;
   updatedAt?: string; // Adicionado para suportar ordenação por modificação
   trackingDates?: string[];
+  favorite?: boolean;
 }
 
 const typeLabels: Record<string, string> = {
@@ -208,6 +212,31 @@ export default function Entities() {
   const handleDelete = (e: React.MouseEvent, entity: Entity) => {
     e.stopPropagation();
     setPendingDeleteEntity(entity);
+  };
+
+  const toggleFavorite = async (entity: Entity, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const previousFavorite = !!entity.favorite;
+    const favorite = !previousFavorite;
+    const updateFavorite = (items: Entity[]) =>
+      items.map((item) => (item.id === entity.id ? { ...item, favorite } : item));
+    setEntities(updateFavorite);
+    entitiesQuery.setData((prev) => updateFavorite(prev ?? []));
+    try {
+      const { data } = await entitiesApi.toggleFavorite(entity.id);
+      const persistedFavorite = !!data.favorite;
+      setEntities((prev) => prev.map((item) => item.id === entity.id ? { ...item, favorite: persistedFavorite } : item));
+      entitiesQuery.setData((prev) =>
+        (prev ?? []).map((item) => item.id === entity.id ? { ...item, favorite: persistedFavorite } : item)
+      );
+    } catch {
+      setEntities((prev) => prev.map((item) => item.id === entity.id ? { ...item, favorite: previousFavorite } : item));
+      entitiesQuery.setData((prev) =>
+        (prev ?? []).map((item) => item.id === entity.id ? { ...item, favorite: previousFavorite } : item)
+      );
+      toast({ title: t("ls_entities_error_favorite"), variant: "destructive" });
+    }
   };
 
   const confirmDelete = async () => {
@@ -556,20 +585,45 @@ export default function Entities() {
 
 
                       {!selectMode && (
-                        <div className="flex shrink-0 items-center gap-1 pt-1">
+                        <div className="flex shrink-0 items-center gap-2 pt-1">
+                          <span className="flex h-5 w-5 items-center justify-center">
+                            <InsightSignalBadge kind="entity" id={entity.id} className="h-5 w-5" />
+                          </span>
+                          <span className="flex h-5 w-5 items-center justify-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="iconSm"
+                              className={cn(
+                                "h-5 w-5 rounded-full p-0 opacity-70 transition-colors hover:opacity-100",
+                                entity.favorite ? "text-foreground" : "text-foreground"
+                              )}
+                              onClick={(e) => void toggleFavorite(entity, e)}
+                              aria-label={entity.favorite ? t("notes_unfavorite") : t("notes_favorite")}
+                            >
+                              {entity.favorite ? (
+                                <BookmarkCheck className="h-3 w-3 fill-current" />
+                              ) : (
+                                <Bookmark className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </span>
+                          <span className="flex h-5 w-5 items-center justify-center">
                           <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground opacity-0 transition hover:text-muted-foreground group-hover:opacity-100 p-1.5"
+                            size="iconSm"
+                            className="h-5 w-5 rounded-full p-0 text-foreground opacity-70 transition hover:opacity-100"
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               handleDelete(e, entity);
                             }}
                             aria-label={t("common_delete")}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
+                          </span>
                         </div>
                       )}
                     </EntityRow>

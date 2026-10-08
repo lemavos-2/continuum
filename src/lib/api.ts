@@ -494,6 +494,7 @@ export const entitiesApi = {
   update: (id: string, data: { title?: string; type?: string; description?: string }) =>
     api.put(`/api/entities/${id}`, data),
   delete: (id: string) => api.delete(`/api/entities/${id}`),
+  toggleFavorite: (id: string) => api.patch(`/api/entities/${id}/favorite`),
   getNotes: (id: string) => api.get(`/api/entities/${id}/notes`),
   getConnections: (id: string) => api.get(`/api/entities/${id}/connections`),
   getContext: (id: string) => api.get(`/api/entities/${id}/context`),

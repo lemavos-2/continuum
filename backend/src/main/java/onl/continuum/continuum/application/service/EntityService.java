@@ -167,6 +167,12 @@ public class EntityService {
     public Entity getEntity(String userId, String vaultId, String entityId) {
         return validateOwnership(userId, vaultId, entityId);
     }
+
+    public Entity toggleFavorite(String entityId) {
+        Entity entity = validateOwnership(getCurrentUserId(), getCurrentVaultId(), entityId);
+        entity.setFavorite(!entity.isFavorite());
+        return entityRepo.save(entity);
+    }
     
     /**
      * @deprecated Use getEntity(userId, vaultId, entityId) para validações mais robustas
