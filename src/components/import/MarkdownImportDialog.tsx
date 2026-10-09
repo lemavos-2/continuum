@@ -277,7 +277,11 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-3xl w-[calc(100vw-1rem)] sm:w-full max-h-[92vh] sm:max-h-[85vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent
+        viewportAware={false}
+        className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(92dvh,760px)] w-full max-w-none gap-0 overflow-hidden rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] flex flex-col"
+        style={{ top: "auto", bottom: 0, transform: "none" }}
+      >
         <DialogHeader className="space-y-0 p-4 sm:p-6 border-b border-border/10 text-left">
           <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("import_eyebrow")}</p>
           <DialogTitle className="font-serif text-xl sm:text-2xl tracking-tight text-foreground mt-2">

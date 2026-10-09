@@ -380,6 +380,36 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={editingGoal} onOpenChange={(open) => {
+        setEditingGoal(open);
+        if (!open) setGoalError(null);
+      }}>
+        <DialogContent
+          viewportAware={false}
+          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)]"
+          style={{ top: "auto", bottom: 0, transform: "none" }}
+        >
+          <DialogHeader className="border-b border-border/10 px-5 py-4 text-center">
+            <DialogTitle className="text-lg">{t('tm_set_daily_goal')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 px-5 py-5">
+            <fieldset>
+              <legend className="mb-2 text-xs font-medium text-muted-foreground">{t('tm_duration')}</legend>
+              <div className="flex items-center gap-2">
+                <DurationWheel label={t('tm_hours_short')} value={goalHours} max={23} onChange={setGoalHours} />
+                <DurationWheel label={t('tm_minutes_short')} value={goalMins} max={59} onChange={setGoalMins} />
+                <DurationWheel label={t('tm_seconds_short')} value={goalSecs} max={59} onChange={setGoalSecs} />
+              </div>
+            </fieldset>
+            {goalError && <p role="alert" className="text-sm text-destructive">{goalError}</p>}
+            <Button type="button" onClick={submitGoal} disabled={isSavingGoal} className="h-12 w-full rounded-xl">
+              {isSavingGoal ? t('tm_saving_entry') : t('tm_set_daily_goal')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       {isLoading ? (
         <div className="h-32" />
       ) : (
