@@ -77,16 +77,16 @@ interface ActionRowProps {
 function ActionRow({ icon: Icon, label, description, onClick, href, disabled = false, destructive = false }: ActionRowProps) {
   const content = (
     <>
-      <Icon className={`h-5 w-5 shrink-0 ${destructive ? "text-destructive" : "text-muted-foreground"}`} />
+      <Icon className={`h-5 w-5 shrink-0 transition-colors ${destructive ? "text-destructive" : "text-muted-foreground group-hover:text-foreground"}`} />
       <span className="min-w-0 flex-1 text-left">
-        <span className={`block text-sm font-medium ${destructive ? "text-destructive" : "text-foreground/80"}`}>{label}</span>
+        <span className={`block text-sm font-medium ${destructive ? "text-destructive" : "text-foreground/80 group-hover:text-foreground"}`}>{label}</span>
         {description && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{description}</span>}
       </span>
-      <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
     </>
   );
   const className =
-    "flex h-16 w-full items-center gap-4 py-0 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60";
+    "group -mx-3 flex h-16 w-[calc(100%+1.5rem)] items-center gap-4 rounded-md px-3 py-0 transition-colors hover:bg-secondary/75 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
 
   if (href) {
     const external = href.startsWith("http");
