@@ -133,9 +133,12 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
   const hoverRef = useRef<HoverCell | null>(null);
   hoverRef.current = hover;
 
-  const { goalMinutes, setGoal } = useTimerGoal(entityId);
+  const { goalMinutes, setGoal, isSaving: isSavingGoal } = useTimerGoal(entityId);
   const [editingGoal, setEditingGoal] = useState(false);
-  const [goalDraft, setGoalDraft] = useState<string>(String(goalMinutes));
+  const [goalHours, setGoalHours] = useState(0);
+  const [goalMins, setGoalMins] = useState(0);
+  const [goalSecs, setGoalSecs] = useState(0);
+  const [goalError, setGoalError] = useState<string | null>(null);
 
   const [adding, setAdding] = useState(false);
   const [entryDate, setEntryDate] = useState<string>(() => dateKey(new Date()));
@@ -223,9 +226,13 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
 
   const activeDays = byDay.size;
 
-  const commitGoal = () => {
-    const n = parseInt(goalDraft, 10);
-    if (Number.isFinite(n) && n > 0) setGoal(n);
+  const submitGoal = () => {
+    const totalSeconds = goalHours * 3600 + goalMins * 60 + goalSecs;
+    if (totalSeconds <= 0) {
+      setGoalError(t('tm_duration_must_be_positive'));
+      return;
+    }
+    setGoal(Math.max(1, Math.round(totalSeconds / 60)));
     setEditingGoal(false);
   };
 
@@ -251,7 +258,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
       await qc.invalidateQueries({ queryKey: ['timeTracking'] });
       setAdding(false);
       setEntryHours(0);
-      setEntryMinutes(30);
+      setEntryMinutes(0);
       setEntrySeconds(0);
       setEntryDate(dateKey(new Date()));
     } catch (err: unknown) {
