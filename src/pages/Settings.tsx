@@ -169,6 +169,8 @@ export default function SettingsPage() {
       toast({
         title: t("import_relinkDoneTitle"),
         description: t("import_relinkDoneDesc", { n: data.connectionsCreated ?? 0, notes: data.notesUpdated ?? 0 }),
+        variant: (data.connectionsCreated ?? 0) > 0 ? "default" : "info",
+        notificationCategory: "entity-relink",
       });
     } catch (error: any) {
       toast({
@@ -213,6 +215,16 @@ export default function SettingsPage() {
     setDeletingNow(true);
     try {
       await authApi.deleteScheduledAccountNow();
+      try {
+        sessionStorage.setItem("continuum.account-deleted", "true");
+      } catch (error) {
+        console.warn("Could not store account deletion notice for the landing page", error);
+        toast({
+          title: t("lp_accountDeletedTitle"),
+          description: t("lp_accountDeletedDescription"),
+          variant: "destructive",
+        });
+      }
       await logout();
       navigate("/", { replace: true });
     } catch (error: unknown) {

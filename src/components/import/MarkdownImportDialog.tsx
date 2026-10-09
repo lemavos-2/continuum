@@ -224,6 +224,8 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
           n: data.connectionsCreated,
           notes: data.notesUpdated,
         }),
+        variant: data.connectionsCreated > 0 ? "default" : "info",
+        notificationCategory: "entity-relink",
       });
       onImported?.();
     } catch (e: any) {
