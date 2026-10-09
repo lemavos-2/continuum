@@ -7,6 +7,8 @@ Every notable change to Continuum, from the first release to the latest version.
 v1.3.1 — Oct XX, 2026
 
 - UI: Add charcoal and light mode.
+- Backend: Add email system.
+- Email: Add alerts sender.
 
 ---
 

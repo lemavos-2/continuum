@@ -83,11 +83,11 @@ function ActionRow({ icon: Icon, label, description, onClick, href, disabled = f
         <span className={`block text-sm font-medium ${destructive ? "text-destructive" : "text-foreground/80 group-hover:text-foreground"}`}>{label}</span>
         {description && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{description}</span>}
       </span>
-      <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+      <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground/60 transition-[color,opacity,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-foreground group-hover:opacity-100" />
     </>
   );
   const className =
-    "group -mx-3 flex h-16 w-[calc(100%+1.5rem)] items-center gap-4 rounded-md px-3 py-0 transition-colors hover:bg-secondary/75 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+    "group -mx-3 flex h-16 w-[calc(100%+1.5rem)] items-center gap-4 rounded-xl border border-transparent px-3 py-0 transition-[background-color,border-color,box-shadow,color] duration-150 hover:border-border/10 hover:bg-secondary/60 hover:text-foreground hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
 
   if (href) {
     const external = href.startsWith("http");
