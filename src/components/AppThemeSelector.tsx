@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SwatchIcon } from "@heroicons/react/24/outline";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -16,11 +16,11 @@ export function AppThemeSelector() {
   const { theme, setTheme } = useTheme();
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+  const selectingTheme = useRef(false);
 
   const handleChange = async (value: string) => {
     if (!APP_THEMES.some((themeOption) => themeOption === value)) return;
-    setSaving(true);
     try {
       await setTheme(value === "CHARCOAL" || value === "LIGHT" ? value : "CLASSIC");
     } catch {
@@ -29,9 +29,15 @@ export function AppThemeSelector() {
         description: t("common_tryAgain"),
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
     }
+  };
+
+  const handleValueChange = (value: string) => {
+    selectingTheme.current = true;
+    void handleChange(value);
+    queueMicrotask(() => {
+      selectingTheme.current = false;
+    });
   };
 
   return (
@@ -45,14 +51,28 @@ export function AppThemeSelector() {
           {t("profile_themeDesc")}
         </span>
       </span>
-      <Select value={theme} onValueChange={handleChange} disabled={saving}>
-        <SelectTrigger className="h-8 w-[150px] text-xs">
+      <Select
+        value={theme}
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && selectingTheme.current) return;
+          setOpen(nextOpen);
+        }}
+        onValueChange={handleValueChange}
+      >
+        <SelectTrigger className="h-8 w-[140px] text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="CLASSIC" className="text-xs">{t("profile_themeClassic")}</SelectItem>
-          <SelectItem value="CHARCOAL" className="text-xs">{t("profile_themeCharcoal")}</SelectItem>
-          <SelectItem value="LIGHT" className="text-xs">{t("profile_themeLight")}</SelectItem>
+          <SelectItem value="CLASSIC" className="text-xs" onSelect={(event) => event.preventDefault()}>
+            {t("profile_themeClassic")}
+          </SelectItem>
+          <SelectItem value="CHARCOAL" className="text-xs" onSelect={(event) => event.preventDefault()}>
+            {t("profile_themeCharcoal")}
+          </SelectItem>
+          <SelectItem value="LIGHT" className="text-xs" onSelect={(event) => event.preventDefault()}>
+            {t("profile_themeLight")} (beta)
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>

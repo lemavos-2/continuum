@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEFAULT_APP_THEME, type AppTheme, applyAppTheme, readCachedAppTheme } from "@/lib/app-theme";
 
@@ -14,6 +14,8 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user, updatePreferences } = useAuth();
   const [theme, setThemeState] = useState<Theme>(() => readCachedAppTheme());
+  const activeTheme = useRef(theme);
+  const themeChangeRevision = useRef(0);
   const userId = user?.id;
   const userTheme = user?.theme;
 
@@ -27,17 +29,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    if (userId) setThemeState(userTheme ?? DEFAULT_APP_THEME);
+    if (userId) {
+      const nextTheme = userTheme ?? DEFAULT_APP_THEME;
+      activeTheme.current = nextTheme;
+      setThemeState(nextTheme);
+    }
   }, [userId, userTheme]);
 
   const setTheme = async (nextTheme: Theme) => {
-    const previousTheme = theme;
+    const previousTheme = activeTheme.current;
+    const revision = ++themeChangeRevision.current;
+    activeTheme.current = nextTheme;
     setThemeState(nextTheme);
+    applyAppTheme(nextTheme);
     try {
       if (user) await updatePreferences({ theme: nextTheme });
       else window.localStorage.setItem("continuum.app-theme", nextTheme);
     } catch (error) {
-      setThemeState(previousTheme);
+      if (themeChangeRevision.current === revision) {
+        activeTheme.current = previousTheme;
+        setThemeState(previousTheme);
+        applyAppTheme(previousTheme);
+      }
       throw error;
     }
   };

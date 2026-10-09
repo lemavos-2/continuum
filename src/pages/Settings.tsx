@@ -107,7 +107,7 @@ function ActionRow({ icon: Icon, label, description, onClick, href, disabled = f
 /* Custom icons */
 
 function VisionIcon({ className }: { className?: string }) {
-  return <img src="/vision-symbol.png" alt="" aria-hidden="true" className={`${className ?? ""} rounded-full object-cover`} />;
+  return <img src="/vision-symbol-light.png" alt="" aria-hidden="true" className={`${className ?? ""} rounded-full object-cover`} />;
 }
 
 /* ------------------------------------------------------------------ */

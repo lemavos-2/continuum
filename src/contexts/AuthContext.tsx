@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import axios from "axios";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initialAuth] = useState(getInitialAuthState);
   const [user, setUser] = useState<AppUser | null>(initialAuth.user);
   const [loading, setLoading] = useState(initialAuth.loading);
+  const preferencesWriteQueue = useRef<Promise<void>>(Promise.resolve());
 
   const fetchUser = async (opts: { silent?: boolean } = {}) => {
     try {
@@ -120,14 +121,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const nextUser = { ...user, ...preferences };
     setUser(nextUser);
 
+    const request = preferencesWriteQueue.current
+      .catch(() => undefined)
+      .then(() => authApi.updateMe(preferences))
+      .then(() => undefined);
+    preferencesWriteQueue.current = request.catch(() => undefined);
+
     try {
-      await authApi.updateMe(preferences);
+      await request;
     } catch (error) {
       setUser((current) => {
         if (!current || current.id !== previousUser.id) return current;
         const rollback = { ...current };
-        if ("theme" in preferences) rollback.theme = previousUser.theme;
-        if ("language" in preferences) rollback.language = previousUser.language;
+        if (preferences.theme !== undefined && current.theme === preferences.theme) {
+          rollback.theme = previousUser.theme;
+        }
+        if (preferences.language !== undefined && current.language === preferences.language) {
+          rollback.language = previousUser.language;
+        }
         return rollback;
       });
       throw error;
