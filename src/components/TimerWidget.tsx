@@ -293,7 +293,7 @@ export function TimerWidget({
       )}
 
       {/* CONTROLS */}
-      <div className="mb-3 grid grid-cols-2 gap-2">
+      <div className={`mb-3 grid gap-2 ${isRunning ? "grid-cols-2" : "grid-cols-1"}`}>
         {!isRunning ? (
           <button
             onClick={handleStart}
@@ -318,23 +318,22 @@ export function TimerWidget({
             >
               {isStopping ? '…' : t("tm_stop")}
             </button>
+            <button
+              onClick={handleRestart}
+              disabled={timerLoading}
+              className="min-h-11 rounded-xl bg-secondary px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-30 sm:text-[11px] sm:tracking-[0.2em]"
+            >
+              {t("tm_restart")}
+            </button>
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="min-h-11 rounded-xl bg-secondary px-2 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground sm:text-[10px] sm:tracking-[0.2em]"
+            >
+              {t("tm_flip_clock")}
+            </button>
           </>
         )}
-        <button
-          onClick={handleRestart}
-          disabled={!isRunning || timerLoading}
-          className="min-h-11 rounded-xl bg-secondary px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-30 sm:text-[11px] sm:tracking-[0.2em]"
-        >
-          {t("tm_restart")}
-        </button>
       </div>
-
-      <button
-        onClick={() => setIsFullscreen(true)}
-        className="min-h-11 w-full rounded-xl bg-secondary px-2 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground sm:text-[10px] sm:tracking-[0.2em]"
-      >
-        {t("tm_flip_clock")}
-      </button>
 
       {/* TODAY SECTION — Activity stat grid */}
       <div className="mt-5 grid grid-cols-1 divide-y divide-border/10 border-y border-border/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">

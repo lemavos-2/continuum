@@ -26,11 +26,29 @@ export function readCachedAppTheme(): AppTheme {
   }
 }
 
-export function applyAppTheme(theme: AppTheme) {
+const APP_THEME_PATHS = [
+  "/notes",
+  "/entities",
+  "/vault",
+  "/activities",
+  "/projects",
+  "/graph",
+  "/insights",
+  "/trash",
+  "/settings",
+  "/editor",
+];
+
+export function shouldApplyAppTheme(pathname: string, isAuthenticated: boolean) {
+  if (pathname === "/" || pathname === "/index") return isAuthenticated;
+  return APP_THEME_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+export function applyAppTheme(theme: AppTheme, enabled = true) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  root.classList.toggle("light", theme === "LIGHT");
-  root.classList.toggle("dark", theme !== "LIGHT");
-  root.classList.toggle("theme-charcoal", theme === "CHARCOAL");
-  root.style.colorScheme = theme === "LIGHT" ? "light" : "dark";
+  root.classList.toggle("light", enabled && theme === "LIGHT");
+  root.classList.toggle("dark", enabled && theme !== "LIGHT");
+  root.classList.toggle("theme-charcoal", enabled && theme === "CHARCOAL");
+  root.style.colorScheme = enabled && theme === "LIGHT" ? "light" : "dark";
 }

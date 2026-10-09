@@ -4,6 +4,7 @@ import {
   DEFAULT_APP_THEME,
   isAppTheme,
   readCachedAppTheme,
+  shouldApplyAppTheme,
 } from "@/lib/app-theme";
 
 describe("app theme preference", () => {
@@ -42,5 +43,20 @@ describe("app theme preference", () => {
     expect(document.documentElement).toHaveClass("light");
     expect(document.documentElement).not.toHaveClass("dark", "theme-charcoal");
     expect(document.documentElement.style.colorScheme).toBe("light");
+  });
+
+  it("does not enable app themes on public routes", () => {
+    expect(shouldApplyAppTheme("/", false)).toBe(false);
+    expect(shouldApplyAppTheme("/about", false)).toBe(false);
+    expect(shouldApplyAppTheme("/", true)).toBe(true);
+    expect(shouldApplyAppTheme("/notes/123", false)).toBe(true);
+  });
+
+  it("removes app theme classes when disabled", () => {
+    applyAppTheme("LIGHT");
+    applyAppTheme("LIGHT", false);
+
+    expect(document.documentElement).not.toHaveClass("light", "dark", "theme-charcoal");
+    expect(document.documentElement.style.colorScheme).toBe("dark");
   });
 });

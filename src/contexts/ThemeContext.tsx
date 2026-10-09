@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { DEFAULT_APP_THEME, type AppTheme, applyAppTheme, readCachedAppTheme } from "@/lib/app-theme";
+import { DEFAULT_APP_THEME, type AppTheme, applyAppTheme, readCachedAppTheme, shouldApplyAppTheme } from "@/lib/app-theme";
 
 export type Theme = AppTheme;
 
@@ -13,14 +14,20 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user, updatePreferences } = useAuth();
+  const { pathname } = useLocation();
   const [theme, setThemeState] = useState<Theme>(() => readCachedAppTheme());
   const activeTheme = useRef(theme);
   const themeChangeRevision = useRef(0);
   const userId = user?.id;
   const userTheme = user?.theme;
 
+  const appThemeEnabled = shouldApplyAppTheme(pathname, Boolean(user));
+
+  useLayoutEffect(() => {
+    applyAppTheme(theme, appThemeEnabled);
+  }, [theme, appThemeEnabled]);
+
   useEffect(() => {
-    applyAppTheme(theme);
     try {
       window.localStorage.setItem("continuum.app-theme", theme);
     } catch (error) {
@@ -41,7 +48,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const revision = ++themeChangeRevision.current;
     activeTheme.current = nextTheme;
     setThemeState(nextTheme);
-    applyAppTheme(nextTheme);
+    applyAppTheme(nextTheme, appThemeEnabled);
     try {
       if (user) await updatePreferences({ theme: nextTheme });
       else window.localStorage.setItem("continuum.app-theme", nextTheme);
@@ -49,7 +56,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (themeChangeRevision.current === revision) {
         activeTheme.current = previousTheme;
         setThemeState(previousTheme);
-        applyAppTheme(previousTheme);
+        applyAppTheme(previousTheme, appThemeEnabled);
       }
       throw error;
     }
