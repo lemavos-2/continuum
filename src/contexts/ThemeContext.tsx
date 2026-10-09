@@ -1,53 +1,48 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { DEFAULT_APP_THEME, type AppTheme, applyAppTheme, readCachedAppTheme } from "@/lib/app-theme";
 
-export type Theme = "dark" | "light";
+export type Theme = AppTheme;
 
 interface ThemeContextValue {
   theme: Theme;
-  setTheme: (t: Theme) => void;
-  toggleTheme: () => void;
+  setTheme: (t: Theme) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "continuum.theme";
-
-function applyTheme(theme: Theme) {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  root.classList.remove("light", "dark");
-  root.classList.add(theme);
-  root.style.colorScheme = theme;
-}
-
-function readInitial(): Theme {
-  if (typeof window === "undefined") return "dark";
-  const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-  if (stored === "light" || stored === "dark") return stored;
-  return "dark";
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => readInitial());
+  const { user, updatePreferences } = useAuth();
+  const [theme, setThemeState] = useState<Theme>(() => readCachedAppTheme());
+  const userId = user?.id;
+  const userTheme = user?.theme;
 
   useEffect(() => {
-    applyTheme(theme);
+    applyAppTheme(theme);
     try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {}
+      window.localStorage.setItem("continuum.app-theme", theme);
+    } catch (error) {
+      console.warn("Failed to cache app theme", error);
+    }
   }, [theme]);
 
-  const setTheme = useCallback((t: Theme) => setThemeState(t), []);
-  const toggleTheme = useCallback(
-    () => setThemeState((prev) => (prev === "dark" ? "light" : "dark")),
-    [],
-  );
+  useEffect(() => {
+    if (userId) setThemeState(userTheme ?? DEFAULT_APP_THEME);
+  }, [userId, userTheme]);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  const setTheme = async (nextTheme: Theme) => {
+    const previousTheme = theme;
+    setThemeState(nextTheme);
+    try {
+      if (user) await updatePreferences({ theme: nextTheme });
+      else window.localStorage.setItem("continuum.app-theme", nextTheme);
+    } catch (error) {
+      setThemeState(previousTheme);
+      throw error;
+    }
+  };
+
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

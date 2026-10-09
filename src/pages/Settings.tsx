@@ -27,6 +27,7 @@ import {
 import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { AppThemeSelector } from "@/components/AppThemeSelector";
 import { useExtrasText, useDeletionStatus } from "@/components/AccountExtras";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -251,6 +252,7 @@ export default function SettingsPage() {
         <Section title={title("preferences")}>
           <ActionRow icon={PencilSquareIcon} label={t("nav_editorSettings")} href="/editor" />
           <LanguageSelector />
+          <AppThemeSelector />
         </Section>
 
         {/* 3. Dados e Integrações */}

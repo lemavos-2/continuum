@@ -13,7 +13,7 @@
 @layer base {
   :root {
     /* --- Continuum raw tokens (source of truth) --- */
-    --bg-base: #080808;
+    --bg-base: #000000;
     --bg-surface: #0D0D0D;
     --bg-surface-2: #161616;
     --bg-hover: #212121;
@@ -56,7 +56,7 @@
     --font-mono-stack: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
     /* --- shadcn bridge (HSL) --- */
-    --background: 0 0% 3.14%;
+    --background: 0 0% 0%;
     --foreground: 45 12% 90%;
 
     --card: 0 0% 5%;
@@ -87,7 +87,7 @@
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 3.14%;
+    --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 45 4% 62%;
     --sidebar-primary: 45 25% 94%;
     --sidebar-primary-foreground: 30 12% 4%;
@@ -191,6 +191,12 @@
     --popup-muted: 45 5% 36%;
     --popup-border: 45 10% 9% / 0.08;
 
+  }
+
+  .dark.theme-charcoal {
+    --bg-base: #080808;
+    --background: 0 0% 3.14%;
+    --sidebar-background: 0 0% 3.14%;
   }
 
   .dark { color-scheme: dark; }
