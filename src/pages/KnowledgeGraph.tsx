@@ -21,6 +21,7 @@ import { SideInspector } from "@/components/SideInspector";
 import { useEntityStore } from "@/contexts/EntityContext";
 import type { Entity, EntityType } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { queryClient } from "@/lib/query-client";
 import { qk, STALE } from "@/lib/queries";
 
@@ -166,6 +167,7 @@ function OptionSwitch({
 
 export default function KnowledgeGraph() {
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const typeLabel = useCallback((type: string) => t(TYPE_LABEL_KEYS[type]) || type, [t]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -446,14 +448,14 @@ export default function KnowledgeGraph() {
         const isHoveredEdge = hovered && (hovered.id === e.source || hovered.id === e.target);
         
         if (hasSelection && !isHighlighted) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.05)";
-          ctx.lineWidth = 0.6 / z;
+          ctx.strokeStyle = theme === "LIGHT" ? "hsla(40,10%,14%,0.12)" : "hsla(0,0%,100%,0.05)";
+          ctx.lineWidth = (theme === "LIGHT" ? 0.8 : 0.6) / z;
         } else if (isHighlighted || isHoveredEdge) {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.75)";
-          ctx.lineWidth = 2 / z;
+          ctx.strokeStyle = theme === "LIGHT" ? "hsla(40,10%,14%,0.8)" : "hsla(0,0%,100%,0.75)";
+          ctx.lineWidth = (theme === "LIGHT" ? 2.4 : 2) / z;
         } else {
-          ctx.strokeStyle = "hsla(0,0%,100%,0.28)";
-          ctx.lineWidth = Math.min(1.6, 0.9 + (a.degree + b.degree) * 0.02) / z;
+          ctx.strokeStyle = theme === "LIGHT" ? "hsla(40,10%,14%,0.42)" : "hsla(0,0%,100%,0.28)";
+          ctx.lineWidth = Math.min(theme === "LIGHT" ? 2 : 1.6, (theme === "LIGHT" ? 1.2 : 0.9) + (a.degree + b.degree) * 0.02) / z;
         }
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -551,7 +553,7 @@ export default function KnowledgeGraph() {
       }
       ctx.restore();
     }
-  }, [isNodeVisible]);
+  }, [isNodeVisible, theme]);
 
   const tick = useCallback(() => {
     simulate();
