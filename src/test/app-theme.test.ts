@@ -36,4 +36,11 @@ describe("app theme preference", () => {
     expect(document.documentElement).toHaveClass("dark");
     expect(document.documentElement).not.toHaveClass("theme-charcoal");
   });
+
+  it("applies the light theme without retaining dark theme classes", () => {
+    applyAppTheme("LIGHT");
+    expect(document.documentElement).toHaveClass("light");
+    expect(document.documentElement).not.toHaveClass("dark", "theme-charcoal");
+    expect(document.documentElement.style.colorScheme).toBe("light");
+  });
 });

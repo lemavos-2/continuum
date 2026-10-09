@@ -70,8 +70,8 @@ public class AccountController {
         
         String theme = body.get("theme");
         String language = body.get("language");
-        if (theme != null && !Set.of("CLASSIC", "CHARCOAL").contains(theme)) {
-            throw new BadRequestException("theme must be CLASSIC or CHARCOAL");
+        if (theme != null && !Set.of("CLASSIC", "CHARCOAL", "LIGHT").contains(theme)) {
+            throw new BadRequestException("theme must be CLASSIC, CHARCOAL, or LIGHT");
         }
         if (language != null && !Set.of("en", "es", "pt", "fr").contains(language)) {
             throw new BadRequestException("language must be en, es, pt, or fr");

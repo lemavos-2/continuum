@@ -379,7 +379,7 @@ export const authApi = {
   me: () => api.get("/api/auth/me"),
   updateMe: (data: {
     username?: string;
-    theme?: "CLASSIC" | "CHARCOAL";
+    theme?: "CLASSIC" | "CHARCOAL" | "LIGHT";
     language?: "en" | "es" | "pt" | "fr";
   }) => api.patch("/api/account/me", data),
   changePassword: (currentPassword: string, newPassword: string) =>

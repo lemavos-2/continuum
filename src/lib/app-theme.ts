@@ -1,10 +1,10 @@
 export const DEFAULT_APP_THEME = "CLASSIC" as const;
-export const APP_THEMES = ["CLASSIC", "CHARCOAL"] as const;
+export const APP_THEMES = ["CLASSIC", "CHARCOAL", "LIGHT"] as const;
 
 export type AppTheme = (typeof APP_THEMES)[number];
 
 export function isAppTheme(value: unknown): value is AppTheme {
-  return value === "CLASSIC" || value === "CHARCOAL";
+  return value === "CLASSIC" || value === "CHARCOAL" || value === "LIGHT";
 }
 
 export function readCachedAppTheme(): AppTheme {
@@ -29,8 +29,8 @@ export function readCachedAppTheme(): AppTheme {
 export function applyAppTheme(theme: AppTheme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  root.classList.remove("light");
-  root.classList.add("dark");
+  root.classList.toggle("light", theme === "LIGHT");
+  root.classList.toggle("dark", theme !== "LIGHT");
   root.classList.toggle("theme-charcoal", theme === "CHARCOAL");
-  root.style.colorScheme = "dark";
+  root.style.colorScheme = theme === "LIGHT" ? "light" : "dark";
 }

@@ -22,7 +22,7 @@ export function AppThemeSelector() {
     if (!APP_THEMES.some((themeOption) => themeOption === value)) return;
     setSaving(true);
     try {
-      await setTheme(value === "CHARCOAL" ? "CHARCOAL" : "CLASSIC");
+      await setTheme(value === "CHARCOAL" || value === "LIGHT" ? value : "CLASSIC");
     } catch {
       toast({
         title: t("profile_updateFailed"),
@@ -52,6 +52,7 @@ export function AppThemeSelector() {
         <SelectContent>
           <SelectItem value="CLASSIC" className="text-xs">{t("profile_themeClassic")}</SelectItem>
           <SelectItem value="CHARCOAL" className="text-xs">{t("profile_themeCharcoal")}</SelectItem>
+          <SelectItem value="LIGHT" className="text-xs">{t("profile_themeLight")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
