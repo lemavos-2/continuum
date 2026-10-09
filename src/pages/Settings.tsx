@@ -26,6 +26,7 @@ import {
 } from "@heroicons/react/24/outline";
 import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AppThemeSelector } from "@/components/AppThemeSelector";
 import { useExtrasText, useDeletionStatus } from "@/components/AccountExtras";
@@ -107,7 +108,9 @@ function ActionRow({ icon: Icon, label, description, onClick, href, disabled = f
 /* Custom icons */
 
 function VisionIcon({ className }: { className?: string }) {
-  return <img src="/vision-symbol-light.png" alt="" aria-hidden="true" className={`${className ?? ""} rounded-full object-cover`} />;
+  const { theme } = useTheme();
+  const src = theme === "LIGHT" ? "/vision-symbol-light.png" : "/vision-symbol.png";
+  return <img src={src} alt="" aria-hidden="true" className={`${className ?? ""} rounded-full object-cover`} />;
 }
 
 /* ------------------------------------------------------------------ */

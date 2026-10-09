@@ -150,7 +150,7 @@ export function SessionNavBar() {
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-sidebar-accent"
           >
             <img
-              src={theme === "LIGHT" ? "/icon-transparent-light.png" : "/icon-transparent.png"}
+              src={theme === "LIGHT" ? "/icon-light.png" : "/icon-transparent.png"}
               alt="Continuum"
               className="h-6 w-6 shrink-0 rounded object-contain"
             />
