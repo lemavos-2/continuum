@@ -308,45 +308,26 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
           <span className="whitespace-normal text-[10px] text-muted-foreground font-mono">
             {t('tm_active_days_summary', { count: activeDays, time: fmtHM(totalSeconds) })}
           </span>
-          {editingGoal ? (
-            <span className="inline-flex items-center gap-1.5">
-              <input
-                type="number"
-                min={1}
-                value={goalDraft}
-                onChange={(e) => setGoalDraft(e.target.value)}
-                onBlur={commitGoal}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitGoal();
-                  if (e.key === 'Escape') {
-                    setGoalDraft(String(goalMinutes));
-                    setEditingGoal(false);
-                  }
-                }}
-                autoFocus
-                className="w-14 px-1.5 py-0.5 text-[10px] font-mono bg-foreground/[0.04] border border-border/15 rounded text-foreground text-right focus:outline-none focus:border-border/30"
-              />
-              <span className="text-[10px] text-muted-foreground font-mono">{t('tm_min_per_day')}</span>
-            </span>
-          ) : (
-            <button
-              onClick={() => {
-                setGoalDraft(String(goalMinutes));
-                setEditingGoal(true);
-              }}
-              className="max-w-full whitespace-normal rounded-md bg-secondary px-2 py-1 text-left text-[10px] font-mono text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground"
-              title={t('tm_set_daily_goal')}
-            >
-              {t('tm_goal_label', { time: fmtHM(goalSeconds) })}
-            </button>
-          )}
+          <button
+            onClick={() => {
+              setGoalError(null);
+              setGoalHours(0);
+              setGoalMins(0);
+              setGoalSecs(0);
+              setEditingGoal(true);
+            }}
+            className="whitespace-normal rounded-md bg-secondary px-2 py-1 text-[10px] font-mono text-secondary-foreground/70 transition hover:bg-secondary/75 hover:text-secondary-foreground"
+            title={t('tm_set_daily_goal')}
+          >
+            {t('tm_goal_label', { time: fmtHM(goalSeconds) })}
+          </button>
           {entityId && (
             <button
               onClick={() => {
                 setEntryError(null);
                 setEntryDate(dateKey(new Date()));
                 setEntryHours(0);
-                setEntryMinutes(30);
+                setEntryMinutes(0);
                 setEntrySeconds(0);
                 setAdding(true);
               }}
