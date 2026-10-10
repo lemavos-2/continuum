@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
+import { BrainGraph2D } from '@/components/graph/BrainGraph2D';
 import { BrainGraph3D, type BrainGraphHandle } from '@/components/graph/BrainGraph3D';
 import { SideInspector } from '@/components/SideInspector';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export default function KnowledgeGraph() {
   const [time, setTime] = useState<'all' | '7d' | '30d'>('all');
   const [showEdges, setShowEdges] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
+  const [show3D, setShow3D] = useState(false);
   const [focus, setFocus] = useState(false);
   const [inside, setInside] = useState(false);
   const [options, setOptions] = useState(false);
@@ -101,17 +103,23 @@ export default function KnowledgeGraph() {
   </Tooltip>;
 
   return <AppLayout>
-    <section className="relative h-[100dvh] min-h-[420px] overflow-hidden bg-background" aria-label={t('gr_brain_3d')}>
-      {!loading && !failed && <BrainGraph3D ref={viewer} nodes={visibleNodes} links={visibleLinks} selectedId={selected?.id ?? null} highlightedIds={highlighted} showEdges={showEdges} showLabels={showLabels} inside={inside} theme={theme} unavailableText={t('gr_3d_unavailable')} onSelect={select} onOpen={open} onClear={clear} />}
+    <section className="relative h-[100dvh] min-h-[420px] overflow-hidden bg-background" aria-label={t('nav_graph')}>
+      {!loading && !failed && (show3D
+        ? <BrainGraph3D ref={viewer} nodes={visibleNodes} links={visibleLinks} selectedId={selected?.id ?? null} highlightedIds={highlighted} showEdges={showEdges} showLabels={showLabels} inside={inside} theme={theme} unavailableText={t('gr_3d_unavailable')} onSelect={select} onOpen={open} onClear={clear} />
+        : <BrainGraph2D ref={viewer} nodes={visibleNodes} links={visibleLinks} selectedId={selected?.id ?? null} highlightedIds={highlighted} showEdges={showEdges} showLabels={showLabels} onSelect={select} onOpen={open} onClear={clear} />)}
       <div className="pointer-events-none absolute left-5 top-5 max-w-[calc(100%-6rem)]">
-        <h1 className="font-display text-xl text-foreground">{t('nav_graph')} <span className="ml-1 font-sans text-xs text-muted-foreground">3D</span></h1>
+        <h1 className="font-display text-xl text-foreground">{t('nav_graph')} <span className="ml-1 font-sans text-xs text-muted-foreground">{show3D ? '3D' : '2D'}</span></h1>
         {!loading && <p className="mt-1 text-xs text-muted-foreground">{t('gr_brain_stats', { nodes: visibleNodes.length, links: visibleLinks.length })}</p>}
+      </div>
+      <div className="absolute right-4 top-5 z-30 flex items-center gap-2 rounded-lg border border-border/10 bg-card/75 px-2 py-2 backdrop-blur-md">
+        <label htmlFor="graph-3d-toggle" className="text-xs text-foreground">3D</label>
+        <Switch id="graph-3d-toggle" aria-label={t('gr_view_3d')} checked={show3D} onCheckedChange={checked => { setShow3D(checked); if (!checked) setInside(false); }} />
       </div>
       <div className="absolute right-4 top-16 z-30 flex flex-col gap-1 rounded-lg border border-border/10 bg-card/75 p-1 backdrop-blur-md">
         {tool(t('common_back'), () => navigate(-1), <ArrowLeft className="h-4 w-4" />)}
         {tool(t('gr_zoom_in'), () => viewer.current?.zoom(1), <ZoomIn className="h-4 w-4" />)}
         {tool(t('gr_zoom_out'), () => viewer.current?.zoom(-1), <ZoomOut className="h-4 w-4" />)}
-        {tool(inside ? t('gr_exit_brain') : t('gr_enter_brain'), () => setInside(v => !v), <ArrowRight className="h-4 w-4" />, inside)}
+        {show3D && tool(inside ? t('gr_exit_brain') : t('gr_enter_brain'), () => setInside(v => !v), <ArrowRight className="h-4 w-4" />, inside)}
         {tool(t('gr_reset_view'), reset, <RefreshCw className="h-4 w-4" />)}
         {tool(t('gr_focus_mode'), () => setFocus(v => !v), focus ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />, focus)}
         {tool(t('gr_open_options'), () => setOptions(true), <Settings className="h-4 w-4" />)}

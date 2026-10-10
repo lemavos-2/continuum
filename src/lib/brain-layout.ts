@@ -9,6 +9,7 @@ export interface BrainNode {
 
 export interface BrainLink { source: string; target: string }
 export type Point3 = [number, number, number];
+export type Point2 = [number, number];
 
 // Axes: x = left/right, y = up/down, z = front(+)/back(-), centred on the origin,
 // about 5.2 wide, 5.6 tall and 6.6 long.
@@ -193,6 +194,32 @@ export function layoutBrainNodes(nodes: BrainNode[], links: BrainLink[] = []): M
   const out: number[] = new Array(n);
   match(sorted.map((_, i) => i), slots.map((_, i) => i), emb, slots, 0, out);
   sorted.forEach((nd, i) => positions.set(nd.id, slots[out[i]]));
+  return positions;
+}
+
+export function layoutBrainNodes2D(nodes: BrainNode[], links: BrainLink[] = []): Map<string, Point2> {
+  const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
+  const positions = new Map<string, Point2>();
+  if (!sorted.length) return positions;
+
+  const index = new Map(sorted.map((node, i) => [node.id, i]));
+  const adj: number[][] = sorted.map(() => []);
+  for (const link of links) {
+    const a = index.get(link.source), b = index.get(link.target);
+    if (a === undefined || b === undefined || a === b) continue;
+    adj[a].push(b);
+    adj[b].push(a);
+  }
+
+  const embedding = spectral(sorted.length, adj, 2);
+  const axes = embedding.map((values, axis) => {
+    let min = Infinity, max = -Infinity;
+    for (const value of values) { min = Math.min(min, value); max = Math.max(max, value); }
+    return values.map((value, i) => max - min < 1e-8
+      ? (i / Math.max(1, values.length - 1)) * 2 - 1
+      : ((value - min) / (max - min)) * 2 - 1);
+  });
+  sorted.forEach((node, i) => positions.set(node.id, [axes[0][i] * 440, axes[1][i] * 290]));
   return positions;
 }
 
