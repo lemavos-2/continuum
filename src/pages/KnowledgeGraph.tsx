@@ -1263,8 +1263,8 @@ export default function KnowledgeGraph() {
             {!empty && (
               <canvas
                 ref={canvasRef}
-                className="bg-black select-none" // Obsidian é tradicionalmente escuro
-                style={{ display: show3D ? "none" : "block", touchAction: "none" }}
+                className="select-none"
+                style={{ display: show3D ? "none" : "block", touchAction: "none", backgroundColor: "var(--bg-base)" }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
