@@ -8,12 +8,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 // ============================================================
 // SUBCOMPONENTE: FlipDigit (Alinhamento Robusto e Sem Falhas)
 // ============================================================
-function FlipDigit({ value }: { value: string }) {
+function FlipDigit({ value, animate = true }: { value: string; animate?: boolean }) {
   const [prevValue, setPrevValue] = useState(value);
   const [isFlipping, setIsFlipping] = useState(false);
 
   useEffect(() => {
     if (value !== prevValue) {
+      if (!animate) {
+        setPrevValue(value);
+        setIsFlipping(false);
+        return;
+      }
+
       setIsFlipping(true);
       const timeout = setTimeout(() => {
         setPrevValue(value);
@@ -21,7 +27,9 @@ function FlipDigit({ value }: { value: string }) {
       }, 500);
       return () => clearTimeout(timeout);
     }
-  }, [value, prevValue]);
+  }, [animate, value, prevValue]);
+
+  const displayedPreviousValue = animate ? prevValue : value;
 
   return (
     <div className="relative w-20 h-28 sm:w-28 sm:h-40 lg:w-32 lg:h-48 font-mono font-bold text-foreground select-none [perspective:1000px]">
@@ -47,19 +55,19 @@ function FlipDigit({ value }: { value: string }) {
       {/* 2. BASE DE BAIXO */}
       <div className="absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-background to-card">
         <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
-          {prevValue}
+          {displayedPreviousValue}
         </div>
       </div>
 
       {/* 3. CARTA QUE CAI DE CIMA */}
-      <div className={`absolute top-0 left-0 w-full h-1/2 overflow-hidden rounded-t-xl bg-gradient-to-b from-card to-background border-b border-border/30 [transform-origin:bottom] backface-hidden ${isFlipping ? 'anim-top' : ''}`}>
+      <div className={`absolute top-0 left-0 w-full h-1/2 overflow-hidden rounded-t-xl bg-gradient-to-b from-card to-background border-b border-border/30 [transform-origin:bottom] backface-hidden ${isFlipping && animate ? 'anim-top' : ''}`}>
         <div className="absolute top-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
-          {prevValue}
+          {displayedPreviousValue}
         </div>
       </div>
 
       {/* 4. CARTA QUE APARECE EM BAIXO */}
-      <div className={`absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-background to-card [transform-origin:top] backface-hidden [transform:rotateX(90deg)] ${isFlipping ? 'anim-bottom' : ''}`}>
+      <div className={`absolute bottom-0 left-0 w-full h-1/2 overflow-hidden rounded-b-xl bg-gradient-to-b from-background to-card [transform-origin:top] backface-hidden [transform:rotateX(90deg)] ${isFlipping && animate ? 'anim-bottom' : ''}`}>
         <div className="absolute bottom-0 left-0 w-full h-[200%] flex items-center justify-center text-6xl sm:text-8xl lg:text-9xl leading-none">
           {value}
         </div>
@@ -114,6 +122,7 @@ export function TimerWidget({
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [hasStoppedTimer, setHasStoppedTimer] = useState(false);
   const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -126,7 +135,9 @@ export function TimerWidget({
 
   const currentElapsed = isRunning
     ? getElapsedSeconds(entityId)
-    : (activeTimer?.elapsedSeconds || 0);
+    : hasStoppedTimer
+      ? 0
+      : (activeTimer?.elapsedSeconds || 0);
 
   const timeString = formatSeconds(currentElapsed);
 
@@ -184,6 +195,7 @@ export function TimerWidget({
 
   const handleStart = async () => {
     try {
+      setHasStoppedTimer(false);
       primeEntityName(entityId, entityName);
       void ensureNotificationPermission();
       await startTimer(entityId);
@@ -194,6 +206,7 @@ export function TimerWidget({
   };
 
   const handleStop = async () => {
+    setHasStoppedTimer(true);
     try {
       const activeTimerData = activeTimers.get(entityId);
       if (activeTimerData) {
@@ -366,24 +379,24 @@ export function TimerWidget({
           </div>
 
           <div className={`flex items-center gap-1.5 sm:gap-3 md:gap-4 transition-opacity ${isPaused ? 'opacity-60' : 'opacity-100'}`}>
-            <FlipDigit value={hrs[0]} />
-            <FlipDigit value={hrs[1]} />
+            <FlipDigit value={hrs[0]} animate={isRunning && !isPaused} />
+            <FlipDigit value={hrs[1]} animate={isRunning && !isPaused} />
 
             <div className={`flex flex-col gap-2 sm:gap-4 px-1 opacity-40 ${isPaused ? '' : 'animate-pulse'}`}>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-foreground rounded-full"></span>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-foreground rounded-full"></span>
             </div>
 
-            <FlipDigit value={mins[0]} />
-            <FlipDigit value={mins[1]} />
+            <FlipDigit value={mins[0]} animate={isRunning && !isPaused} />
+            <FlipDigit value={mins[1]} animate={isRunning && !isPaused} />
 
             <div className={`flex flex-col gap-2 sm:gap-4 px-1 opacity-40 ${isPaused ? '' : 'animate-pulse'}`}>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-foreground rounded-full"></span>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-foreground rounded-full"></span>
             </div>
 
-            <FlipDigit value={secs[0]} />
-            <FlipDigit value={secs[1]} />
+            <FlipDigit value={secs[0]} animate={isRunning && !isPaused} />
+            <FlipDigit value={secs[1]} animate={isRunning && !isPaused} />
           </div>
 
           {/* Hover / tap-revealed controls */}
