@@ -1,9 +1,9 @@
 import { Component, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef, type ReactNode } from 'react';
 import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
-import { Environment, Html, Lightformer, OrbitControls } from '@react-three/drei';
+import { AdaptiveDpr, AdaptiveEvents, Html, OrbitControls } from '@react-three/drei';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
-import { createBrainScaffold, layoutBrainNodes, type BrainLink, type BrainNode, type Point3 } from '@/lib/brain-layout';
+import { createBrainScaffold, layoutBrainNodes, scaffoldBuffers, type BrainLink, type BrainNode, type Point3 } from '@/lib/brain-layout';
 
 export interface BrainGraphHandle { zoom: (direction: number) => void; reset: () => void; enter: () => void }
 interface Props {
@@ -22,91 +22,117 @@ interface Props {
 }
 interface Palette { node: string; muted: string; background: string }
 
-function segments(points: Point3[], links: [number, number][]) {
-  return new Float32Array(links.flatMap(([a, b]) => [...points[a], ...points[b]]));
-}
+// 3/4 lateral view: the angle where the brain is most recognisable.
+const VIEW_DIRECTION = new THREE.Vector3(0.82, 0.14, 0.56).normalize();
+const VIEW_TARGET = new THREE.Vector3(0, -0.1, 0);
 
+// The brain outline: one Points draw call + one LineSegments draw call, built
+// once and cached in the layout module (no per-instance matrices, no O(n^2) work).
 function Scaffold({ palette, inside }: { palette: Palette; inside: boolean }) {
-  const scaffold = useMemo(() => createBrainScaffold(), []);
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const positions = useMemo(() => segments(scaffold.points, scaffold.links), [scaffold]);
-  useEffect(() => {
-    if (!mesh.current) return;
-    const dummy = new THREE.Object3D();
-    scaffold.points.forEach((point, index) => {
-      dummy.position.set(...point);
-      dummy.scale.setScalar(index % 11 === 0 ? 0.045 : 0.022);
-      dummy.updateMatrix();
-      mesh.current?.setMatrixAt(index, dummy.matrix);
-    });
-    mesh.current.instanceMatrix.needsUpdate = true;
-  }, [scaffold]);
+  const { points, lines } = useMemo(() => scaffoldBuffers(createBrainScaffold()), []);
   return <group>
-    <instancedMesh ref={mesh} args={[undefined, undefined, scaffold.points.length]} raycast={() => null}>
-      <sphereGeometry args={[1, 8, 6]} />
-      <meshBasicMaterial color={palette.node} transparent opacity={inside ? 0.12 : 0.4} depthWrite={false} />
-    </instancedMesh>
-    <lineSegments raycast={() => null}>
-      <bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry>
-      <lineBasicMaterial color={palette.node} transparent opacity={inside ? 0.055 : 0.16} depthWrite={false} />
+    <points raycast={() => null} frustumCulled={false}>
+      <bufferGeometry><bufferAttribute attach="attributes-position" args={[points, 3]} /></bufferGeometry>
+      <pointsMaterial color={palette.node} size={inside ? 0.028 : 0.04} sizeAttenuation transparent opacity={inside ? 0.18 : 0.45} depthWrite={false} />
+    </points>
+    <lineSegments raycast={() => null} frustumCulled={false}>
+      <bufferGeometry><bufferAttribute attach="attributes-position" args={[lines, 3]} /></bufferGeometry>
+      <lineBasicMaterial color={palette.node} transparent opacity={inside ? 0.04 : 0.12} depthWrite={false} />
     </lineSegments>
   </group>;
 }
 
 function Network({ positions, palette, ...props }: Props & { positions: Map<string, Point3>; palette: Palette }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
+  const invalidate = useThree(state => state.invalidate);
   const [hovered, setHovered] = useState<string | null>(null);
-  const active = props.nodes.find(n => n.id === (hovered ?? props.selectedId));
+  const hoveredRef = useRef<string | null>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
   const colors = useMemo(() => [new THREE.Color(palette.node), new THREE.Color(palette.muted)], [palette]);
+  const indexById = useMemo(() => new Map(props.nodes.map((n, i) => [n.id, i])), [props.nodes]);
+  const active = props.nodes.find(n => n.id === (hovered ?? props.selectedId));
+
+  // Node radius by degree, computed once per graph (it used to be recomputed on every hover).
+  const baseSize = useMemo(() => {
+    const degree = new Uint32Array(props.nodes.length);
+    props.links.forEach(l => {
+      const a = indexById.get(l.source), b = indexById.get(l.target);
+      if (a !== undefined) degree[a]++;
+      if (b !== undefined) degree[b]++;
+    });
+    return Float32Array.from(degree, d => 0.038 + Math.min(0.045, d * 0.0055));
+  }, [props.nodes, props.links, indexById]);
+
+  const place = (index: number, isHover: boolean) => {
+    const instances = mesh.current;
+    const node = props.nodes[index];
+    const point = node && positions.get(node.id);
+    if (!instances || !point) return;
+    const highlighted = !props.highlightedIds || props.highlightedIds.has(node.id);
+    const selected = node.id === props.selectedId || isHover;
+    dummy.position.set(point[0], point[1], point[2]);
+    dummy.scale.setScalar(baseSize[index] * (selected ? 1.5 : highlighted ? 1 : 0.6));
+    dummy.updateMatrix();
+    instances.setMatrixAt(index, dummy.matrix);
+    instances.setColorAt(index, colors[highlighted ? 0 : 1]);
+  };
+
+  // Full rebuild: only when the graph, selection, highlight or palette change.
   useEffect(() => {
     const instances = mesh.current;
     if (!instances) return;
-    const dummy = new THREE.Object3D();
-    const degree = new Map<string, number>();
-    props.links.forEach(l => {
-      degree.set(l.source, (degree.get(l.source) ?? 0) + 1);
-      degree.set(l.target, (degree.get(l.target) ?? 0) + 1);
-    });
-    props.nodes.forEach((node, index) => {
-      const point = positions.get(node.id);
-      if (!point) return;
-      const highlighted = !props.highlightedIds || props.highlightedIds.has(node.id);
-      const selected = node.id === props.selectedId || node.id === hovered;
-      dummy.position.set(...point);
-      const size = 0.065 + Math.min(0.06, (degree.get(node.id) ?? 0) * 0.009);
-      dummy.scale.setScalar(size * (selected ? 1.4 : highlighted ? 1 : 0.65));
-      dummy.updateMatrix();
-      instances.setMatrixAt(index, dummy.matrix);
-      instances.setColorAt(index, colors[highlighted ? 0 : 1]);
-    });
+    for (let i = 0; i < props.nodes.length; i++) place(i, props.nodes[i].id === hoveredRef.current);
     instances.instanceMatrix.needsUpdate = true;
     if (instances.instanceColor) instances.instanceColor.needsUpdate = true;
     instances.computeBoundingSphere();
-  }, [props.nodes, props.links, props.selectedId, props.highlightedIds, positions, hovered, colors]);
+    invalidate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.nodes, props.selectedId, props.highlightedIds, positions, colors, baseSize]);
+
+  // Hover touches only the two instances involved instead of rebuilding all of them.
+  useEffect(() => {
+    const instances = mesh.current;
+    if (!instances) return;
+    const previous = hoveredRef.current;
+    hoveredRef.current = hovered;
+    for (const id of [previous, hovered]) {
+      const index = id ? indexById.get(id) : undefined;
+      if (index !== undefined) place(index, id === hovered);
+    }
+    instances.instanceMatrix.needsUpdate = true;
+    if (instances.instanceColor) instances.instanceColor.needsUpdate = true;
+    invalidate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hovered]);
+
   const edgePositions = useMemo(() => {
     const normal: number[] = [], focused: number[] = [];
     for (const link of props.links) {
       const a = positions.get(link.source), b = positions.get(link.target);
       if (!a || !b) continue;
       const target = props.selectedId && (link.source === props.selectedId || link.target === props.selectedId) ? focused : normal;
-      target.push(...a, ...b);
+      target.push(a[0], a[1], a[2], b[0], b[1], b[2]);
     }
-    return [new Float32Array(normal), new Float32Array(focused)];
+    return [Float32Array.from(normal), Float32Array.from(focused)];
   }, [props.links, props.selectedId, positions]);
+
+  // Many links add up to a white mass: fade them as the graph grows.
+  const edgeOpacity = Math.min(0.4, Math.max(0.09, 14 / Math.sqrt(Math.max(1, props.links.length))));
   const nodeAt = (e: ThreeEvent<PointerEvent | MouseEvent>) => e.instanceId === undefined ? undefined : props.nodes[e.instanceId];
+
   return <>
-    {props.showEdges && edgePositions.map((array, index) => <lineSegments key={index} raycast={() => null}>
+    {props.showEdges && edgePositions.map((array, index) => <lineSegments key={index} raycast={() => null} frustumCulled={false}>
       <bufferGeometry><bufferAttribute attach="attributes-position" args={[array, 3]} /></bufferGeometry>
-      <lineBasicMaterial color={palette.node} transparent opacity={index === 1 ? 0.95 : props.selectedId ? 0.12 : 0.42} depthWrite={false} />
+      <lineBasicMaterial color={palette.node} transparent opacity={index === 1 ? 0.95 : props.selectedId ? 0.1 : edgeOpacity} depthWrite={false} />
     </lineSegments>)}
-    <instancedMesh ref={mesh} args={[undefined, undefined, props.nodes.length]}
+    <instancedMesh ref={mesh} args={[undefined, undefined, props.nodes.length]} frustumCulled={false}
       onClick={e => { if (e.delta > 5) return; const node = nodeAt(e); if (node) { e.stopPropagation(); props.onSelect(node); } }}
       onDoubleClick={e => { const node = nodeAt(e); if (node) { e.stopPropagation(); props.onOpen(node); } }}
       onPointerOver={e => { e.stopPropagation(); setHovered(nodeAt(e)?.id ?? null); }}
-      onPointerMove={e => { e.stopPropagation(); setHovered(nodeAt(e)?.id ?? null); }}
+      onPointerMove={e => { if (e.pointerType === 'touch') return; e.stopPropagation(); setHovered(nodeAt(e)?.id ?? null); }}
       onPointerOut={() => setHovered(null)}>
-      <sphereGeometry args={[1, 16, 12]} />
-      <meshStandardMaterial roughness={0.3} metalness={0.18} />
+      <sphereGeometry args={[1, 10, 8]} />
+      <meshLambertMaterial />
     </instancedMesh>
     {active && props.showLabels && <Html position={positions.get(active.id)} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
       <div className="pointer-events-none -translate-y-8 max-w-48 truncate rounded-md border border-border/10 bg-popover/95 px-3 py-2 text-xs text-popover-foreground shadow-md">{active.label}</div>
@@ -118,28 +144,33 @@ const CameraRig = forwardRef<BrainGraphHandle, { inside: boolean }>(function Cam
   const { camera, invalidate, size } = useThree();
   const controls = useRef<OrbitControlsImpl>(null);
   const reset = () => {
-    camera.position.set(8, 2.8, size.width < 600 ? 14 : 10);
-    controls.current?.target.set(0, -0.25, 0);
+    // distance from the aspect ratio so the whole brain fits on portrait phones too
+    const fov = THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov);
+    const aspect = size.width / Math.max(1, size.height);
+    const distance = THREE.MathUtils.clamp(6.8 / (2 * Math.tan(fov / 2) * Math.min(aspect, 1.5)), 9.5, 28);
+    camera.position.copy(VIEW_DIRECTION).multiplyScalar(distance).add(VIEW_TARGET);
+    controls.current?.target.copy(VIEW_TARGET);
     controls.current?.update(); invalidate();
   };
   const enter = () => {
-    camera.position.set(0.12, 0.45, 0.95);
-    controls.current?.target.set(0, 0.4, -0.4);
+    camera.position.set(0.1, 0.6, 1.1);
+    controls.current?.target.set(0, 0.55, -0.5);
     controls.current?.update(); invalidate();
   };
-  useEffect(() => { if (inside) enter(); else reset(); }, [inside, size.width]);
+  useEffect(() => { if (inside) enter(); else reset(); }, [inside, size.width, size.height]);
   useImperativeHandle(ref, () => ({
     reset, enter,
     zoom(direction) {
       const control = controls.current;
       if (!control) return;
       const offset = camera.position.clone().sub(control.target);
-      const distance = THREE.MathUtils.clamp(offset.length() * (direction > 0 ? 0.72 : 1.38), 0.12, 30);
+      const distance = THREE.MathUtils.clamp(offset.length() * (direction > 0 ? 0.72 : 1.38), 0.12, 34);
       camera.position.copy(control.target).add(offset.normalize().multiplyScalar(distance));
       control.update(); invalidate();
     },
   }));
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} minDistance={0.12} maxDistance={30} zoomSpeed={0.85} rotateSpeed={0.65} enablePan />;
+  // `regress` lets AdaptiveDpr/AdaptiveEvents lower the cost while the user is rotating.
+  return <OrbitControls ref={controls} makeDefault regress enableDamping dampingFactor={0.08} minDistance={0.12} maxDistance={34} zoomSpeed={0.85} rotateSpeed={0.65} enablePan />;
 });
 
 class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
@@ -150,7 +181,7 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
 
 export const BrainGraph3D = forwardRef<BrainGraphHandle, Props>(function BrainGraph3D(props, ref) {
   const [palette, setPalette] = useState<Palette | null>(null);
-  const positions = useMemo(() => layoutBrainNodes(props.nodes), [props.nodes]);
+  const positions = useMemo(() => layoutBrainNodes(props.nodes, props.links), [props.nodes, props.links]);
   useEffect(() => {
     const css = getComputedStyle(document.documentElement);
     setPalette({ node: css.getPropertyValue('--graph-node').trim(), muted: css.getPropertyValue('--graph-muted').trim(), background: css.getPropertyValue('--bg-base').trim() });
@@ -158,17 +189,19 @@ export const BrainGraph3D = forwardRef<BrainGraphHandle, Props>(function BrainGr
   const fallback = <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-sm text-muted-foreground">{props.unavailableText}</div>;
   if (!palette) return null;
   return <SceneBoundary fallback={fallback}>
-    <Canvas className="touch-none" frameloop="demand" dpr={[1, 1.5]} camera={{ position: [8, 2.8, 10], fov: 45, near: 0.015, far: 100 }} gl={{ antialias: true, alpha: false }} fallback={fallback} onPointerMissed={props.onClear}>
+    <Canvas className="touch-none" frameloop="demand" dpr={[1, 1.5]} performance={{ min: 0.5 }}
+      camera={{ position: [10, 2, 7], fov: 45, near: 0.015, far: 120 }}
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      fallback={fallback} onPointerMissed={props.onClear}>
       <color attach="background" args={[palette.background]} />
-      <ambientLight intensity={1.3} />
-      <directionalLight position={[5, 8, 6]} intensity={2} />
-      <Environment resolution={64}>
-        <Lightformer position={[0, 5, 0]} scale={[10, 10, 1]} intensity={2} />
-        <Lightformer position={[-5, 0, 2]} rotation-y={Math.PI / 2} scale={[8, 6, 1]} intensity={1} />
-      </Environment>
+      <ambientLight intensity={1.6} />
+      <directionalLight position={[5, 8, 6]} intensity={2.2} />
+      <directionalLight position={[-6, -3, -5]} intensity={0.6} />
       <Scaffold palette={palette} inside={props.inside} />
       {props.nodes.length > 0 && <Network {...props} positions={positions} palette={palette} />}
       <CameraRig ref={ref} inside={props.inside} />
+      <AdaptiveDpr />
+      <AdaptiveEvents />
     </Canvas>
   </SceneBoundary>;
 });
