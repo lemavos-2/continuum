@@ -51,7 +51,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   const [stats, setStats] = useState<EntityStats | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [mobilePanelHeight, setMobilePanelHeight] = useState(() =>
-    typeof window === "undefined" ? 240 : Math.round(window.innerHeight * 0.32)
+    typeof window === "undefined" ? 240 : Math.max(200, Math.round(window.innerHeight * 0.32))
   );
   const dragStart = useRef<{ pointerId: number; y: number; height: number } | null>(null);
   const dragMoved = useRef(false);
@@ -59,12 +59,12 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   useEffect(() => {
     if (!mobileBottomSheet) return;
     setMobileExpanded(false);
-    setMobilePanelHeight(Math.round(window.innerHeight * 0.32));
+    setMobilePanelHeight(Math.max(200, Math.round(window.innerHeight * 0.32)));
   }, [entity?.id, isOpen, mobileBottomSheet]);
 
   useEffect(() => {
     if (!mobileBottomSheet) return;
-    const resize = () => setMobilePanelHeight(Math.round(window.innerHeight * (mobileExpanded ? 0.7 : 0.32)));
+    const resize = () => setMobilePanelHeight(Math.max(200, Math.round(window.innerHeight * (mobileExpanded ? 0.7 : 0.32))));
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
   }, [mobileBottomSheet, mobileExpanded]);
@@ -204,42 +204,62 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
             : "fixed right-0 top-0 bottom-0 z-40 w-[22rem] border-l border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl"}
         >
           {mobileBottomSheet && (
-            <div className="shrink-0 border-b border-border/10 px-4 pb-3 lg:hidden">
+            <div
+              className="shrink-0 border-b border-border/10 px-4 pb-3 [touch-action:none] lg:hidden"
+              role="group"
+              onPointerDown={event => {
+                if (event.target instanceof HTMLElement && event.target.closest("[data-inspector-close]")) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                dragStart.current = { pointerId: event.pointerId, y: event.clientY, height: mobilePanelHeight };
+                dragMoved.current = false;
+              }}
+              onPointerMove={event => {
+                const start = dragStart.current;
+                if (!start || start.pointerId !== event.pointerId) return;
+                const delta = start.y - event.clientY;
+                if (Math.abs(delta) > 4) dragMoved.current = true;
+                const minHeight = Math.max(200, Math.round(window.innerHeight * 0.32));
+                const maxHeight = Math.round(window.innerHeight * 0.7);
+                setMobilePanelHeight(Math.max(minHeight, Math.min(maxHeight, start.height + delta)));
+              }}
+              onPointerUp={event => {
+                const start = dragStart.current;
+                if (!start || start.pointerId !== event.pointerId) return;
+                const minHeight = Math.max(200, Math.round(window.innerHeight * 0.32));
+                const maxHeight = Math.round(window.innerHeight * 0.7);
+                const height = Math.max(minHeight, Math.min(maxHeight, start.height + start.y - event.clientY));
+                const expanded = height > window.innerHeight * 0.5;
+                dragStart.current = null;
+                setMobileExpanded(expanded);
+                setMobilePanelHeight(Math.round(window.innerHeight * (expanded ? 0.7 : 0.32)));
+              }}
+              onPointerCancel={() => { dragStart.current = null; }}
+              onLostPointerCapture={() => { dragStart.current = null; }}
+              onClick={event => {
+                if (event.target instanceof HTMLElement && event.target.closest("[data-inspector-close]")) return;
+                if (dragMoved.current) {
+                  dragMoved.current = false;
+                  return;
+                }
+                const expanded = !mobileExpanded;
+                setMobileExpanded(expanded);
+                setMobilePanelHeight(Math.max(200, Math.round(window.innerHeight * (expanded ? 0.7 : 0.32))));
+              }}
+            >
               <button
                 type="button"
                 className="flex w-full touch-none flex-col items-center pb-3 pt-2"
                 aria-label={t(mobileExpanded ? "ent_collapse_details" : "ent_expand_details")}
                 aria-expanded={mobileExpanded}
-                onPointerDown={event => {
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  dragStart.current = { pointerId: event.pointerId, y: event.clientY, height: mobilePanelHeight };
-                  dragMoved.current = false;
-                }}
-                onPointerMove={event => {
-                  const start = dragStart.current;
-                  if (!start || start.pointerId !== event.pointerId) return;
-                  const delta = start.y - event.clientY;
-                  if (Math.abs(delta) > 4) dragMoved.current = true;
-                  const minHeight = Math.round(window.innerHeight * 0.32);
-                  const maxHeight = Math.round(window.innerHeight * 0.7);
-                  setMobilePanelHeight(Math.max(minHeight, Math.min(maxHeight, start.height + delta)));
-                }}
-                onPointerUp={event => {
-                  if (dragStart.current?.pointerId !== event.pointerId) return;
-                  dragStart.current = null;
-                  const expanded = mobilePanelHeight > window.innerHeight * 0.5;
-                  setMobileExpanded(expanded);
-                  setMobilePanelHeight(Math.round(window.innerHeight * (expanded ? 0.7 : 0.32)));
-                }}
-                onPointerCancel={() => { dragStart.current = null; }}
-                onClick={() => {
+                onClick={event => {
+                  event.stopPropagation();
                   if (dragMoved.current) {
                     dragMoved.current = false;
                     return;
                   }
                   const expanded = !mobileExpanded;
                   setMobileExpanded(expanded);
-                  setMobilePanelHeight(Math.round(window.innerHeight * (expanded ? 0.7 : 0.32)));
+                  setMobilePanelHeight(Math.max(200, Math.round(window.innerHeight * (expanded ? 0.7 : 0.32))));
                 }}
               >
                 <span className="h-1.5 w-10 rounded-full bg-muted-foreground/40" />
@@ -247,9 +267,17 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="label-caps text-muted-foreground">{config.label}</p>
-                  <h2 className="mt-1 truncate font-serif text-lg tracking-tight text-foreground">{displayEntity.title}</h2>
+                  <h2 className="mt-1 break-words font-serif text-lg leading-tight tracking-tight text-foreground">{displayEntity.title}</h2>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("ent_close")} className="h-8 w-8 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  data-inspector-close
+                  onPointerDown={event => event.stopPropagation()}
+                  onClick={event => { event.stopPropagation(); onClose(); }}
+                  aria-label={t("ent_close")}
+                  className="h-8 w-8 shrink-0"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -262,7 +290,10 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
               </div>
             </div>
           )}
-          <ScrollArea className={mobileBottomSheet ? "min-h-0 flex-1 lg:h-full" : "h-full"}>
+          <ScrollArea className={mobileBottomSheet
+            ? mobileExpanded ? "min-h-0 flex-1 overscroll-contain lg:h-full" : "hidden lg:block lg:h-full"
+            : "h-full"}
+          >
             <div className="space-y-4 p-6">
               <div className={mobileBottomSheet ? "hidden items-start justify-between gap-3 lg:flex" : "flex items-start justify-between gap-3"}>
                 <div className="min-w-0 flex-1">

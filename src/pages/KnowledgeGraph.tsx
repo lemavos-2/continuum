@@ -12,7 +12,6 @@ import {
   EyeOff,
   X,
   ArrowLeft,
-  ArrowRight,
 } from "@/lib/heroicons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,7 +192,6 @@ export default function KnowledgeGraph() {
   // Default false para formação orgânica estilo Obsidian
   const [clusterByPeriod, setClusterByPeriod] = useState(false);
   const [show3D, setShow3D] = useState(false);
-  const [insideBrain, setInsideBrain] = useState(false);
 
   const { inspectorOpen, inspectorEntity, openInspector, closeInspector } = useEntityStore();
   const [allEntities, setAllEntities] = useState<Entity[]>([]);
@@ -887,7 +885,6 @@ export default function KnowledgeGraph() {
     setSelectedNode(null);
     closeInspector();
     alphaRef.current = 0.8; // Reorganiza
-    setInsideBrain(false);
     brainGraphRef.current?.reset();
   };
 
@@ -1068,19 +1065,6 @@ export default function KnowledgeGraph() {
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              {show3D && (
-                <Button
-                  type="button"
-                  variant="canvasIcon"
-                  size="icon"
-                  onClick={() => setInsideBrain(value => !value)}
-                  className={`border-0 bg-transparent hover:bg-muted ${insideBrain ? "bg-muted text-foreground" : ""}`}
-                  aria-label={insideBrain ? t("gr_exit_brain") : t("gr_enter_brain")}
-                  title={insideBrain ? t("gr_exit_brain") : t("gr_enter_brain")}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              )}
               <Button
                 type="button"
                 variant="canvasIcon"
@@ -1096,10 +1080,7 @@ export default function KnowledgeGraph() {
                 type="button"
                 variant="canvasIcon"
                 size="icon"
-                onClick={() => {
-                  setShow3D(value => !value);
-                  if (show3D) setInsideBrain(false);
-                }}
+                onClick={() => setShow3D(value => !value)}
                 className="h-9 w-9 border-0 bg-transparent text-xs font-semibold hover:bg-muted"
                 aria-label={show3D ? t("gr_view_2d") : t("gr_view_3d")}
                 title={show3D ? t("gr_view_2d") : t("gr_view_3d")}
@@ -1306,7 +1287,7 @@ export default function KnowledgeGraph() {
                   highlightedIds={highlightedBrainNodes}
                   showEdges={showEdges}
                   showLabels={showLabels}
-                  inside={insideBrain}
+                  inside={false}
                   theme={theme}
                   unavailableText={t("gr_3d_unavailable")}
                   onSelect={node => {
