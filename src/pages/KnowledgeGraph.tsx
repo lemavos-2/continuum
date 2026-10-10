@@ -1351,14 +1351,14 @@ export default function KnowledgeGraph() {
               </Card>
             )}
           </div>
+          <SideInspector
+            isOpen={inspectorOpen}
+            entity={inspectorEntity}
+            mobileBottomSheet
+            onClose={() => { closeInspector(); setSelectedNode(null); }}
+          />
         </div>
       </div>
-
-      <SideInspector
-        isOpen={inspectorOpen}
-        entity={inspectorEntity}
-        onClose={() => { closeInspector(); setSelectedNode(null); }}
-      />
     </AppLayout>
   );
 }

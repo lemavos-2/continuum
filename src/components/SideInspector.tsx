@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowUpRight, Calendar, Link2, Network, StickyNote, X, Tag } from "@/lib/heroicons";
@@ -29,6 +29,7 @@ interface SideInspectorProps {
   isOpen: boolean;
   entity: InspectableEntity | null;
   onClose: () => void;
+  mobileBottomSheet?: boolean;
 }
 
 const truncateText = (value: string, maxLength = 220) =>
@@ -36,7 +37,7 @@ const truncateText = (value: string, maxLength = 220) =>
 
 const formatDate = (value?: string) => (value ? new Date(value).toLocaleDateString("en-US") : "—");
 
-export const SideInspector = memo(function SideInspector({ isOpen, entity, onClose }: SideInspectorProps) {
+export const SideInspector = memo(function SideInspector({ isOpen, entity, onClose, mobileBottomSheet = false }: SideInspectorProps) {
   const navigate = useNavigate();
   const { openInspector, setLoadingEntityId } = useEntityStore();
   const { toast } = useToast();
@@ -48,6 +49,25 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   const [relatedNotes, setRelatedNotes] = useState<RelatedNote[]>([]);
   const [relatedEntities, setRelatedEntities] = useState<Entity[]>([]);
   const [stats, setStats] = useState<EntityStats | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [mobilePanelHeight, setMobilePanelHeight] = useState(() =>
+    typeof window === "undefined" ? 240 : Math.round(window.innerHeight * 0.32)
+  );
+  const dragStart = useRef<{ pointerId: number; y: number; height: number } | null>(null);
+  const dragMoved = useRef(false);
+
+  useEffect(() => {
+    if (!mobileBottomSheet) return;
+    setMobileExpanded(false);
+    setMobilePanelHeight(Math.round(window.innerHeight * 0.32));
+  }, [entity?.id, isOpen, mobileBottomSheet]);
+
+  useEffect(() => {
+    if (!mobileBottomSheet) return;
+    const resize = () => setMobilePanelHeight(Math.round(window.innerHeight * (mobileExpanded ? 0.7 : 0.32)));
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [mobileBottomSheet, mobileExpanded]);
 
   useEffect(() => {
     if (!entity || !isOpen) {
@@ -165,20 +185,86 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
         return previewSource ? truncateText(previewSource) : "No content available.";
       })()
     : "";
+  const inspectorMobileHeight = `${mobilePanelHeight}px`;
+  const inspectorMobileStyle = mobileBottomSheet
+    ? { "--mobile-inspector-height": inspectorMobileHeight } as React.CSSProperties
+    : undefined;
 
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, x: 320 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 320 }}
+          initial={mobileBottomSheet && window.innerWidth < 1024 ? { opacity: 0, y: 40 } : { opacity: 0, x: 320 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          exit={mobileBottomSheet && window.innerWidth < 1024 ? { opacity: 0, y: 40 } : { opacity: 0, x: 320 }}
           transition={{ duration: 0.25 }}
-          className="fixed right-0 top-0 bottom-0 z-40 w-[22rem] border-l border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl"
+          style={inspectorMobileStyle}
+          className={mobileBottomSheet
+            ? "relative z-40 flex h-[var(--mobile-inspector-height)] max-h-[70dvh] w-full flex-none flex-col overflow-hidden rounded-t-3xl border-t border-border/10 bg-background/95 shadow-2xl backdrop-blur-xl lg:fixed lg:bottom-0 lg:right-0 lg:top-0 lg:h-auto lg:max-h-none lg:w-[22rem] lg:rounded-none lg:rounded-l-2xl lg:border-l lg:border-t-0"
+            : "fixed right-0 top-0 bottom-0 z-40 w-[22rem] border-l border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl"}
         >
-          <ScrollArea className="h-full">
-            <div className="space-y-4 p-6">
+          {mobileBottomSheet && (
+            <div className="shrink-0 border-b border-border/10 px-4 pb-3 lg:hidden">
+              <button
+                type="button"
+                className="flex w-full touch-none flex-col items-center pb-3 pt-2"
+                aria-label={t(mobileExpanded ? "ent_collapse_details" : "ent_expand_details")}
+                aria-expanded={mobileExpanded}
+                onPointerDown={event => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  dragStart.current = { pointerId: event.pointerId, y: event.clientY, height: mobilePanelHeight };
+                  dragMoved.current = false;
+                }}
+                onPointerMove={event => {
+                  const start = dragStart.current;
+                  if (!start || start.pointerId !== event.pointerId) return;
+                  const delta = start.y - event.clientY;
+                  if (Math.abs(delta) > 4) dragMoved.current = true;
+                  const minHeight = Math.round(window.innerHeight * 0.32);
+                  const maxHeight = Math.round(window.innerHeight * 0.7);
+                  setMobilePanelHeight(Math.max(minHeight, Math.min(maxHeight, start.height + delta)));
+                }}
+                onPointerUp={event => {
+                  if (dragStart.current?.pointerId !== event.pointerId) return;
+                  dragStart.current = null;
+                  const expanded = mobilePanelHeight > window.innerHeight * 0.5;
+                  setMobileExpanded(expanded);
+                  setMobilePanelHeight(Math.round(window.innerHeight * (expanded ? 0.7 : 0.32)));
+                }}
+                onPointerCancel={() => { dragStart.current = null; }}
+                onClick={() => {
+                  if (dragMoved.current) {
+                    dragMoved.current = false;
+                    return;
+                  }
+                  const expanded = !mobileExpanded;
+                  setMobileExpanded(expanded);
+                  setMobilePanelHeight(Math.round(window.innerHeight * (expanded ? 0.7 : 0.32)));
+                }}
+              >
+                <span className="h-1.5 w-10 rounded-full bg-muted-foreground/40" />
+              </button>
               <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="label-caps text-muted-foreground">{config.label}</p>
+                  <h2 className="mt-1 truncate font-serif text-lg tracking-tight text-foreground">{displayEntity.title}</h2>
+                </div>
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("ent_close")} className="h-8 w-8 shrink-0">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                {isNote ? notePreview : displayEntity.description || t("ent_no_description_added")}
+              </div>
+              <div className="mt-2 flex gap-4 text-[10px] text-muted-foreground">
+                <span>{relatedNotes.length} {t("ent_notes")}</span>
+                <span>{isNote ? (displayEntity as InspectableNote).entityIds?.length ?? 0 : relatedEntities.length} {t("ent_connections")}</span>
+              </div>
+            </div>
+          )}
+          <ScrollArea className={mobileBottomSheet ? "min-h-0 flex-1 lg:h-full" : "h-full"}>
+            <div className="space-y-4 p-6">
+              <div className={mobileBottomSheet ? "hidden items-start justify-between gap-3 lg:flex" : "flex items-start justify-between gap-3"}>
                 <div className="min-w-0 flex-1">
                   <p className="label-caps text-muted-foreground">
                     {config.label}
@@ -362,7 +448,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                         <h3 className="mb-3 label-caps text-muted-foreground">{t("ent_connected_notes")}</h3>
                         <div className="space-y-2">
                           {relatedNotes.length > 0 ? (
-                            relatedNotes.slice(0, 5).map((note) => (
+                            (mobileBottomSheet ? relatedNotes : relatedNotes.slice(0, 5)).map((note) => (
                               <button
                                 key={note.id}
                                 onClick={() => {
@@ -388,7 +474,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
                         <h3 className="mb-3 label-caps text-muted-foreground">{t("ent_related_entities")}</h3>
                         <div className="space-y-2">
                           {relatedEntities.length > 0 ? (
-                            relatedEntities.slice(0, 5).map((relatedEntity) => (
+                            (mobileBottomSheet ? relatedEntities : relatedEntities.slice(0, 5)).map((relatedEntity) => (
                               <button
                                 key={relatedEntity.id}
                                 onClick={() => openInspector(relatedEntity)}
