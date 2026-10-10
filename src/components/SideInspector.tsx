@@ -293,6 +293,54 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
               </div>
             </div>
           )}
+          {mobileBottomSheet && !mobileExpanded && (
+            <div className="min-h-0 flex-1 space-y-2 overflow-hidden px-4 pb-3 lg:hidden">
+              {loading ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-12 animate-pulse rounded-md bg-muted/50" />
+                  <div className="h-12 animate-pulse rounded-md bg-muted/50" />
+                </div>
+              ) : isNote ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-md bg-muted/50 px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground">{t("ent_mentioned_entities")}</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">{(displayEntity as InspectableNote).entityIds?.length ?? 0}</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground">{t("ent_last_update")}</p>
+                    <p className="mt-1 truncate text-xs font-medium text-foreground">{formatDate((displayEntity as InspectableNote).updatedAt)}</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-md bg-muted/50 px-3 py-2">
+                      <p className="text-[10px] text-muted-foreground">{t("ent_created")}</p>
+                      <p className="mt-1 truncate text-xs font-medium text-foreground">{formatDate(displayEntity.createdAt)}</p>
+                    </div>
+                    <div className="rounded-md bg-muted/50 px-3 py-2">
+                      <p className="text-[10px] text-muted-foreground">{t("ent_type")}</p>
+                      <p className="mt-1 truncate text-xs font-medium text-foreground">{config.label}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {relatedNotes[0] && (
+                      <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground">{t("ent_connected_notes")}</p>
+                        <p className="mt-1 truncate text-xs text-foreground">{relatedNotes[0].title}</p>
+                      </div>
+                    )}
+                    {relatedEntities[0] && (
+                      <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground">{t("ent_related_entities")}</p>
+                        <p className="mt-1 truncate text-xs text-foreground">{relatedEntities[0].title}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <ScrollArea className={mobileBottomSheet
             ? mobileExpanded ? "min-h-0 flex-1 overscroll-contain lg:h-full" : "hidden lg:block lg:h-full"
             : "h-full"}
