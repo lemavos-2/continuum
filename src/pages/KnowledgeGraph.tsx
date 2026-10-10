@@ -27,7 +27,6 @@ import { queryClient } from "@/lib/query-client";
 import { qk, STALE } from "@/lib/queries";
 import { BrainGraph3D, type BrainGraphHandle } from "@/components/graph/BrainGraph3D";
 import { normalizeBrainLinks, type BrainNode, type BrainLink } from "@/lib/brain-layout";
-import { Switch } from "@/components/ui/switch";
 
 interface GraphNode {
   id: string;
@@ -1093,6 +1092,20 @@ export default function KnowledgeGraph() {
               >
                 {focusMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
+              <Button
+                type="button"
+                variant="canvasIcon"
+                size="icon"
+                onClick={() => {
+                  setShow3D(value => !value);
+                  if (show3D) setInsideBrain(false);
+                }}
+                className="h-9 w-9 border-0 bg-transparent text-xs font-semibold hover:bg-muted"
+                aria-label={show3D ? t("gr_view_2d") : t("gr_view_3d")}
+                title={show3D ? t("gr_view_2d") : t("gr_view_3d")}
+              >
+                {show3D ? "3D" : "2D"}
+              </Button>
 
               <div className="my-0.5 h-px w-6 bg-border/10" />
 
@@ -1241,20 +1254,6 @@ export default function KnowledgeGraph() {
           )}
 
           <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0 touch-none">
-            {!empty && !loading && (
-              <div className="absolute left-4 top-4 z-30 flex items-center gap-2 rounded-lg border border-border/10 bg-card/75 px-2 py-2 backdrop-blur-md">
-                <label htmlFor="graph-3d-toggle" className="text-xs text-foreground">3D</label>
-                <Switch
-                  id="graph-3d-toggle"
-                  aria-label={t("gr_view_3d")}
-                  checked={show3D}
-                  onCheckedChange={enabled => {
-                    setShow3D(enabled);
-                    if (!enabled) setInsideBrain(false);
-                  }}
-                />
-              </div>
-            )}
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                 <div className="flex flex-col items-center gap-3">
