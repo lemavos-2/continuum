@@ -53,7 +53,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
   const [mobilePanelHeight, setMobilePanelHeight] = useState(() =>
     typeof window === "undefined" ? 240 : Math.max(200, Math.round(window.innerHeight * 0.32))
   );
-  const dragStart = useRef<{ pointerId: number; y: number; height: number } | null>(null);
+  const dragStart = useRef<{ y: number; height: number } | null>(null);
   const dragMoved = useRef(false);
 
   useEffect(() => {
@@ -207,34 +207,37 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
             <div
               className="shrink-0 border-b border-border/10 px-4 pb-3 [touch-action:none] lg:hidden"
               role="group"
-              onPointerDown={event => {
+              onTouchStart={event => {
                 if (event.target instanceof HTMLElement && event.target.closest("[data-inspector-close]")) return;
-                event.currentTarget.setPointerCapture(event.pointerId);
-                dragStart.current = { pointerId: event.pointerId, y: event.clientY, height: mobilePanelHeight };
+                const touch = event.touches[0];
+                if (!touch) return;
+                dragStart.current = { y: touch.clientY, height: mobilePanelHeight };
                 dragMoved.current = false;
               }}
-              onPointerMove={event => {
+              onTouchMove={event => {
                 const start = dragStart.current;
-                if (!start || start.pointerId !== event.pointerId) return;
-                const delta = start.y - event.clientY;
+                const touch = event.touches[0];
+                if (!start || !touch) return;
+                event.preventDefault();
+                const delta = start.y - touch.clientY;
                 if (Math.abs(delta) > 4) dragMoved.current = true;
                 const minHeight = Math.max(200, Math.round(window.innerHeight * 0.32));
                 const maxHeight = Math.round(window.innerHeight * 0.7);
                 setMobilePanelHeight(Math.max(minHeight, Math.min(maxHeight, start.height + delta)));
               }}
-              onPointerUp={event => {
+              onTouchEnd={event => {
                 const start = dragStart.current;
-                if (!start || start.pointerId !== event.pointerId) return;
+                const touch = event.changedTouches[0];
+                if (!start || !touch) return;
                 const minHeight = Math.max(200, Math.round(window.innerHeight * 0.32));
                 const maxHeight = Math.round(window.innerHeight * 0.7);
-                const height = Math.max(minHeight, Math.min(maxHeight, start.height + start.y - event.clientY));
+                const height = Math.max(minHeight, Math.min(maxHeight, start.height + start.y - touch.clientY));
                 const expanded = height > window.innerHeight * 0.5;
                 dragStart.current = null;
                 setMobileExpanded(expanded);
                 setMobilePanelHeight(Math.round(window.innerHeight * (expanded ? 0.7 : 0.32)));
               }}
-              onPointerCancel={() => { dragStart.current = null; }}
-              onLostPointerCapture={() => { dragStart.current = null; }}
+              onTouchCancel={() => { dragStart.current = null; }}
               onClick={event => {
                 if (event.target instanceof HTMLElement && event.target.closest("[data-inspector-close]")) return;
                 if (dragMoved.current) {
