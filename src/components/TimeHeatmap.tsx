@@ -109,6 +109,58 @@ function DurationWheel({
   );
 }
 
+function DurationInputs({
+  hours,
+  minutes,
+  seconds,
+  maxHours,
+  onHoursChange,
+  onMinutesChange,
+  onSecondsChange,
+  labels,
+}: {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  maxHours: number;
+  onHoursChange: (value: number) => void;
+  onMinutesChange: (value: number) => void;
+  onSecondsChange: (value: number) => void;
+  labels: { hours: string; minutes: string; seconds: string };
+}) {
+  const fields = [
+    { label: labels.hours, value: hours, max: maxHours, onChange: onHoursChange },
+    { label: labels.minutes, value: minutes, max: 59, onChange: onMinutesChange },
+    { label: labels.seconds, value: seconds, max: 59, onChange: onSecondsChange },
+  ];
+
+  return (
+    <div className="hidden grid-cols-3 gap-3 sm:grid">
+      {fields.map(({ label, value, max, onChange }) => (
+        <label key={label} className="space-y-2">
+          <span className="block text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            {label}
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={max}
+            step={1}
+            inputMode="numeric"
+            value={value}
+            onChange={(event) => {
+              const parsed = Number.parseInt(event.target.value, 10);
+              onChange(Number.isFinite(parsed) ? Math.max(0, Math.min(max, parsed)) : 0);
+            }}
+            aria-label={label}
+            className="h-12 w-full rounded-xl border border-border/15 bg-foreground/[0.03] px-3 text-center text-lg tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </label>
+      ))}
+    </div>
+  );
+}
+
 interface HoverCell {
   key: string;
   seconds: number;
@@ -346,7 +398,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
       }}>
         <DialogContent
           viewportAware={false}
-          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)]"
+          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] sm:!left-[50%] sm:!top-[50%] sm:!bottom-auto sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-1.5rem)] sm:max-w-lg sm:gap-4 sm:rounded-2xl sm:border sm:p-5"
           style={{ top: "auto", bottom: 0, transform: "none" }}
         >
           <DialogHeader className="border-b border-border/10 px-5 py-4 text-center">
@@ -366,11 +418,25 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
             </label>
             <fieldset>
               <legend className="mb-2 text-xs font-medium text-muted-foreground">{t('tm_duration')}</legend>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:hidden">
                 <DurationWheel label={t('tm_hours_short')} value={entryHours} max={99} onChange={setEntryHours} />
                 <DurationWheel label={t('tm_minutes_short')} value={entryMinutes} max={59} onChange={setEntryMinutes} />
                 <DurationWheel label={t('tm_seconds_short')} value={entrySeconds} max={59} onChange={setEntrySeconds} />
               </div>
+              <DurationInputs
+                hours={entryHours}
+                minutes={entryMinutes}
+                seconds={entrySeconds}
+                maxHours={99}
+                onHoursChange={setEntryHours}
+                onMinutesChange={setEntryMinutes}
+                onSecondsChange={setEntrySeconds}
+                labels={{
+                  hours: t('tm_hours_short'),
+                  minutes: t('tm_minutes_short'),
+                  seconds: t('tm_seconds_short'),
+                }}
+              />
             </fieldset>
             {entryError && <p role="alert" className="text-sm text-destructive">{entryError}</p>}
             <Button type="button" onClick={submitEntry} disabled={isAdding} className="h-12 w-full rounded-xl">
@@ -386,7 +452,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
       }}>
         <DialogContent
           viewportAware={false}
-          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)]"
+          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] sm:!left-[50%] sm:!top-[50%] sm:!bottom-auto sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-1.5rem)] sm:max-w-lg sm:gap-4 sm:rounded-2xl sm:border sm:p-5"
           style={{ top: "auto", bottom: 0, transform: "none" }}
         >
           <DialogHeader className="border-b border-border/10 px-5 py-4 text-center">
@@ -395,11 +461,25 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
           <div className="space-y-5 px-5 py-5">
             <fieldset>
               <legend className="mb-2 text-xs font-medium text-muted-foreground">{t('tm_duration')}</legend>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:hidden">
                 <DurationWheel label={t('tm_hours_short')} value={goalHours} max={23} onChange={setGoalHours} />
                 <DurationWheel label={t('tm_minutes_short')} value={goalMins} max={59} onChange={setGoalMins} />
                 <DurationWheel label={t('tm_seconds_short')} value={goalSecs} max={59} onChange={setGoalSecs} />
               </div>
+              <DurationInputs
+                hours={goalHours}
+                minutes={goalMins}
+                seconds={goalSecs}
+                maxHours={23}
+                onHoursChange={setGoalHours}
+                onMinutesChange={setGoalMins}
+                onSecondsChange={setGoalSecs}
+                labels={{
+                  hours: t('tm_hours_short'),
+                  minutes: t('tm_minutes_short'),
+                  seconds: t('tm_seconds_short'),
+                }}
+              />
             </fieldset>
             {goalError && <p role="alert" className="text-sm text-destructive">{goalError}</p>}
             <Button type="button" onClick={submitGoal} disabled={isSavingGoal} className="h-12 w-full rounded-xl">
