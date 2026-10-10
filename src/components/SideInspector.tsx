@@ -200,7 +200,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
           transition={{ duration: 0.25 }}
           style={inspectorMobileStyle}
           className={mobileBottomSheet
-            ? "relative z-40 flex h-[var(--mobile-inspector-height)] max-h-[70dvh] w-full flex-none flex-col overflow-hidden rounded-t-3xl border-t border-border/10 bg-background/95 shadow-2xl backdrop-blur-xl transition-[height] duration-200 ease-out motion-reduce:transition-none lg:fixed lg:bottom-0 lg:right-0 lg:top-0 lg:h-auto lg:max-h-none lg:w-[22rem] lg:rounded-none lg:rounded-l-2xl lg:border-l lg:border-t-0"
+            ? "relative z-40 flex h-[var(--mobile-inspector-height)] max-h-[70dvh] w-full flex-none flex-col overflow-hidden rounded-t-3xl border-t border-border/10 bg-background/95 shadow-2xl backdrop-blur-xl lg:fixed lg:bottom-0 lg:right-0 lg:top-0 lg:h-auto lg:max-h-none lg:w-[22rem] lg:rounded-none lg:rounded-l-2xl lg:border-l lg:border-t-0"
             : "fixed right-0 top-0 bottom-0 z-40 w-[22rem] border-l border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl"}
         >
           {mobileBottomSheet && (
@@ -290,52 +290,50 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
             </div>
           )}
           {mobileBottomSheet && !mobileExpanded && (
-            <div className="min-h-0 flex-1 overflow-hidden px-4 pb-3 lg:hidden">
+            <div className="min-h-0 flex-1 space-y-2 overflow-hidden px-4 pb-3 lg:hidden">
               {loading ? (
-                <div className={mobileBottomSheet ? "hidden rounded-md bg-muted/60 p-4 lg:block" : "rounded-md bg-muted/60 p-4"}>
-                  <div className="mb-3 h-3 w-20 animate-pulse rounded bg-muted" />
-                  <div className="space-y-3">
-                    <div className="h-3 w-full animate-pulse rounded bg-muted" />
-                    <div className="h-3 w-4/5 animate-pulse rounded bg-muted" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-12 animate-pulse rounded-md bg-muted/50" />
+                  <div className="h-12 animate-pulse rounded-md bg-muted/50" />
+                </div>
+              ) : isNote ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-md bg-muted/50 px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground">{t("ent_mentioned_entities")}</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">{(displayEntity as InspectableNote).entityIds?.length ?? 0}</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground">{t("ent_last_update")}</p>
+                    <p className="mt-1 truncate text-xs font-medium text-foreground">{formatDate((displayEntity as InspectableNote).updatedAt)}</p>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-md bg-muted/60 p-4">
-                  <h3 className="mb-3 label-caps text-muted-foreground">{t("ent_metadata")}</h3>
-                  <div className="space-y-2 text-[10px] font-mono text-muted-foreground">
-                    {isNote ? (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5"><Calendar className="h-3 w-3" />{t("ent_created")}</span>
-                          <span className="font-semibold text-muted-foreground">{formatDate(displayEntity.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5"><Link2 className="h-3 w-3" />{t("ent_mentioned_entities")}</span>
-                          <span className="font-semibold text-muted-foreground">{(displayEntity as InspectableNote).entityIds?.length ?? 0}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5"><Calendar className="h-3 w-3" />{t("ent_last_update")}</span>
-                          <span className="font-semibold text-muted-foreground">{formatDate((displayEntity as InspectableNote).updatedAt)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5"><Calendar className="h-3 w-3" />{t("ent_created")}</span>
-                          <span className="font-semibold text-muted-foreground">{formatDate(displayEntity.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5"><Network className="h-3 w-3" />{t("ent_connections")}</span>
-                          <span className="font-semibold text-muted-foreground">{relatedEntities.length}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5"><Tag className="h-3 w-3" />{t("ent_type")}</span>
-                          <span className="font-semibold text-muted-foreground">{config.label}</span>
-                        </div>
-                      </>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-md bg-muted/50 px-3 py-2">
+                      <p className="text-[10px] text-muted-foreground">{t("ent_created")}</p>
+                      <p className="mt-1 truncate text-xs font-medium text-foreground">{formatDate(displayEntity.createdAt)}</p>
+                    </div>
+                    <div className="rounded-md bg-muted/50 px-3 py-2">
+                      <p className="text-[10px] text-muted-foreground">{t("ent_type")}</p>
+                      <p className="mt-1 truncate text-xs font-medium text-foreground">{config.label}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {relatedNotes[0] && (
+                      <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground">{t("ent_connected_notes")}</p>
+                        <p className="mt-1 truncate text-xs text-foreground">{relatedNotes[0].title}</p>
+                      </div>
+                    )}
+                    {relatedEntities[0] && (
+                      <div className="min-w-0 rounded-md bg-muted/50 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground">{t("ent_related_entities")}</p>
+                        <p className="mt-1 truncate text-xs text-foreground">{relatedEntities[0].title}</p>
+                      </div>
                     )}
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}
