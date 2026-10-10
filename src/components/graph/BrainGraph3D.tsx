@@ -24,9 +24,9 @@ interface Palette { node: string; muted: string; background: string }
 
 // 3/4 lateral view: the angle where the brain is most recognisable.
 const VIEW_DIRECTION = new THREE.Vector3(0.82, 0.14, 0.56).normalize();
-const VIEW_TARGET = new THREE.Vector3(0, -0.1, 0);
+const VIEW_TARGET = new THREE.Vector3(0, 0, 0);
 
-// The brain outline: one Points draw call + one LineSegments draw call, built
+// The brain outline (a real cortex surface resampled in brain-layout.ts): one Points draw call + one LineSegments draw call, built
 // once and cached in the layout module (no per-instance matrices, no O(n^2) work).
 function Scaffold({ palette, inside }: { palette: Palette; inside: boolean }) {
   const { points, lines } = useMemo(() => scaffoldBuffers(createBrainScaffold()), []);
@@ -147,14 +147,14 @@ const CameraRig = forwardRef<BrainGraphHandle, { inside: boolean }>(function Cam
     // distance from the aspect ratio so the whole brain fits on portrait phones too
     const fov = THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov);
     const aspect = size.width / Math.max(1, size.height);
-    const distance = THREE.MathUtils.clamp(6.8 / (2 * Math.tan(fov / 2) * Math.min(aspect, 1.5)), 9.5, 28);
+    const distance = THREE.MathUtils.clamp(7.2 / (2 * Math.tan(fov / 2) * Math.min(aspect, 1.5)), 9.5, 28);
     camera.position.copy(VIEW_DIRECTION).multiplyScalar(distance).add(VIEW_TARGET);
     controls.current?.target.copy(VIEW_TARGET);
     controls.current?.update(); invalidate();
   };
   const enter = () => {
-    camera.position.set(0.1, 0.6, 1.1);
-    controls.current?.target.set(0, 0.55, -0.5);
+    camera.position.set(0.1, 0.4, 1.3);
+    controls.current?.target.set(0, 0.3, -0.6);
     controls.current?.update(); invalidate();
   };
   useEffect(() => { if (inside) enter(); else reset(); }, [inside, size.width, size.height]);
@@ -205,3 +205,4 @@ export const BrainGraph3D = forwardRef<BrainGraphHandle, Props>(function BrainGr
     </Canvas>
   </SceneBoundary>;
 });
+    
