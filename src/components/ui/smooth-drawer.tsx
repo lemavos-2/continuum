@@ -38,6 +38,12 @@ interface SmoothDrawerProps {
   children: React.ReactNode;
   className?: string;
   bodyClassName?: string;
+  /**
+   * vaul resizes/offsets the drawer when the mobile keyboard opens. Pass `false`
+   * to let the browser handle it — avoids the drawer getting stuck displaced
+   * after the keyboard is dismissed.
+   */
+  repositionInputs?: boolean;
 }
 
 export default function SmoothDrawer({
@@ -49,9 +55,15 @@ export default function SmoothDrawer({
   children,
   className,
   bodyClassName,
+  repositionInputs = true,
 }: SmoothDrawerProps) {
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      shouldScaleBackground={false}
+      repositionInputs={repositionInputs}
+    >
       <DrawerContent
         className={cn(
           "mx-auto max-h-[88dvh] w-full max-w-lg rounded-t-3xl border-border/10 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-xl sm:bottom-4 sm:rounded-3xl",
