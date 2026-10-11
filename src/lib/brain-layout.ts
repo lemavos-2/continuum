@@ -1,3 +1,5 @@
+import { BRAIN_SURFACE_B64 } from './brain-surface-data';
+
 export interface BrainNode {
   id: string;
   label: string;
@@ -8,122 +10,37 @@ export interface BrainNode {
 export interface BrainLink { source: string; target: string }
 export type Point3 = [number, number, number];
 
-// Axes: x = left/right, y = up/down, z = front(+)/back(-).
-// A generated network, not an anatomical model: the outer surface of a union of
-// ellipsoids (cerebrum, two temporal lobes, cerebellum, brain stem) with a
-// longitudinal fissure, central/Sylvian grooves, gyri-like folds and cerebellar
-// lamellae. Only points that are not buried inside another part are kept, so
-// the silhouette is the real outline and density is even. Fully deterministic.
+// Axes: x = left/right, y = up/down, z = front(+)/back(-), centred on the origin,
+// about 5.2 wide, 5.6 tall and 6.6 long.
+//
+// The brain outline is a real one: points resampled from the ICBM152 template
+// surface (see brain-surface-data.ts for source and licence). They are ordered
+// so that ANY prefix is evenly spread over the surface: the first n points are a
+// good layout for n nodes, and a longer prefix is a denser outline.
 
-const GOLDEN = Math.PI * (3 - Math.sqrt(5));
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-const gauss = (x: number, c: number, w: number) => Math.exp(-(((x - c) / w) ** 2));
+// ---- real brain surface ---------------------------------------------------------
 
-interface Blob {
-  name: 'cerebrum' | 'temporal' | 'cerebellum' | 'stem';
-  c: Point3;               // centre
-  a: Point3;               // semi-axes
-  rx: number;              // tilt around the x axis
-  polar: 0 | 1 | 2;        // axis the Fibonacci latitude runs along (the longest one)
-}
-
-const BLOBS: Blob[] = [
-  { name: 'cerebrum',   c: [0, 0.75, 0],       a: [2.45, 1.8, 2.95], rx: 0,    polar: 2 },
-  { name: 'temporal',   c: [-1.75, -0.8, 0.4],  a: [0.85, 0.6, 1.65], rx: 0.18, polar: 2 },
-  { name: 'temporal',   c: [1.75, -0.8, 0.4],   a: [0.85, 0.6, 1.65], rx: 0.18, polar: 2 },
-  { name: 'cerebellum', c: [0, -1.05, -1.95],  a: [1.45, 0.65, 0.95], rx: 0,    polar: 0 },
-  { name: 'stem',       c: [0, -1.6, -0.8],    a: [0.36, 1.1, 0.36], rx: 0.28, polar: 1 },
-];
-
-// Fibonacci sphere sample as a unit vector in the blob's own axes.
-function canonical(b: Blob, local: number, total: number): Point3 {
-  const lat = 1 - 2 * ((local + 0.5) / total);
-  const r = Math.sqrt(Math.max(0, 1 - lat * lat));
-  const ang = local * GOLDEN;
-  const out: Point3 = [0, 0, 0];
-  const others = [0, 1, 2].filter(i => i !== b.polar);
-  out[b.polar] = lat;
-  out[others[0]] = Math.cos(ang) * r;
-  out[others[1]] = Math.sin(ang) * r;
-  return out;
-}
-
-const rotX = (v: Point3, t: number): Point3 => [v[0], v[1] * Math.cos(t) - v[2] * Math.sin(t), v[1] * Math.sin(t) + v[2] * Math.cos(t)];
-const place = (b: Blob, u: Point3, scale: Point3 = [1, 1, 1]): Point3 => {
-  const o = rotX([u[0] * b.a[0] * scale[0], u[1] * b.a[1] * scale[1], u[2] * b.a[2] * scale[2]], b.rx);
-  return [b.c[0] + o[0], b.c[1] + o[1], b.c[2] + o[2]];
-};
-function inside(p: Point3, b: Blob): boolean {
-  const l = rotX([p[0] - b.c[0], p[1] - b.c[1], p[2] - b.c[2]], -b.rx);
-  return (l[0] / b.a[0]) ** 2 + (l[1] / b.a[1]) ** 2 + (l[2] / b.a[2]) ** 2 < 0.97;
-}
-function area(b: Blob) { // Knud Thomsen approximation
-  const [x, y, z] = b.a, p = 1.6;
-  return 4 * Math.PI * (((x * y) ** p + (x * z) ** p + (y * z) ** p) / 3) ** (1 / p);
-}
-
-// Surface detail for one sample of one part.
-function detail(b: Blob, u: Point3): Point3 {
-  const [ux, uy, uz] = u;
-  if (b.name === 'cerebrum') {
-    const side = ux >= 0 ? 1 : -1;
-    const ax = Math.abs(ux);
-    const sylvian = gauss(uy, -0.2 - 0.3 * uz, 0.07) * smooth(0.3, 0.7, ax);
-    const central = gauss(uz, -0.05 + 0.4 * ax, 0.055) * smooth(0.2, 0.5, uy);
-    const fold = 1 + 0.05 * Math.sin(ux * 9 + uz * 6) * Math.cos(uy * 10 - uz * 5)
-                   + 0.035 * Math.sin(uz * 15 + uy * 7 - ux * 6)
-                   - 0.1 * sylvian - 0.085 * central;
-    const p = place(b, u, [fold, fold, fold]);
-    // longitudinal fissure: split into hemispheres and sink the top midline
-    const dx = Math.abs(p[0]);
-    const sink = uy > 0 ? 0.3 * uy * gauss(dx, 0, 0.4) : 0;
-    return [side * (0.1 + dx), p[1] - sink, p[2]];
+let surfaceCache: Point3[] | null = null;
+function surface(): Point3[] {
+  if (surfaceCache) return surfaceCache;
+  const binary = atob(BRAIN_SURFACE_B64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const view = new DataView(bytes.buffer);
+  const count = Math.floor(bytes.length / 6);
+  const points: Point3[] = new Array(count);
+  for (let i = 0; i < count; i++) {
+    points[i] = [view.getInt16(i * 6, true) / 1000, view.getInt16(i * 6 + 2, true) / 1000, view.getInt16(i * 6 + 4, true) / 1000];
   }
-  if (b.name === 'temporal') {
-    const f = 1 + 0.05 * Math.sin(ux * 8 + uz * 7) * Math.cos(uy * 9);
-    return place(b, u, [f, f, f]);
-  }
-  if (b.name === 'cerebellum') {
-    const f = 1 + 0.07 * Math.sin(uy * 30 + ux * 1.5);   // horizontal lamellae
-    const vermis = 1 - 0.1 * gauss(ux, 0, 0.12);
-    return place(b, u, [f, f * vermis, f]);
-  }
-  return place(b, u);
+  surfaceCache = points;
+  return points;
 }
 
-interface PoolEntry { p: Point3; c: Point3 }
-const poolCache = new Map<number, PoolEntry[]>();
-function pool(count: number): PoolEntry[] {
-  const cached = poolCache.get(count);
-  if (cached) return cached;
-  const areas = BLOBS.map(area);
-  const sum = areas.reduce((x, y) => x + y, 0);
-  let factor = 2.4, kept: PoolEntry[] = [];
-  for (let attempt = 0; attempt < 4 && kept.length < count; attempt++, factor *= 1.5) {
-    kept = [];
-    BLOBS.forEach((b, bi) => {
-      const m = Math.ceil(count * factor * areas[bi] / sum);
-      for (let i = 0; i < m; i++) {
-        const u = canonical(b, i, m);
-        const base = place(b, u);
-        if (BLOBS.some((o, oi) => oi !== bi && inside(base, o))) continue; // buried in another part
-        kept.push({ p: detail(b, u), c: b.c });
-      }
-    });
-  }
-  const out = Array.from({ length: count }, (_, i) => kept[Math.min(kept.length - 1, Math.floor((i + 0.5) * kept.length / count))]);
-  poolCache.set(count, out);
-  return out;
-}
-
-// `depth` < 1 pulls a point toward the centre of its own part (not the world
-// origin), so interior nodes stay inside the lobe they belong to.
-export function brainPoint(index: number, count: number, depth = 1): Point3 {
-  const e = pool(count)[Math.min(Math.max(0, index), count - 1)];
-  return [e.c[0] + depth * (e.p[0] - e.c[0]), e.c[1] + depth * (e.p[1] - e.c[1]), e.c[2] + depth * (e.p[2] - e.c[2])];
+// `depth` < 1 pulls a surface point toward the centre of the brain.
+export function brainPoint(index: number, _count?: number, depth = 1): Point3 {
+  const points = surface();
+  const p = points[((index % points.length) + points.length) % points.length];
+  return [p[0] * depth, p[1] * depth, p[2] * depth];
 }
 
 // ---- scaffold -----------------------------------------------------------------
@@ -168,12 +85,13 @@ function nearestLinks(points: Point3[], k = 3): [number, number][] {
 }
 
 const scaffoldCache = new Map<number, BrainScaffold>();
-export function createBrainScaffold(count = 1800): BrainScaffold {
-  const cached = scaffoldCache.get(count);
+export function createBrainScaffold(count = 2800): BrainScaffold {
+  const size = Math.min(count, surface().length);
+  const cached = scaffoldCache.get(size);
   if (cached) return cached;
-  const points = Array.from({ length: count }, (_, i) => brainPoint(i, count));
+  const points = surface().slice(0, size);
   const scaffold = { points, links: nearestLinks(points) };
-  scaffoldCache.set(count, scaffold);
+  scaffoldCache.set(size, scaffold);
   return scaffold;
 }
 
@@ -252,12 +170,16 @@ export function layoutBrainNodes(nodes: BrainNode[], links: BrainLink[] = []): M
   const positions = new Map<string, Point3>();
   if (!n) return positions;
   const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
-  const total = Math.max(900, n);
+  const available = surface().length;
+  // Slot i = i-th surface point: the prefix is evenly spread, so nodes never stack and
+  // keep a minimum spacing. Depth layers fill the volume; graphs larger than the
+  // point set wrap around into slightly smaller concentric layers.
   const slots: Point3[] = sorted.map((_, i) => {
-    const s = Math.floor((i + 0.5) * total / n);
-    // three depth layers: most nodes on the surface, the rest filling the volume
-    const h = ((s * 2654435761) >>> 0) % 100;
-    return brainPoint(s, total, h < 14 ? 0.5 : h < 38 ? 0.75 : 0.98);
+    const layer = Math.floor(i / available);
+    const s = i % available;
+    const h = (((s + layer * 7919) * 2654435761) >>> 0) % 100;
+    const depth = (h < 8 ? 0.55 : h < 22 ? 0.8 : 0.98) * Math.pow(0.9, layer);
+    return brainPoint(s, available, depth);
   });
   const index = new Map(sorted.map((nd, i) => [nd.id, i]));
   const adj: number[][] = sorted.map(() => []);
