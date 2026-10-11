@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import SmoothDrawer from "@/components/ui/smooth-drawer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -272,29 +272,24 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
   );
 
   return (
-    <Dialog
+    <SmoothDrawer
       open={open}
       onOpenChange={(v) => {
         if (!v) reset();
         onOpenChange(v);
       }}
+      title={
+        <>
+          <span className="mb-2 block font-sans text-[10px] font-normal uppercase tracking-[0.32em] text-muted-foreground">
+            {t("import_eyebrow")}
+          </span>
+          {t("profile_importMd")}
+        </>
+      }
+      description={t("import_headerDesc")}
+      className="max-w-3xl"
     >
-      <DialogContent
-        viewportAware={false}
-        className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(92dvh,760px)] w-full max-w-none gap-0 overflow-hidden rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] flex flex-col"
-        style={{ top: "auto", bottom: 0, transform: "none" }}
-      >
-        <DialogHeader className="space-y-0 p-4 sm:p-6 border-b border-border/10 text-left">
-          <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("import_eyebrow")}</p>
-          <DialogTitle className="font-serif text-xl sm:text-2xl tracking-tight text-foreground mt-2">
-            {t("profile_importMd")}
-          </DialogTitle>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            {t("import_headerDesc")}
-          </p>
-        </DialogHeader>
-
-        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
+        <div className="border-t border-border/10 p-4 sm:p-6">
           {step === "upload" && (
             <div className="space-y-4">
               <div
@@ -537,7 +532,7 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
 
               {busy && <Progress value={progress} className="h-[2px] bg-accent rounded-none" />}
 
-              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 sticky bottom-0 bg-[hsl(var(--popup-background))] -mx-4 sm:mx-0 px-4 sm:px-0 pb-1">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 sticky bottom-0 bg-background -mx-4 sm:mx-0 px-4 sm:px-0 pb-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -609,8 +604,7 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </SmoothDrawer>
   );
 }
 
