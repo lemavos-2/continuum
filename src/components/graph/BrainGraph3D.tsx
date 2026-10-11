@@ -3,7 +3,7 @@ import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
 import { AdaptiveDpr, AdaptiveEvents, Html, OrbitControls } from '@react-three/drei';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
-import { createBrainScaffold, layoutBrainNodes, scaffoldBuffers, type BrainLink, type BrainNode, type Point3 } from '@/lib/brain-layout';
+import { createBrainMesh, layoutBrainNodes, type BrainLink, type BrainNode, type Point3 } from '@/lib/brain-layout';
 
 export interface BrainGraphHandle { zoom: (direction: number) => void; reset: () => void; enter: () => void }
 interface Props {
@@ -26,21 +26,73 @@ interface Palette { node: string; muted: string; background: string }
 const VIEW_DIRECTION = new THREE.Vector3(0.82, 0.14, 0.56).normalize();
 const VIEW_TARGET = new THREE.Vector3(0, 0, 0);
 
-// The brain outline (a real cortex surface resampled in brain-layout.ts): one Points draw call + one LineSegments draw call, built
-// once and cached in the layout module (no per-instance matrices, no O(n^2) work).
-function Scaffold({ palette, inside }: { palette: Palette; inside: boolean }) {
-  const { points, lines } = useMemo(() => scaffoldBuffers(createBrainScaffold()), []);
-  return <group>
-    <points raycast={() => null} frustumCulled={false}>
-      <bufferGeometry><bufferAttribute attach="attributes-position" args={[points, 3]} /></bufferGeometry>
-      <pointsMaterial color={palette.node} size={inside ? 0.028 : 0.04} sizeAttenuation transparent opacity={inside ? 0.18 : 0.45} depthWrite={false} />
-    </points>
-    <lineSegments raycast={() => null} frustumCulled={false}>
-      <bufferGeometry><bufferAttribute attach="attributes-position" args={[lines, 3]} /></bufferGeometry>
-      <lineBasicMaterial color={palette.node} transparent opacity={inside ? 0.04 : 0.12} depthWrite={false} />
-    </lineSegments>
-  </group>;
+const SHELL_VERTEX = /* glsl */ `
+  attribute float ridge;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  varying float vRidge;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vView = -mv.xyz;
+    vRidge = ridge;
+    gl_Position = projectionMatrix * mv;
+  }`;
+const SHELL_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform vec3 uBackground;
+  uniform float uOpacity;
+  uniform float uSolid;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  varying float vRidge;
+  void main() {
+    vec3 n = normalize(vNormal);
+    if (!gl_FrontFacing) n = -n;
+    float facing = clamp(dot(n, normalize(vView)), 0.0, 1.0);
+    float rim = pow(1.0 - facing, 1.7);                       // bright silhouette
+    float crest = smoothstep(0.35, 0.75, vRidge);             // bright gyri, dark sulci
+    float shade = 0.10 + 0.55 * rim + 0.45 * crest * (0.4 + 0.6 * facing);
+    // solid: blend towards the page background (works on dark and light themes)
+    gl_FragColor = uSolid > 0.5 ? vec4(mix(uBackground, uColor, shade), 1.0) : vec4(uColor, shade * uOpacity);
+  }`;
+
+// The brain: ONE mesh (20k triangles, one draw call) with folded gyri, deep sulci and a
+// bright rim. Solid when seen from outside, so nodes on the far side are hidden and the
+// silhouette reads as a brain even with very few nodes.
+function Shell({ palette, inside }: { palette: Palette; inside: boolean }) {
+  const geometry = useMemo(() => {
+    const mesh = createBrainMesh();
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(mesh.positions, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(mesh.normals, 3));
+    g.setAttribute('ridge', new THREE.BufferAttribute(mesh.ridge, 1));
+    g.setIndex(new THREE.BufferAttribute(mesh.index, 1));
+    g.computeBoundingSphere();
+    return g;
+  }, []);
+  const uniforms = useMemo(() => ({
+    uColor: { value: new THREE.Color() },
+    uBackground: { value: new THREE.Color() },
+    uOpacity: { value: 0.3 },
+    uSolid: { value: 1 },
+  }), []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => {
+    uniforms.uColor.value.set(palette.node);
+    uniforms.uBackground.value.set(palette.background);
+  }, [palette, uniforms]);
+  uniforms.uSolid.value = inside ? 0 : 1;
+  return <mesh geometry={geometry} raycast={() => null} frustumCulled={false} renderOrder={-1}>
+    <shaderMaterial uniforms={uniforms} vertexShader={SHELL_VERTEX} fragmentShader={SHELL_FRAGMENT}
+      transparent={inside} depthWrite={!inside} side={inside ? THREE.BackSide : THREE.FrontSide} />
+  </mesh>;
 }
+
+// A node on the far side of the brain is hidden by the solid shell: it must not react to the pointer.
+const BRAIN_CENTER = new THREE.Vector3(0, 0.3, 0);
+const toNode = new THREE.Vector3();
+const toCamera = new THREE.Vector3();
 
 function Network({ positions, palette, ...props }: Props & { positions: Map<string, Point3>; palette: Palette }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
@@ -60,7 +112,7 @@ function Network({ positions, palette, ...props }: Props & { positions: Map<stri
       if (a !== undefined) degree[a]++;
       if (b !== undefined) degree[b]++;
     });
-    return Float32Array.from(degree, d => 0.038 + Math.min(0.045, d * 0.0055));
+    return Float32Array.from(degree, d => 0.03 + Math.min(0.036, d * 0.0044));
   }, [props.nodes, props.links, indexById]);
 
   const place = (index: number, isHover: boolean) => {
@@ -117,13 +169,23 @@ function Network({ positions, palette, ...props }: Props & { positions: Map<stri
   }, [props.links, props.selectedId, positions]);
 
   // Many links add up to a white mass: fade them as the graph grows.
-  const edgeOpacity = Math.min(0.4, Math.max(0.09, 14 / Math.sqrt(Math.max(1, props.links.length))));
-  const nodeAt = (e: ThreeEvent<PointerEvent | MouseEvent>) => e.instanceId === undefined ? undefined : props.nodes[e.instanceId];
+  const edgeOpacity = Math.min(0.4, Math.max(0.05, 4.2 / Math.sqrt(Math.max(1, props.links.length))));
+  const nodeAt = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
+    const node = e.instanceId === undefined ? undefined : props.nodes[e.instanceId];
+    const point = node && positions.get(node.id);
+    if (!node || !point) return undefined;
+    if (!props.inside) { // far side of the solid brain: not clickable
+      toNode.set(point[0], point[1], point[2]).sub(BRAIN_CENTER).normalize();
+      toCamera.copy(e.camera.position).sub(BRAIN_CENTER).normalize();
+      if (toNode.dot(toCamera) < 0.05) return undefined;
+    }
+    return node;
+  };
 
   return <>
     {props.showEdges && edgePositions.map((array, index) => <lineSegments key={index} raycast={() => null} frustumCulled={false}>
       <bufferGeometry><bufferAttribute attach="attributes-position" args={[array, 3]} /></bufferGeometry>
-      <lineBasicMaterial color={palette.node} transparent opacity={index === 1 ? 0.95 : props.selectedId ? 0.1 : edgeOpacity} depthWrite={false} />
+      <lineBasicMaterial color={palette.node} transparent opacity={index === 1 ? 0.95 : props.selectedId ? 0.04 : edgeOpacity} depthWrite={false} depthTest={false} />
     </lineSegments>)}
     <instancedMesh ref={mesh} args={[undefined, undefined, props.nodes.length]} frustumCulled={false}
       onClick={e => { if (e.delta > 5) return; const node = nodeAt(e); if (node) { e.stopPropagation(); props.onSelect(node); } }}
@@ -147,7 +209,7 @@ const CameraRig = forwardRef<BrainGraphHandle, { inside: boolean }>(function Cam
     // distance from the aspect ratio so the whole brain fits on portrait phones too
     const fov = THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov);
     const aspect = size.width / Math.max(1, size.height);
-    const distance = THREE.MathUtils.clamp(7.2 / (2 * Math.tan(fov / 2) * Math.min(aspect, 1.5)), 9.5, 28);
+    const distance = THREE.MathUtils.clamp(7.8 / (2 * Math.tan(fov / 2) * Math.min(aspect, 1.5)), 9.5, 28);
     camera.position.copy(VIEW_DIRECTION).multiplyScalar(distance).add(VIEW_TARGET);
     controls.current?.target.copy(VIEW_TARGET);
     controls.current?.update(); invalidate();
@@ -197,7 +259,7 @@ export const BrainGraph3D = forwardRef<BrainGraphHandle, Props>(function BrainGr
       <ambientLight intensity={1.6} />
       <directionalLight position={[5, 8, 6]} intensity={2.2} />
       <directionalLight position={[-6, -3, -5]} intensity={0.6} />
-      <Scaffold palette={palette} inside={props.inside} />
+      <Shell palette={palette} inside={props.inside} />
       {props.nodes.length > 0 && <Network {...props} positions={positions} palette={palette} />}
       <CameraRig ref={ref} inside={props.inside} />
       <AdaptiveDpr />
@@ -205,4 +267,3 @@ export const BrainGraph3D = forwardRef<BrainGraphHandle, Props>(function BrainGr
     </Canvas>
   </SceneBoundary>;
 });
-    
