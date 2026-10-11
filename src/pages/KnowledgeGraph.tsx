@@ -1087,6 +1087,11 @@ export default function KnowledgeGraph() {
               >
                 {show3D ? "3D" : "2D"}
               </Button>
+              {show3D && (
+                <span className="-mt-1 rounded-full border border-border/20 px-1.5 py-0.5 text-[9px] leading-none text-muted-foreground">
+                  (beta)
+                </span>
+              )}
 
               <div className="my-0.5 h-px w-6 bg-border/10" />
 

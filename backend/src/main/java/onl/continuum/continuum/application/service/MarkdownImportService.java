@@ -122,8 +122,16 @@ public class MarkdownImportService {
         detectFromFrontmatter(frontmatter, candidates);
         detectFromPlain(plain, candidates);
 
-        candidates.values().removeIf(c -> "LOW".equals(c.confidence()) && c.occurrences() < 2);
-        candidates.values().removeIf(c -> isNoise(c.name()));
+        Map<String, Candidate> repeatedCandidates = new LinkedHashMap<>();
+        for (Candidate candidate : candidates.values()) {
+            int occurrences = countMentions(plain, candidate.key());
+            if (occurrences >= 2 && !isNoise(candidate.name())) {
+                repeatedCandidates.put(candidate.key(), new Candidate(
+                        candidate.key(), candidate.name(), candidate.suggestedType(),
+                        occurrences, candidate.confidence()));
+            }
+        }
+        candidates = repeatedCandidates;
 
         int wordCount = plain.isBlank() ? 0 : plain.trim().split("\\s+").length;
         boolean hasBody = !plain.trim().isEmpty();
@@ -140,6 +148,18 @@ public class MarkdownImportService {
         if (looksLikePathOrUrl(n)) return true;
         if (FILE_EXT.matcher(n).find()) return true;
         return NOISE.contains(n);
+    }
+
+    private int countMentions(String text, String entityKey) {
+        String[] words = entityKey.split("\\s+");
+        StringJoiner phrase = new StringJoiner("\\s+");
+        for (String word : words) phrase.add(Pattern.quote(word));
+        Pattern mention = Pattern.compile(
+                "(?iu)(?<![\\p{L}\\p{N}_])" + phrase + "(?![\\p{L}\\p{N}_])");
+        Matcher matcher = mention.matcher(text);
+        int occurrences = 0;
+        while (matcher.find()) occurrences++;
+        return occurrences;
     }
 
     private static String stripAccents(String s) {
@@ -496,26 +516,32 @@ public class MarkdownImportService {
             String name = m.group(1).trim();
             if (!name.isBlank()) bump(out, capitalize(name), "TOPIC", "HIGH");
         }
-        // Only compound proper names (2-3 words, every word Capitalized, not ALL CAPS,
-        // not at sentence start) are treated as people/projects.
         m = PROPER_NOUN.matcher(text);
         while (m.find()) {
-            if (m.group(2) == null) continue;
-            StringBuilder name = new StringBuilder(m.group(1)).append(' ').append(m.group(2));
-            if (m.group(3) != null) name.append(' ').append(m.group(3));
+            StringBuilder name = new StringBuilder(m.group(1));
+            int words = 1;
+            if (m.group(2) != null) { name.append(' ').append(m.group(2)); words++; }
+            if (m.group(3) != null) { name.append(' ').append(m.group(3)); words++; }
             String full = name.toString();
+            String lower = m.group(1).toLowerCase(Locale.ROOT);
+            if (words == 1 && STOPLIST.contains(lower)) continue;
             if (isSentenceStart(text, m.start())) continue;
-            if (!isProperCompound(full) || isNoisePhrase(full)) continue;
-            bump(out, full, "PERSON", "MEDIUM");
+            String type = words == 1 ? "PERSON" : "PROJECT";
+            bump(out, full, type, "LOW");
         }
-    }
 
-    private boolean isProperCompound(String name) {
-        for (String w : name.split("\\s+")) {
-            if (w.length() < 2 || !startsWithUppercase(w)) return false;
-            if (w.equals(w.toUpperCase(Locale.ROOT))) return false;
+        m = MULTI_WORD_NAME.matcher(text);
+        while (m.find()) {
+            String first = m.group(1);
+            String second = m.group(2);
+            String third = m.group(3);
+            if (!startsWithUppercase(first) && !startsWithUppercase(second)) continue;
+
+            StringBuilder name = new StringBuilder(first).append(' ').append(second);
+            if (third != null) name.append(' ').append(third);
+            if (isNoisePhrase(name.toString())) continue;
+            bump(out, name.toString(), "PERSON", "MEDIUM");
         }
-        return true;
     }
 
     private boolean startsWithUppercase(String value) {

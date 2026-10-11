@@ -71,7 +71,7 @@ export function AppThemeSelector() {
             {t("profile_themeCharcoal")}
           </SelectItem>
           <SelectItem value="LIGHT" className="text-xs" onSelect={(event) => event.preventDefault()}>
-            {t("profile_themeLight")} (beta)
+            {t("profile_themeLight")}
           </SelectItem>
         </SelectContent>
       </Select>
