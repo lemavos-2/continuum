@@ -496,32 +496,26 @@ public class MarkdownImportService {
             String name = m.group(1).trim();
             if (!name.isBlank()) bump(out, capitalize(name), "TOPIC", "HIGH");
         }
+        // Only compound proper names (2-3 words, every word Capitalized, not ALL CAPS,
+        // not at sentence start) are treated as people/projects.
         m = PROPER_NOUN.matcher(text);
         while (m.find()) {
-            StringBuilder name = new StringBuilder(m.group(1));
-            int words = 1;
-            if (m.group(2) != null) { name.append(' ').append(m.group(2)); words++; }
-            if (m.group(3) != null) { name.append(' ').append(m.group(3)); words++; }
+            if (m.group(2) == null) continue;
+            StringBuilder name = new StringBuilder(m.group(1)).append(' ').append(m.group(2));
+            if (m.group(3) != null) name.append(' ').append(m.group(3));
             String full = name.toString();
-            String lower = m.group(1).toLowerCase(Locale.ROOT);
-            if (words == 1 && STOPLIST.contains(lower)) continue;
             if (isSentenceStart(text, m.start())) continue;
-            String type = words == 1 ? "PERSON" : "PROJECT";
-            bump(out, full, type, "LOW");
+            if (!isProperCompound(full) || isNoisePhrase(full)) continue;
+            bump(out, full, "PERSON", "MEDIUM");
         }
+    }
 
-        m = MULTI_WORD_NAME.matcher(text);
-        while (m.find()) {
-            String first = m.group(1);
-            String second = m.group(2);
-            String third = m.group(3);
-            if (!startsWithUppercase(first) && !startsWithUppercase(second)) continue;
-
-            StringBuilder name = new StringBuilder(first).append(' ').append(second);
-            if (third != null) name.append(' ').append(third);
-            if (isNoisePhrase(name.toString())) continue;
-            bump(out, name.toString(), "PERSON", "MEDIUM");
+    private boolean isProperCompound(String name) {
+        for (String w : name.split("\\s+")) {
+            if (w.length() < 2 || !startsWithUppercase(w)) return false;
+            if (w.equals(w.toUpperCase(Locale.ROOT))) return false;
         }
+        return true;
     }
 
     private boolean startsWithUppercase(String value) {
