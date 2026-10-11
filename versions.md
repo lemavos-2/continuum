@@ -4,7 +4,7 @@ Every notable change to Continuum, from the first release to the latest version.
 
 ---
 
-v1.3.1 — Oct XX, 2026
+v1.3.2 — Oct 11, 2026
 
 - UI: Introduced charcoal and light themes.
 - UI: Polished drawer component
