@@ -13,6 +13,7 @@ v1.3.1 — Oct XX, 2026
 - Email: Added an alert-sending service.
 - Time Tracking: Preserved scroll-wheel duration controls on mobile and added numeric inputs for setting goals and adding manual entries on desktop.
 - Notes: Fixed bilink navigation to open the correct note and save pending edits before leaving.
+- Import: Improved entity detection to include only entities mentioned at least twice.
 
 ---
 
