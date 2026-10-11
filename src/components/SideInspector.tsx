@@ -5,6 +5,8 @@ import { ArrowUpRight, Calendar, Link2, Network, StickyNote, X, Tag } from "@/li
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import SmoothDrawer from "@/components/ui/smooth-drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEntityStore, type InspectableEntity, type InspectableNote } from "@/contexts/EntityContext";
 import { entitiesApi, notesApi } from "@/lib/api";
@@ -37,7 +39,10 @@ const truncateText = (value: string, maxLength = 220) =>
 
 const formatDate = (value?: string) => (value ? new Date(value).toLocaleDateString("en-US") : "—");
 
-export const SideInspector = memo(function SideInspector({ isOpen, entity, onClose, mobileBottomSheet = false }: SideInspectorProps) {
+export const SideInspector = memo(function SideInspector({ isOpen, entity, onClose, mobileBottomSheet: mobileBottomSheetProp = false }: SideInspectorProps) {
+  const isMobile = useIsMobile();
+  const drawerMode = mobileBottomSheetProp && isMobile;
+  const mobileBottomSheet = mobileBottomSheetProp && !drawerMode;
   const navigate = useNavigate();
   const { openInspector, setLoadingEntityId } = useEntityStore();
   const { toast } = useToast();
@@ -190,7 +195,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
     ? { "--mobile-inspector-height": inspectorMobileHeight } as React.CSSProperties
     : undefined;
 
-  return (
+  const panel = (
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
@@ -199,7 +204,7 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
           exit={mobileBottomSheet && window.innerWidth < 1024 ? { opacity: 0, y: 40 } : { opacity: 0, x: 320 }}
           transition={{ duration: 0.25 }}
           style={inspectorMobileStyle}
-          className={mobileBottomSheet
+          className={drawerMode ? "flex w-full flex-col" : mobileBottomSheet
             ? "relative z-40 flex h-[var(--mobile-inspector-height)] max-h-[70dvh] w-full flex-none flex-col overflow-hidden rounded-t-3xl border-t border-border/10 bg-background/95 shadow-2xl backdrop-blur-xl lg:fixed lg:bottom-0 lg:right-0 lg:top-0 lg:h-auto lg:max-h-none lg:w-[22rem] lg:rounded-none lg:rounded-l-2xl lg:border-l lg:border-t-0"
             : "fixed right-0 top-0 bottom-0 z-40 w-[22rem] border-l border-border/10 bg-background/95 backdrop-blur-xl shadow-2xl"}
         >
@@ -594,6 +599,15 @@ export const SideInspector = memo(function SideInspector({ isOpen, entity, onClo
       )}
     </AnimatePresence>
   );
+
+  if (drawerMode) {
+    return (
+      <SmoothDrawer open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} hideHeader title={entity?.title ?? ""}>
+        {panel}
+      </SmoothDrawer>
+    );
+  }
+  return panel;
 });
 
 SideInspector.displayName = "SideInspector";

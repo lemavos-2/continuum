@@ -5,7 +5,7 @@ import { timeTrackingApi } from '@/lib/api';
 import { useTimeTracking, type TimeEntry } from '@/hooks/useTimeTracking';
 import { useTimerGoal } from '@/hooks/useTimerGoal';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import SmoothDrawer from '@/components/ui/smooth-drawer';
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -392,18 +392,10 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
         </div>
       </div>
 
-      <Dialog open={adding && !!entityId} onOpenChange={(open) => {
+      <SmoothDrawer open={adding && !!entityId} onOpenChange={(open) => {
         setAdding(open);
         if (!open) setEntryError(null);
-      }}>
-        <DialogContent
-          viewportAware={false}
-          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] sm:!left-[50%] sm:!top-[50%] sm:!bottom-auto sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-1.5rem)] sm:max-w-lg sm:gap-4 sm:rounded-2xl sm:border sm:p-5"
-          style={{ top: "auto", bottom: 0, transform: "none" }}
-        >
-          <DialogHeader className="border-b border-border/10 px-5 py-4 text-center">
-            <DialogTitle className="text-lg">{t('tm_add_manual_entry_title')}</DialogTitle>
-          </DialogHeader>
+      }} title={t('tm_add_manual_entry_title')}>
           <div className="space-y-5 px-5 py-5">
             <label className="block space-y-2">
               <span className="text-xs font-medium text-muted-foreground">{t('tm_date')}</span>
@@ -443,21 +435,12 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
               {isAdding ? t('tm_saving_entry') : t('tm_add')}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+      </SmoothDrawer>
 
-      <Dialog open={editingGoal} onOpenChange={(open) => {
+      <SmoothDrawer open={editingGoal} onOpenChange={(open) => {
         setEditingGoal(open);
         if (!open) setGoalError(null);
-      }}>
-        <DialogContent
-          viewportAware={false}
-          className="!left-0 !top-auto !bottom-0 !translate-x-0 !translate-y-0 max-h-[min(82dvh,620px)] w-full max-w-none gap-0 overflow-y-auto rounded-b-none rounded-t-3xl border-x-0 border-b-0 p-0 pb-[env(safe-area-inset-bottom)] sm:!left-[50%] sm:!top-[50%] sm:!bottom-auto sm:!translate-x-[-50%] sm:!translate-y-[-50%] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-1.5rem)] sm:max-w-lg sm:gap-4 sm:rounded-2xl sm:border sm:p-5"
-          style={{ top: "auto", bottom: 0, transform: "none" }}
-        >
-          <DialogHeader className="border-b border-border/10 px-5 py-4 text-center">
-            <DialogTitle className="text-lg">{t('tm_set_daily_goal')}</DialogTitle>
-          </DialogHeader>
+      }} title={t('tm_set_daily_goal')}>
           <div className="space-y-5 px-5 py-5">
             <fieldset>
               <legend className="mb-2 text-xs font-medium text-muted-foreground">{t('tm_duration')}</legend>
@@ -486,8 +469,7 @@ export function TimeHeatmap({ entityId, weeks = 52 }: Props) {
               {isSavingGoal ? t('tm_saving_entry') : t('tm_set_daily_goal')}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+      </SmoothDrawer>
 
 
       {isLoading ? (

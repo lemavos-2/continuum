@@ -24,6 +24,7 @@ import {
   ShieldCheckIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import SmoothDrawer from "@/components/ui/smooth-drawer";
 import MarkdownImportDialog from "@/components/import/MarkdownImportDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -394,21 +395,9 @@ export default function SettingsPage() {
       />
       <MarkdownImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => refreshUser()} />
 
-      {subscriptionOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 p-0 backdrop-blur-md"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(event) => {
-            const target = event.target as HTMLElement;
-            if (!target.closest("[data-subscription-panel]")) setSubscriptionOpen(false);
-          }}
-        >
-          <div className="w-full">
-            <SubscriptionContent />
-          </div>
-        </div>
-      )}
+      <SmoothDrawer open={subscriptionOpen} onOpenChange={setSubscriptionOpen} hideHeader title="Subscription" className="max-w-3xl">
+        <SubscriptionContent />
+      </SmoothDrawer>
     </AppLayout>
   );
 }
