@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type FocusEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import SmoothDrawer from "@/components/ui/smooth-drawer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -101,11 +101,14 @@ interface Props {
 export default function MarkdownImportDialog({ open, onOpenChange, onImported }: Props) {
   const { toast } = useToast();
   const { t } = useLanguage();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<Step>("upload");
   const [busy, setBusy] = useState(false);
+  // True from the tap on "select files/folder" until the browser hands us the files
+  // (or the picker is cancelled). Listing a big folder can take seconds with no feedback.
+  const [picking, setPicking] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
@@ -122,6 +125,7 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
     setResult(null);
     setProgress(0);
     setBusy(false);
+    setPicking(false);
     setDragging(false);
     setCustomEntities([]);
     setCustomDraftName("");
@@ -129,8 +133,17 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
   }, []);
 
   const handleFiles = useCallback(
-    async (fileList: FileList | null) => {
-      if (!fileList || fileList.length === 0) return;
+    async (fileList: ArrayLike<File> | null) => {
+      setPicking(false);
+      if (!fileList || fileList.length === 0) {
+        setProgress(0);
+        return;
+      }
+      // Optimistic: show the loading line right away, then let the browser paint it
+      // before we chew through a potentially huge file list.
+      setBusy(true);
+      setProgress((p) => Math.max(p, 12));
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
       const all = Array.from(fileList);
       const files = all.filter(isStrictMarkdownFile);
       const skipped = all.length - files.length;
@@ -140,6 +153,8 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
           description: t("import_noMdDesc"),
           variant: "destructive",
         });
+        setBusy(false);
+        setProgress(0);
         return;
       }
       if (skipped > 0) {
@@ -148,8 +163,6 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
           description: t("import_skippedDesc"),
         });
       }
-      setBusy(true);
-      setProgress(15);
       try {
         const res = await importApi.previewMarkdown(files);
         setProgress(90);
@@ -287,6 +300,56 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
     [decisions]
   );
 
+  const loading = busy || picking;
+
+  // Keep the loading line moving while we wait, so it never looks frozen.
+  useEffect(() => {
+    if (!loading || step === "result") return;
+    const id = window.setInterval(() => {
+      setProgress((p) => (p < 85 ? p + Math.max(0.5, (85 - p) * 0.06) : p));
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [loading, step]);
+
+  // Safety net for browsers that never fire the file input's "cancel" event.
+  useEffect(() => {
+    if (!picking) return;
+    const id = window.setTimeout(() => {
+      setPicking(false);
+      setProgress(0);
+    }, 60_000);
+    return () => window.clearTimeout(id);
+  }, [picking]);
+
+  const handlePickerCancel = useCallback(() => {
+    setPicking(false);
+    setProgress(0);
+  }, []);
+
+  const bindFileInput = useCallback(
+    (el: HTMLInputElement | null) => {
+      inputRef.current = el;
+      if (el) el.oncancel = handlePickerCancel;
+    },
+    [handlePickerCancel]
+  );
+
+  const bindFolderInput = useCallback(
+    (el: HTMLInputElement | null) => {
+      folderInputRef.current = el;
+      if (el) el.oncancel = handlePickerCancel;
+    },
+    [handlePickerCancel]
+  );
+
+  const openPicker = useCallback((input: HTMLInputElement | null) => {
+    if (!input) return;
+    // Instant feedback on tap — the browser can take seconds to list a large folder.
+    setPicking(true);
+    setProgress((p) => Math.max(p, 6));
+    input.click();
+  }, []);
+
   return (
     <SmoothDrawer
       open={open}
@@ -327,31 +390,35 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
               <p className="mt-1 text-sm text-muted-foreground">{t("import_orPick")}</p>
               <div className="mt-6 flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center">
                 <Button
-                  onClick={() => inputRef.current?.click()}
-                  disabled={busy}
+                  onClick={() => openPicker(inputRef.current)}
+                  disabled={loading}
                   className="h-11 w-full rounded-xl px-5 text-sm sm:w-auto"
                 >
                   {t("import_selectFiles")}
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => folderInputRef.current?.click()}
-                  disabled={busy}
+                  onClick={() => openPicker(folderInputRef.current)}
+                  disabled={loading}
                   className="h-11 w-full rounded-xl px-5 text-sm sm:w-auto"
                 >
                   {t("import_selectFolder")}
                 </Button>
               </div>
               <input
-                ref={inputRef}
+                ref={bindFileInput}
                 type="file"
                 accept=".md"
                 multiple
                 className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  e.target.value = ""; // lets the same selection fire onChange again
+                  handleFiles(picked);
+                }}
               />
               <input
-                ref={folderInputRef}
+                ref={bindFolderInput}
                 type="file"
                 /* @ts-expect-error non-standard */
                 webkitdirectory=""
@@ -359,10 +426,14 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
                 accept=".md"
                 multiple
                 className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  e.target.value = ""; // lets the same selection fire onChange again
+                  handleFiles(picked);
+                }}
               />
             </div>
-            {busy && (
+            {loading && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">{t("import_parsing")}</p>
                 <Progress value={progress} className="h-1.5 rounded-full bg-secondary" />
