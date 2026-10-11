@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type FocusEvent } from "react";
 import SmoothDrawer from "@/components/ui/smooth-drawer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -45,9 +45,15 @@ const BINARY_MIME = /^(audio|video|image)\//i;
 
 /* Shared visual tokens — same rounded language used by the other drawers. */
 const fieldClass =
-  "h-11 w-full rounded-xl border border-border/15 bg-foreground/[0.03] px-3.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring";
+  "h-12 w-full rounded-xl border border-border/15 bg-foreground/[0.03] px-4 text-base text-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring";
 const selectClass =
-  "h-11 rounded-xl border border-border/15 bg-foreground/[0.03] px-3 text-sm text-foreground/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring";
+  "h-12 rounded-xl border border-border/15 bg-foreground/[0.03] px-3.5 text-base text-foreground/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring";
+
+/* With the drawer's own keyboard repositioning off, keep the focused field in view. */
+const revealOnFocus = (e: FocusEvent<HTMLElement>) => {
+  const el = e.currentTarget;
+  window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+};
 const optionClass = "bg-[hsl(var(--popup-background))] text-[hsl(var(--popup-foreground))]";
 const panelClass = "rounded-2xl border border-border/10 bg-foreground/[0.03]";
 
@@ -291,6 +297,7 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
       title={t("profile_importMd")}
       description={t("import_headerDesc")}
       className="max-w-3xl"
+      repositionInputs={false}
     >
       <div className="px-5 pb-5 pt-3 sm:px-6">
         {step === "upload" && (
@@ -409,8 +416,9 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
                       addCustomEntity();
                     }
                   }}
+                  onFocus={revealOnFocus}
                   placeholder={t("import_addOwnPlaceholder")}
-                  className={`${fieldClass} min-w-0 flex-1`}
+                  className={`${fieldClass} min-w-0 sm:flex-1`}
                 />
                 <div className="flex gap-2">
                   <select
@@ -428,7 +436,7 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
                     variant="outline"
                     onClick={addCustomEntity}
                     disabled={busy || !customDraftName.trim()}
-                    className="h-11 rounded-xl px-5 text-sm"
+                    className="h-12 rounded-xl px-6 text-sm"
                   >
                     {t("import_addBtn")}
                   </Button>
@@ -488,7 +496,8 @@ export default function MarkdownImportDialog({ open, onOpenChange, onImported }:
                             onChange={(e) =>
                               setDecisions((s) => ({ ...s, [c.key]: { ...d, name: e.target.value } }))
                             }
-                            className="h-9 min-w-0 flex-1 rounded-lg bg-transparent px-2 text-sm text-foreground transition-colors hover:bg-foreground/[0.04] focus:bg-foreground/[0.06] focus:outline-none focus:ring-2 focus:ring-ring"
+                            onFocus={revealOnFocus}
+                            className="h-9 min-w-0 flex-1 rounded-lg bg-transparent px-2 text-base text-foreground transition-colors hover:bg-foreground/[0.04] focus:bg-foreground/[0.06] focus:outline-none focus:ring-2 focus:ring-ring"
                           />
                           <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                             {c.existing ? t("import_exists") : `${c.occurrences}×`}
