@@ -4,11 +4,19 @@ Every notable change to Continuum, from the first release to the latest version.
 
 ---
 
+v1.3.3 — Oct XX, 2026
+
+- Prefetch: Add prefetch progress line.
+- UI: Padronize /notes, /entities UI in desktop to look like mobile.
+- Notes: Filter by type now uses drawer.
+
+---
+
 v1.3.2 — Oct 11, 2026
 
 - UI: Introduced charcoal and light themes.
 - UI: Polished drawer component
-- 3D Graph: Add a 3D graph in brain shape  (beta).
+- 3D Graph: Add a 3D graph in brain shape (beta).
 - Backend: Added email infrastructure.
 - Email: Added an alert-sending service.
 - Time Tracking: Preserved scroll-wheel duration controls on mobile and added numeric inputs for setting goals and adding manual entries on desktop.
