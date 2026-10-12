@@ -218,6 +218,7 @@ export default function Notes() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(false);
   const [othersChipActive, setOthersChipActive] = useState(false);
 
   // Multiselect
@@ -646,12 +647,7 @@ export default function Notes() {
           </SheetContent>
         </Sheet>
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-16 lg:px-12 lg:py-16">
-          {/* ─── Sidebar (desktop only) ──────────────────────────── */}
-          <aside className="hidden lg:sticky lg:top-16 lg:block lg:w-52 lg:shrink-0 lg:self-start">
-            {SidebarContent}
-          </aside>
-  
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-10 lg:px-12 lg:py-10">
           {/* ─── Main ────────────────────────────────────────────── */}
           <main className="min-w-0 flex-1">
             {/* Header (desktop) */}
@@ -672,7 +668,7 @@ export default function Notes() {
             </header>
 
             {/* Mobile: search + view chips */}
-            <div className="mb-5 space-y-3 lg:hidden">
+            <div className="mb-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="relative z-0 flex-1">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -683,15 +679,32 @@ export default function Notes() {
                       className="h-12 w-full rounded-2xl bg-accent pl-11 text-[15px] placeholder:italic placeholder:text-muted-foreground"
                     />
                   </div>
-                  <ListSortMenu value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
+                  <ListSortMenu className="lg:h-12 lg:w-12 lg:rounded-2xl" value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="hidden h-12 w-12 shrink-0 rounded-2xl bg-accent lg:inline-flex"
+                    onClick={() => setDesktopSidebarOpen((open) => !open)}
+                    aria-label={t("notes_filters")}
+                    aria-expanded={desktopSidebarOpen}
+                    aria-controls="notes-desktop-filters"
+                    title={t("notes_filters")}
+                  >
+                    {desktopSidebarOpen ? <X className="h-4 w-4" /> : <SlidersHorizontal className="h-4 w-4" />}
+                  </Button>
                 </div>
               <div onTouchStart={(event) => event.stopPropagation()}>
                 <FilterChips
                   value={othersChipActive ? "others" : view}
                   onChange={(v) => {
                     if (v === "others") {
-                      setOthersChipActive(true);
-                      setFilterDrawerOpen(true);
+                      if (window.matchMedia("(min-width: 1024px)").matches) {
+                        setDesktopSidebarOpen(true);
+                      } else {
+                        setOthersChipActive(true);
+                        setFilterDrawerOpen(true);
+                      }
                       return;
                     }
                     setOthersChipActive(false);
@@ -707,24 +720,6 @@ export default function Notes() {
                 />
               </div>
             </div>
-
-            {/* Sticky search (desktop) */}
-            <div className="sticky top-14 z-10 -mx-4 hidden border-b border-border/10 bg-background/70 px-4 py-3 backdrop-blur-xl lg:block">
-              <div className="flex items-center gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    variant="ghost"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={t("notes_searchPlaceholder")}
-                    className="w-full border-0 bg-transparent pl-6 text-sm text-foreground placeholder:italic placeholder:text-muted-foreground focus:outline-none focus:ring-0"
-                  />
-                </div>
-                <ListSortMenu value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
-              </div>
-            </div>
-
 
             {/* Selection action bar */}
             {selectMode && (
@@ -982,6 +977,12 @@ export default function Notes() {
               </div>
             )}
           </main>
+          {desktopSidebarOpen && (
+            <aside id="notes-desktop-filters" aria-label={t("notes_filters")} className="hidden lg:sticky lg:top-10 lg:block lg:w-52 lg:shrink-0 lg:self-start lg:border-l lg:border-border/10 lg:pl-6">
+              <p className="mb-6 font-serif text-2xl text-foreground">{t("notes_filters")}</p>
+              {SidebarContent}
+            </aside>
+          )}
         </div>
       </div>
 
