@@ -4,6 +4,7 @@
  * app's tokens, framer-motion and controlled usage.
  */
 import type * as React from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -29,6 +30,8 @@ export const smoothDrawerItem = {
 };
 
 interface SmoothDrawerProps {
+  /** Open at a compact snap point, then expand with an upward drag. */
+  expandable?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: React.ReactNode;
@@ -56,25 +59,38 @@ export default function SmoothDrawer({
   className,
   bodyClassName,
   repositionInputs = true,
+  expandable = false,
 }: SmoothDrawerProps) {
+  const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(0.32);
+  useEffect(() => {
+    if (!open) setActiveSnapPoint(0.32);
+  }, [open]);
   return (
     <Drawer
       open={open}
       onOpenChange={onOpenChange}
       shouldScaleBackground={false}
       repositionInputs={repositionInputs}
+      {...(expandable ? {
+        snapPoints: [0.32, 0.92],
+        activeSnapPoint,
+        setActiveSnapPoint,
+        fadeFromIndex: 1,
+        snapToSequentialPoint: true,
+      } : {})}
     >
       <DrawerContent
         className={cn(
           "mx-auto max-h-[88dvh] w-full max-w-lg rounded-t-3xl border-border/10 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-xl sm:bottom-4 sm:rounded-3xl",
           className,
+          expandable && "h-[92dvh] max-h-[92dvh] sm:bottom-0 sm:rounded-b-none",
         )}
       >
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants as never}
-          className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain", bodyClassName)}
+          className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain", expandable && activeSnapPoint !== 0.92 && "overflow-y-hidden", bodyClassName)}
         >
           <motion.div variants={smoothDrawerItem as never} className={hideHeader ? "sr-only" : undefined}>
             <DrawerHeader className="space-y-1.5 px-5 pb-2 pt-4 text-center">

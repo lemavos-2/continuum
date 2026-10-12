@@ -47,7 +47,7 @@ import { FloatingCreateButton } from "@/components/ui/floating-create-button";
 import { ListSortMenu, type ListSortMode } from "@/components/ui/list-sort-menu";
 
 
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import SmoothDrawer from "@/components/ui/smooth-drawer";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useLongPress } from "@/hooks/useLongPress";
@@ -630,22 +630,18 @@ export default function Notes() {
         )}
 
         {/* Mobile filter drawer */}
-        <Sheet
+        <SmoothDrawer
+          title={t("notes_filters")}
           open={filterDrawerOpen}
           onOpenChange={(open) => {
             setFilterDrawerOpen(open);
             if (!open) setOthersChipActive(false);
           }}
         >
-          <SheetContent
-            side="left"
-            className="w-[min(84vw,320px)] rounded-r-2xl border-border/10 bg-muted/60 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[6px] supports-[backdrop-filter]:bg-muted/60"
-            onTouchStart={(event) => event.stopPropagation()}
-          >
-            <p className="mb-6 font-serif text-2xl text-foreground">{t("notes_filters")}</p>
+          <div className="px-6 pb-6 pt-4" onTouchStart={(event) => event.stopPropagation()}>
             {SidebarContent}
-          </SheetContent>
-        </Sheet>
+          </div>
+        </SmoothDrawer>
 
         <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-10 lg:px-12 lg:py-10">
           {/* ─── Main ────────────────────────────────────────────── */}
