@@ -431,6 +431,20 @@ export const notesApi = {
   getTypes: () => api.get("/api/notes/types"),
 };
 
+export const noteTypesApi = {
+  list: () => api.get<string[]>("/api/note-types"),
+  create: (name: string) => api.post<{ name: string }>("/api/note-types", { name }),
+  delete: (name: string) => api.delete("/api/note-types", { params: { name } }),
+};
+
+export async function getAllNoteTypes() {
+  const [assigned, saved] = await Promise.all([notesApi.getTypes(), noteTypesApi.list()]);
+  return [...new Set([
+    ...(Array.isArray(assigned.data) ? assigned.data : []),
+    ...(Array.isArray(saved.data) ? saved.data : []),
+  ])].sort((a, b) => a.localeCompare(b));
+}
+
 export const foldersApi = {
   list: () => api.get("/api/folders"),
   create: (name: string, parentId?: string) =>

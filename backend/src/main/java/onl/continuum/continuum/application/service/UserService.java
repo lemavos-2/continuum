@@ -157,7 +157,7 @@ public class UserService {
         Query byUser = Query.query(Criteria.where("userId").is(userId));
         for (String c : java.util.List.of("notes", "entities", "entity_links", "note_links", "refresh_tokens",
                 "subscriptions", "time_entries", "timer_sessions", "token_blacklist", "tracking_events",
-                "user_score_snapshots", "trash_items", "folders", "stripe_event_logs")) {
+                "user_score_snapshots", "trash_items", "folders", "note_types", "stripe_event_logs")) {
             mongoTemplate.remove(byUser, c);
         }
         userRepository.deleteById(userId);

@@ -6,7 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { notesApi, vaultApi } from "@/lib/api";
+import { getAllNoteTypes, noteTypesApi, notesApi, vaultApi } from "@/lib/api";
 import { usePlanGate } from "@/hooks/usePlanGate";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { qk, STALE } from "@/lib/queries";
@@ -215,6 +215,7 @@ export default function Notes() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<NoteSummary | null>(null);
+  const [pendingTypeDelete, setPendingTypeDelete] = useState<string | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -275,11 +276,8 @@ export default function Notes() {
   );
   const typesQuery = useCachedResource<string[]>(
     qk.noteTypes(),
-    async () => {
-      const res = await notesApi.getTypes();
-      return Array.isArray(res.data) ? res.data : [];
-    },
-    { staleTime: STALE.list }
+    getAllNoteTypes,
+    { staleTime: STALE.list, refetchOnMount: "always" }
   );
   const loading =
     notesQuery.loading ||
@@ -350,6 +348,49 @@ export default function Notes() {
 
   const handleCreate = () => {
     void createNote();
+  };
+
+  const createNoteType = async () => {
+    const name = window.prompt(t("notes_new_type_prompt"));
+    const cleanName = name?.trim();
+    if (!cleanName) return;
+
+    try {
+      const { data } = await noteTypesApi.create(cleanName);
+      const nextTypes = [...new Set([...types, data.name])].sort((a, b) => a.localeCompare(b));
+      setTypes(nextTypes);
+      typesQuery.setData(nextTypes);
+      toast({ title: t("notes_type_created", { type: data.name }) });
+    } catch (error) {
+      console.error("[Notes] type creation failed", error);
+      toast({ title: t("notes_type_create_failed"), variant: "destructive" });
+    }
+  };
+
+  const confirmDeleteType = async () => {
+    if (!pendingTypeDelete) return;
+    const type = pendingTypeDelete;
+    try {
+      await noteTypesApi.delete(type);
+      const nextTypes = types.filter((item) => item !== type);
+      const updatedAt = new Date().toISOString();
+      const nextNotes = notes.map((note) => note.type === type ? { ...note, type: undefined, updatedAt } : note);
+      setTypes(nextTypes);
+      typesQuery.setData(nextTypes);
+      setNotes(nextNotes);
+      notesQuery.setData(nextNotes);
+      notes.filter((note) => note.type === type).forEach((note) => {
+        queryClient.setQueryData<{ type?: string }>(qk.note(note.id), (detail) =>
+          detail ? { ...detail, type: undefined } : detail
+        );
+      });
+      if (selectedType === type) setSelectedType(null);
+      setPendingTypeDelete(null);
+      toast({ title: t("notes_type_deleted", { type }) });
+    } catch (error) {
+      console.error("[Notes] type deletion failed", error);
+      toast({ title: t("notes_type_delete_failed"), variant: "destructive" });
+    }
   };
 
 
@@ -570,7 +611,20 @@ export default function Notes() {
 
   const SidebarContent = (
     <div className="border-t border-border/15 pt-4">
-      <p className="mb-4 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">{t("notes_types")}</p>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">{t("notes_types")}</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="iconSm"
+          aria-label={t("notes_create_type")}
+          title={t("notes_create_type")}
+          onClick={() => void createNoteType()}
+          className="h-7 w-7 text-muted-foreground/70 hover:text-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
       <div className="divide-y divide-border/10">
         <button
           type="button"
@@ -586,20 +640,32 @@ export default function Notes() {
           <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{counts.all}</span>
         </button>
         {types.map((tp) => (
-          <button
-            key={tp}
-            type="button"
-            onClick={() => setSelectedType(tp)}
-            className={cn(
-              "group flex w-full items-center justify-between border-l-2 px-3 py-3 text-left text-[13px] transition-colors",
-              selectedType === tp
-                ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <span className="truncate">{tp}</span>
-            <span className="ml-3 font-mono text-[10px] tabular-nums text-muted-foreground">{counts.byType[tp] || 0}</span>
-          </button>
+          <div key={tp} className="group flex items-center border-b border-border/10 last:border-0">
+            <button
+              type="button"
+              onClick={() => setSelectedType(tp)}
+              className={cn(
+                "flex min-w-0 flex-1 items-center justify-between border-l-2 px-3 py-3 text-left text-[13px] transition-colors",
+                selectedType === tp
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span className="truncate">{tp}</span>
+              <span className="ml-3 font-mono text-[10px] tabular-nums text-muted-foreground">{counts.byType[tp] || 0}</span>
+            </button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="iconSm"
+              aria-label={t("notes_delete_type", { type: tp })}
+              title={t("notes_delete_type", { type: tp })}
+              onClick={() => setPendingTypeDelete(tp)}
+              className="mr-1 h-7 w-7 shrink-0 text-muted-foreground/50 opacity-100 transition-opacity hover:text-destructive focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         ))}
       </div>
     </div>
@@ -608,7 +674,20 @@ export default function Notes() {
   const DrawerFilterContent = (
     <div className="space-y-7">
       <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("notes_types")}</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("notes_types")}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={t("notes_create_type")}
+            title={t("notes_create_type")}
+            onClick={() => void createNoteType()}
+            className="h-9 w-9 text-muted-foreground/70 hover:text-foreground"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="space-y-0.5">
           <NavItem
             label={t("notes_allTypes")}
@@ -617,13 +696,27 @@ export default function Notes() {
             onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
           />
           {types.map((tp) => (
-            <NavItem
-              key={tp}
-              label={tp}
-              count={counts.byType[tp] || 0}
-              active={selectedType === tp}
-              onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
-            />
+            <div key={tp} className="group flex items-center gap-1">
+              <div className="min-w-0 flex-1">
+                <NavItem
+                  label={tp}
+                  count={counts.byType[tp] || 0}
+                  active={selectedType === tp}
+                  onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("notes_delete_type", { type: tp })}
+                title={t("notes_delete_type", { type: tp })}
+                onClick={() => setPendingTypeDelete(tp)}
+                className="h-9 w-9 shrink-0 text-muted-foreground/60 hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           ))}
         </div>
       </div>
@@ -1058,6 +1151,15 @@ export default function Notes() {
         confirmText={bulkDeleting ? t("notes_removing") : t("notes_remove")}
         destructive
         onConfirm={confirmBulkDelete}
+      />
+      <ConfirmDialog
+        open={pendingTypeDelete !== null}
+        onOpenChange={(open) => !open && setPendingTypeDelete(null)}
+        title={t("notes_delete_type_title")}
+        description={t("notes_delete_type_desc", { type: pendingTypeDelete ?? "" })}
+        confirmText={t("notes_remove")}
+        destructive
+        onConfirm={confirmDeleteType}
       />
     </AppLayout>
   );

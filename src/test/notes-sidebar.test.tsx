@@ -58,7 +58,9 @@ describe("desktop Notes sidebar", () => {
     expect(sidebar).toHaveTextContent("notes_types");
     expect(sidebar).not.toHaveTextContent("notes_index");
     expect(sidebar).not.toHaveTextContent("notes_recent");
-    fireEvent.click(sidebar.querySelector("button") as HTMLButtonElement);
+    expect(screen.getByRole("button", { name: "notes_create_type" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "notes_delete_type" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "notes_allTypes" }));
     fireEvent.click(screen.getByRole("heading", { name: "notes_title" }));
     expect(sidebar).toBeInTheDocument();
 
