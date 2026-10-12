@@ -65,19 +65,20 @@ export default function SmoothDrawer({
   useEffect(() => {
     if (!open) setActiveSnapPoint(0.32);
   }, [open]);
+  const snapProps: React.ComponentProps<typeof Drawer> = expandable ? {
+    snapPoints: [0.32, 0.92],
+    activeSnapPoint,
+    setActiveSnapPoint,
+    fadeFromIndex: 1,
+    snapToSequentialPoint: true,
+  } : {};
   return (
     <Drawer
       open={open}
       onOpenChange={onOpenChange}
       shouldScaleBackground={false}
       repositionInputs={repositionInputs}
-      {...(expandable ? {
-        snapPoints: [0.32, 0.92],
-        activeSnapPoint,
-        setActiveSnapPoint,
-        fadeFromIndex: 1,
-        snapToSequentialPoint: true,
-      } : {})}
+      {...snapProps}
     >
       <DrawerContent
         className={cn(
