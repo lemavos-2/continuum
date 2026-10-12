@@ -144,27 +144,22 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
       type="button"
       variant="ghost"
       className={cn(
-        "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[13px] normal-case transition-all duration-200",
-        active
-          ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/15 hover:text-primary"
-          : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+        "group flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[13px] normal-case transition-colors",
+        active ? "text-foreground" : "text-muted-foreground hover:text-muted-foreground"
       )}
       onClick={onClick}
     >
-      <span className="flex min-w-0 items-center gap-2.5">
+      <span className="flex items-center gap-2">
         <span
           aria-hidden
           className={cn(
-            "h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-200",
-            active ? "scale-110 bg-primary" : "bg-foreground/20 group-hover:bg-foreground/50"
+            "h-px w-3 transition-all",
+            active ? "w-5 bg-foreground" : "bg-foreground/20 group-hover:bg-foreground/40"
           )}
         />
         <span className="truncate">{label}</span>
       </span>
-      <span className={cn(
-        "ml-3 rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums transition-colors",
-        active ? "bg-primary/10 text-primary" : "bg-foreground/[0.04] text-muted-foreground"
-      )}>
+      <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
         {count}
       </span>
     </Button>
@@ -245,7 +240,7 @@ export default function Notes() {
     const touch = event.touches[0];
     const target = event.target;
     const excluded = target instanceof Element && !!target.closest(
-      "input, textarea, select, [contenteditable='true'], [role='dialog'], [data-radix-popper-content-wrapper]",
+      "input, textarea, select, [contenteditable='true'], [role='dialog'], [data-radix-popper-content-wrapper], [data-filter-chips]",
     );
     indexSwipeStart.current = {
       x: touch.clientX,
@@ -574,27 +569,63 @@ export default function Notes() {
           : t("notes_view_dormant");
 
   const SidebarContent = (
-    <div className="rounded-2xl border border-border/15 bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:p-5">
-      <div className="mb-4 border-b border-border/10 pb-4">
-        <p className="font-serif text-xl tracking-tight text-foreground">{t("notes_types")}</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("notes_filters")}</p>
-      </div>
-      <div className="space-y-1">
-        <NavItem
-          label={t("notes_allTypes")}
-          count={counts.all}
-          active={!selectedType}
-          onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
-        />
+    <div className="border-t border-border/15 pt-4">
+      <p className="mb-4 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">{t("notes_types")}</p>
+      <div className="divide-y divide-border/10">
+        <button
+          type="button"
+          onClick={() => setSelectedType(null)}
+          className={cn(
+            "group flex w-full items-center justify-between border-l-2 px-3 py-3 text-left text-[13px] transition-colors",
+            !selectedType
+              ? "border-foreground text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <span>{t("notes_allTypes")}</span>
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{counts.all}</span>
+        </button>
         {types.map((tp) => (
-          <NavItem
+          <button
             key={tp}
-            label={tp}
-            count={counts.byType[tp] || 0}
-            active={selectedType === tp}
-            onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
-          />
+            type="button"
+            onClick={() => setSelectedType(tp)}
+            className={cn(
+              "group flex w-full items-center justify-between border-l-2 px-3 py-3 text-left text-[13px] transition-colors",
+              selectedType === tp
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="truncate">{tp}</span>
+            <span className="ml-3 font-mono text-[10px] tabular-nums text-muted-foreground">{counts.byType[tp] || 0}</span>
+          </button>
         ))}
+      </div>
+    </div>
+  );
+
+  const DrawerFilterContent = (
+    <div className="space-y-7">
+      <div>
+        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("notes_types")}</p>
+        <div className="space-y-0.5">
+          <NavItem
+            label={t("notes_allTypes")}
+            count={counts.all}
+            active={!selectedType}
+            onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
+          />
+          {types.map((tp) => (
+            <NavItem
+              key={tp}
+              label={tp}
+              count={counts.byType[tp] || 0}
+              active={selectedType === tp}
+              onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -634,7 +665,7 @@ export default function Notes() {
           }}
         >
           <div className="px-6 pb-6 pt-4" onTouchStart={(event) => event.stopPropagation()}>
-            {SidebarContent}
+            {DrawerFilterContent}
           </div>
         </SmoothDrawer>
 
@@ -676,7 +707,21 @@ export default function Notes() {
                   </div>
                   <ListSortMenu className="lg:h-12 lg:w-12 lg:rounded-2xl" value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
                 </div>
-              <div onTouchStart={(event) => event.stopPropagation()}>
+              <div
+                data-filter-chips
+                onTouchStart={(event) => {
+                  indexSwipeStart.current = null;
+                  event.stopPropagation();
+                }}
+                onTouchEnd={(event) => {
+                  indexSwipeStart.current = null;
+                  event.stopPropagation();
+                }}
+                onTouchCancel={(event) => {
+                  indexSwipeStart.current = null;
+                  event.stopPropagation();
+                }}
+              >
                 <FilterChips
                   value={othersChipActive || desktopSidebarOpen ? "others" : view}
                   onChange={(v) => {

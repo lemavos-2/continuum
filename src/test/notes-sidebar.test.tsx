@@ -81,6 +81,11 @@ describe("mobile Notes filter drawer", () => {
     }));
     const { container } = render(<MemoryRouter><Notes /></MemoryRouter>);
     const page = container.querySelector(".relative.min-h-full") as HTMLElement;
+    const filterPill = screen.getByRole("button", { name: "notes_archive" });
+
+    fireEvent.touchStart(filterPill, { touches: [{ clientX: 200, clientY: 100 }] });
+    fireEvent.touchEnd(filterPill, { changedTouches: [{ clientX: 100, clientY: 105 }] });
+    expect(screen.queryByRole("dialog", { name: "notes_filters" })).not.toBeInTheDocument();
 
     fireEvent.touchStart(page, { touches: [{ clientX: 200, clientY: 100 }] });
     fireEvent.touchEnd(page, { changedTouches: [{ clientX: 100, clientY: 105 }] });
