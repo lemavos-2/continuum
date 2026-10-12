@@ -17,30 +17,82 @@ vi.mock("@/lib/query-client", () => ({ queryClient: { invalidateQueries: vi.fn()
 vi.mock("@/components/InsightSignal", () => ({ InsightSignalBadge: () => null }));
 vi.mock("@/components/UpgradeModal", () => ({ default: () => null }));
 vi.mock("@/components/import/MarkdownImportDialog", () => ({ default: () => null }));
+vi.mock("@/components/ui/smooth-drawer", () => ({
+  default: ({ open, title, onOpenChange, children }: { open: boolean; title: string; onOpenChange: (open: boolean) => void; children: React.ReactNode }) =>
+    open ? (
+      <div role="dialog" aria-label={title}>
+        <button type="button" onClick={() => onOpenChange(false)}>Close filters</button>
+        {children}
+      </div>
+    ) : null,
+}));
 vi.mock("@/components/ui/confirm-dialog", () => ({ ConfirmDialog: () => null }));
 vi.mock("@/components/ui/fit-text", () => ({ FitText: ({ children }: { children: React.ReactNode }) => <span>{children}</span> }));
 
 import Notes from "@/pages/Notes";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("desktop Notes sidebar", () => {
-  it("opens and closes only through its toggle, retaining visibility after choosing filters and clicking elsewhere", () => {
+  it("opens and closes through Others, retaining visibility after choosing filters and clicking elsewhere", () => {
+    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
+      matches: query === "(min-width: 1024px)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
     render(<MemoryRouter><Notes /></MemoryRouter>);
-    const toggle = screen.getByRole("button", { name: "notes_filters" });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const toggle = screen.getByRole("button", { name: "notes_others" });
+    expect(screen.queryByRole("button", { name: "notes_filters" })).not.toBeInTheDocument();
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
     const sidebar = screen.getByRole("complementary", { name: "notes_filters" });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(sidebar).toHaveTextContent("notes_types");
+    expect(sidebar).not.toHaveTextContent("notes_index");
+    expect(sidebar).not.toHaveTextContent("notes_recent");
     fireEvent.click(sidebar.querySelector("button") as HTMLButtonElement);
     fireEvent.click(screen.getByRole("heading", { name: "notes_title" }));
     expect(sidebar).toBeInTheDocument();
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
 
     fireEvent.click(toggle);
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("mobile Notes filter drawer", () => {
+  it("opens on horizontal swipes in either direction", () => {
+    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
+      matches: query === "(max-width: 1023px)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    const { container } = render(<MemoryRouter><Notes /></MemoryRouter>);
+    const page = container.querySelector(".relative.min-h-full") as HTMLElement;
+
+    fireEvent.touchStart(page, { touches: [{ clientX: 200, clientY: 100 }] });
+    fireEvent.touchEnd(page, { changedTouches: [{ clientX: 100, clientY: 105 }] });
+    const drawer = screen.getByRole("dialog", { name: "notes_filters" });
+    expect(drawer).toBeInTheDocument();
+    expect(drawer).toHaveTextContent("notes_types");
+    expect(drawer).not.toHaveTextContent("notes_index");
+    expect(drawer).not.toHaveTextContent("notes_recent");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close filters" }));
+    fireEvent.touchStart(page, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchEnd(page, { changedTouches: [{ clientX: 200, clientY: 105 }] });
+    expect(screen.getByRole("dialog", { name: "notes_filters" })).toBeInTheDocument();
   });
 });

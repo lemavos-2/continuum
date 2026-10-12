@@ -306,8 +306,11 @@ export default function Entities() {
                   <p className="mt-2 text-sm text-muted-foreground">{t("entities_tagline")}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button size="sm" className="gap-2" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-3.5 w-3.5" /> {t("entities_new")}
+                  <Button
+                    className="h-auto gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition active:scale-95 hover:bg-foreground"
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" /> {t("entities_new")}
                   </Button>
                 </div>
 

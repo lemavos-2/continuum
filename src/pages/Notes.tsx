@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AppLayout from "@/components/AppLayout";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,6 @@ import {
   Upload,
   ChevronDown,
   ChevronRight,
-  SlidersHorizontal,
   Check,
   X,
   Tag,
@@ -144,22 +144,27 @@ function NavItem({ label, count, active, onClick }: NavItemProps) {
       type="button"
       variant="ghost"
       className={cn(
-        "group flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-[13px] normal-case transition-colors",
-        active ? "text-foreground" : "text-muted-foreground hover:text-muted-foreground"
+        "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[13px] normal-case transition-all duration-200",
+        active
+          ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/15 hover:text-primary"
+          : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
       )}
       onClick={onClick}
     >
-      <span className="flex items-center gap-2">
+      <span className="flex min-w-0 items-center gap-2.5">
         <span
           aria-hidden
           className={cn(
-            "h-px w-3 transition-all",
-            active ? "bg-foreground w-5" : "bg-foreground/20 group-hover:bg-foreground/40"
+            "h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-200",
+            active ? "scale-110 bg-primary" : "bg-foreground/20 group-hover:bg-foreground/50"
           )}
         />
-        {label}
+        <span className="truncate">{label}</span>
       </span>
-      <span className={cn("font-mono text-[10px] tabular-nums", active ? "text-muted-foreground" : "text-muted-foreground")}>
+      <span className={cn(
+        "ml-3 rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums transition-colors",
+        active ? "bg-primary/10 text-primary" : "bg-foreground/[0.04] text-muted-foreground"
+      )}>
         {count}
       </span>
     </Button>
@@ -257,8 +262,9 @@ export default function Notes() {
 
     const touch = event.changedTouches[0];
     const dx = touch.clientX - start.x;
+    const horizontalDistance = Math.abs(dx);
     const dy = Math.abs(touch.clientY - start.y);
-    if (dx >= 60 && dy <= dx * 0.75 && Date.now() - start.startedAt <= 1000) {
+    if (horizontalDistance >= 60 && dy <= horizontalDistance * 0.75 && Date.now() - start.startedAt <= 1000) {
       setFilterDrawerOpen(true);
     }
   };
@@ -568,39 +574,28 @@ export default function Notes() {
           : t("notes_view_dormant");
 
   const SidebarContent = (
-    <div className="space-y-7">
-      <div>
-        <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("notes_index")}</p>
-        <div className="space-y-0.5">
-          <NavItem label={t("notes_archive")} count={counts.all} active={view === "all"} onClick={() => { setView("all"); setFilterDrawerOpen(false); }} />
-          <NavItem label={t("notes_recent")} count={counts.recent} active={view === "recent"} onClick={() => { setView("recent"); setFilterDrawerOpen(false); }} />
-          <NavItem label={t("notes_favorites")} count={counts.favorites} active={view === "favorites"} onClick={() => { setView("favorites"); setFilterDrawerOpen(false); }} />
-          <NavItem label={t("notes_dormant")} count={counts.archived} active={view === "archived"} onClick={() => { setView("archived"); setFilterDrawerOpen(false); }} />
-        </div>
+    <div className="rounded-2xl border border-border/15 bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:p-5">
+      <div className="mb-4 border-b border-border/10 pb-4">
+        <p className="font-serif text-xl tracking-tight text-foreground">{t("notes_types")}</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("notes_filters")}</p>
       </div>
-
-      {types.length > 0 && (
-        <div>
-          <p className="mb-3 text-[10px] uppercase tracking-[0.32em] text-muted-foreground">{t("notes_types")}</p>
-          <div className="space-y-0.5">
-            <NavItem
-              label={t("notes_allTypes")}
-              count={counts.all}
-              active={!selectedType}
-              onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
-            />
-            {types.map((tp) => (
-              <NavItem
-                key={tp}
-                label={tp}
-                count={counts.byType[tp] || 0}
-                active={selectedType === tp}
-                onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="space-y-1">
+        <NavItem
+          label={t("notes_allTypes")}
+          count={counts.all}
+          active={!selectedType}
+          onClick={() => { setSelectedType(null); setFilterDrawerOpen(false); }}
+        />
+        {types.map((tp) => (
+          <NavItem
+            key={tp}
+            label={tp}
+            count={counts.byType[tp] || 0}
+            active={selectedType === tp}
+            onClick={() => { setSelectedType(tp); setFilterDrawerOpen(false); }}
+          />
+        ))}
+      </div>
     </div>
   );
 
@@ -643,9 +638,9 @@ export default function Notes() {
           </div>
         </SmoothDrawer>
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:gap-10 lg:px-12 lg:py-10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-5 lg:flex-row lg:items-start lg:gap-14 lg:px-12 lg:py-10">
           {/* ─── Main ────────────────────────────────────────────── */}
-          <main className="min-w-0 flex-1">
+          <motion.main layout="position" transition={{ layout: { type: "spring", stiffness: 280, damping: 30 } }} className="min-w-0 flex-1">
             {/* Header (desktop) */}
             <header className="mb-8 hidden lg:block">
               <div className="flex items-end justify-between gap-4">
@@ -654,8 +649,12 @@ export default function Notes() {
                   <h1 className="mt-2 font-serif text-5xl tracking-tight text-foreground">{t("notes_title")}</h1>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button onClick={handleCreate} className="gap-2" disabled={creating}>
-                    <Plus className="h-3.5 w-3.5" /> {creating ? t("notes_creating") : t("notes_new")}
+                  <Button
+                    onClick={handleCreate}
+                    className="h-auto gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition active:scale-95 hover:bg-foreground disabled:opacity-60"
+                    disabled={creating}
+                  >
+                    <Plus className="h-4 w-4" /> {creating ? t("notes_creating") : t("notes_new")}
                   </Button>
                 </div>
 
@@ -676,27 +675,14 @@ export default function Notes() {
                     />
                   </div>
                   <ListSortMenu className="lg:h-12 lg:w-12 lg:rounded-2xl" value={sortMode} onValueChange={setSortMode} labels={sortLabels(t)} />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="hidden h-12 w-12 shrink-0 rounded-2xl bg-accent lg:inline-flex"
-                    onClick={() => setDesktopSidebarOpen((open) => !open)}
-                    aria-label={t("notes_filters")}
-                    aria-expanded={desktopSidebarOpen}
-                    aria-controls="notes-desktop-filters"
-                    title={t("notes_filters")}
-                  >
-                    {desktopSidebarOpen ? <X className="h-4 w-4" /> : <SlidersHorizontal className="h-4 w-4" />}
-                  </Button>
                 </div>
               <div onTouchStart={(event) => event.stopPropagation()}>
                 <FilterChips
-                  value={othersChipActive ? "others" : view}
+                  value={othersChipActive || desktopSidebarOpen ? "others" : view}
                   onChange={(v) => {
                     if (v === "others") {
                       if (window.matchMedia("(min-width: 1024px)").matches) {
-                        setDesktopSidebarOpen(true);
+                        setDesktopSidebarOpen((open) => !open);
                       } else {
                         setOthersChipActive(true);
                         setFilterDrawerOpen(true);
@@ -972,13 +958,22 @@ export default function Notes() {
                 })}
               </div>
             )}
-          </main>
-          {desktopSidebarOpen && (
-            <aside id="notes-desktop-filters" aria-label={t("notes_filters")} className="hidden lg:sticky lg:top-10 lg:block lg:w-52 lg:shrink-0 lg:self-start lg:border-l lg:border-border/10 lg:pl-6">
-              <p className="mb-6 font-serif text-2xl text-foreground">{t("notes_filters")}</p>
-              {SidebarContent}
-            </aside>
-          )}
+          </motion.main>
+          <AnimatePresence initial={false}>
+            {desktopSidebarOpen && (
+              <motion.aside
+                id="notes-desktop-filters"
+                aria-label={t("notes_filters")}
+                initial={{ opacity: 0, x: 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 18 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="hidden w-64 shrink-0 lg:sticky lg:top-10 lg:block lg:self-start"
+              >
+                {SidebarContent}
+              </motion.aside>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
